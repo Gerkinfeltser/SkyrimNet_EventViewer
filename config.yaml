@@ -1,0 +1,32 @@
+# sn-eventview settings. Reload the page after editing.
+# Read only when the page is opened through serve.py (http://localhost:8791).
+
+# lan: yes = other devices on your network (or Tailscale) can open the page too, at http://<this PC's IP>:8791/.
+# Anyone who can reach this PC can then read your dialogue, memories and diaries. Restart the helper after changing it.
+lan: no
+
+# hide: events whose text matches any of these are left out of the view.
+# Each entry is a regular expression, case-insensitive, matched against the line as shown.
+# Keep entries in single quotes so backslashes stay as they are ('' is a literal quote).
+hide:
+  - 'continues the conversation\.?$'
+
+# Right-hand column. memories: NPC memories (🧠). diary: NPC diary entries (📔).
+# omnisight: OmniSight screenshots and descriptions (📷). no = left out entirely, with no toggle or 📌 marker.
+memories: yes
+diary: yes
+omnisight: yes
+
+# column: groups of events shown as cards in the right-hand column instead of the chat,
+# each with its own toggle in the column's header. Delete a group to keep its events in the chat.
+#   label: the toggle's text (an emoji works too)
+#   hue:   card colour, 0-360 (190 teal, 42 gold, 280 purple, 0 red, 120 green)
+#   types: regular expression for SkyrimNet event types (list them with: python serve.py --types)
+#   shown: no = the toggle starts off (until you click it; the page remembers your choice)
+column:
+  - label: IntelEngine
+    hue: 190
+    types: '^(intel_.*|follower_recruited)$'
+  - label: PoliticalEngine
+    hue: 42
+    types: '^political_'

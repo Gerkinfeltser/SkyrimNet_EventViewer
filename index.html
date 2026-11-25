@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SkyrimNet Event View</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root { --dw:min(720px,55vw); --bg:#14161a; --panel:#1d2026; --fg:#e4e1d8; --muted:#8a8f98; --line:#2a2e36; --you:#2f4a6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.45 "Segoe UI",system-ui,sans-serif; }
+
+  header { position:sticky; top:0; z-index:5; display:flex; gap:12px; align-items:center;
+           padding:8px 14px; background:var(--panel); border-bottom:1px solid var(--line); }
+  header .where { flex:1; min-width:0; color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  header .where b { color:var(--fg); font-weight:600; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#a33; flex:none; }
+  .dot.ok { background:#4a4; }
+  .menu { position:relative; flex:none; }
+  .menu summary { list-style:none; cursor:pointer; font-size:18px; line-height:1; padding:2px 6px; border-radius:4px; color:var(--muted); user-select:none; }
+  .menu summary::-webkit-details-marker { display:none; }
+  .menu summary:hover, .menu[open] summary { color:var(--fg); background:var(--line); }
+  .menu .panel { position:absolute; right:0; top:30px; display:flex; flex-direction:column; gap:7px; white-space:nowrap;
+                 padding:10px 14px; background:var(--panel); border:1px solid var(--line); border-radius:6px; box-shadow:0 6px 18px #0008; }
+  .menu label { font-size:13px; color:var(--muted); cursor:pointer; user-select:none; }
+  .menu .sep { border-top:1px solid var(--line); padding-top:7px; }
+  .menu .mlwrap { border-bottom:1px solid var(--line); padding-bottom:7px; }
+  .menu.acts summary { font-size:17px; padding:2px 4px; color:inherit; }
+  .menu.acts .panel { left:0; right:auto; z-index:6; }
+  .menu.acts .n { color:var(--muted); font-size:12px; }
+  body.hide-acts .menu.acts summary { opacity:.35; filter:grayscale(1); }
+  body.hide-acts .menu.acts .panel label:not(.mlwrap) { opacity:.45; }
+  .act-failed, .act-checks { opacity:.75; }
+  .menu select { margin-left:4px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:12.5px; }
+  .hist { flex:none; font-size:12.5px; color:var(--muted); white-space:nowrap; }
+  .hist a { color:#8fb0d6; }
+  .hist select { max-width:340px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:12.5px; }
+  .dot.arch { background:#777; }
+
+  main { max-width:860px; margin:0 auto; padding:12px 14px 64px; }
+  body.split { padding-right:var(--dw); } /* prompt panel open: the chat moves into the left column */
+  body.split header { margin-right:calc(-1 * var(--dw)); } /* the header bar still spans both columns */
+  .tbtn { cursor:pointer; font-size:17px; line-height:1; padding:2px 4px; border-radius:4px; user-select:none; }
+  .tbtn:hover { background:var(--line); }
+  .tbtn:has(input:not(:checked)) { opacity:.35; filter:grayscale(1); }
+  .tbtn.txt { font-size:13px; margin-left:8px; }
+  .tbtn .n { color:var(--muted); font-size:12px; }
+  [data-i] { scroll-margin-top:96px; } /* below the header and the chat bar */
+  .colbar { position:sticky; top:41px; z-index:4; display:flex; align-items:center; gap:10px; padding:10px 14px; font-size:13px;
+            background:var(--panel); border-bottom:1px solid var(--line); }
+  .colbar .fill { flex:1; }
+  /* 📌 where a memory, diary entry or OmniSight picture was made; its card is in the context column */
+  .mark { display:flex; align-items:center; gap:7px; margin:3px 10px; font-size:12px; color:var(--muted); cursor:pointer; white-space:nowrap; }
+  .mark::after { content:""; flex:1; border-top:1px dashed currentColor; opacity:.45; }
+  .mark:hover { color:var(--fg); }
+  .memcard.flash { box-shadow:0 0 0 2px var(--fg); }
+  body.hide-marks .mark { display:none; }
+  /* the end of the chat: "Now" when live, the end of a playthrough or day in History */
+  .endmark { display:flex; align-items:center; gap:12px; margin:14px 10px 6px;
+             color:#d6c48f; font-weight:700; font-size:13px; letter-spacing:.04em; white-space:nowrap; }
+  .endmark::before, .endmark::after { content:""; flex:1; border-top:1px solid currentColor; opacity:.45; }
+  .endmark .pulse { color:#8fd19e; margin-right:5px; animation:nowpulse 2s ease-in-out infinite; }
+  @keyframes nowpulse { 50% { opacity:.3; } }
+  .divider { margin:18px 0 8px; text-align:left; color:var(--muted); font-size:12px; letter-spacing:.04em; }
+  .divider span { background:var(--bg); padding:0 10px 0 0; }
+  .divider::before { content:""; display:block; border-top:1px solid var(--line); margin-bottom:-9px; }
+  .msg { display:flex; flex-direction:column; align-items:flex-start; margin:6px 0; }
+  .who { font-size:12px; font-weight:600; margin:0 10px 2px; }
+  .who .to { color:var(--muted); font-weight:400; }
+  .bubble { max-width:78%; padding:7px 12px; border-radius:14px; background:var(--panel); border:1px solid var(--line); }
+  .msg.you .bubble { background:var(--you); border-color:transparent; }
+  .msg.bg { opacity:.6; }
+  /* Thoughts: a paler, greyer bubble in the thinker's hue (set inline), dashed because unspoken. Default = pale player blue. */
+  .thought { width:fit-content; max-width:78%; margin:2px 0 6px; padding:7px 12px; border-radius:14px;
+             border:1px dashed hsl(212 22% 44%); background:hsl(212 22% 31%); color:#dcd7cd; font-style:italic; }
+  .bubble .to { color:var(--muted); font-style:italic; }
+  .narr, .act { margin:10px 10px; font-style:italic; color:#d6c48f; }
+  .other { margin:3px 10px; color:var(--muted); font-size:12.5px; }
+  .t { color:var(--muted); font-size:11px; margin-left:6px; font-weight:400; }
+  .type { display:inline-block; font:500 10.5px/1.6 "Segoe UI",system-ui,sans-serif; font-style:normal; color:var(--muted);
+          border:1px solid var(--line); border-radius:4px; padding:0 5px; margin:0 6px; vertical-align:1px; letter-spacing:.02em; }
+
+  /* Timeline scrubber: one block per stay in a location, width = number of events there. */
+  #scrub { position:fixed; left:0; right:0; bottom:0; z-index:2; height:34px; display:flex;
+           background:var(--panel); border-top:1px solid var(--line); cursor:pointer; user-select:none; touch-action:none; }
+  .seg { flex:1 1 0; min-width:0; border-right:1px solid var(--bg); padding:0 6px; overflow:hidden;
+         font-size:11px; line-height:33px; white-space:nowrap; text-overflow:ellipsis; color:var(--muted); }
+  .seg.on { color:var(--fg); box-shadow:inset 0 2px 0 var(--fg); }
+  #cursor { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--fg); pointer-events:none; display:none; z-index:1; }
+  #curtime { position:absolute; top:3px; left:6px; white-space:nowrap; font-size:11.5px; line-height:1; padding:3px 6px; border-radius:4px;
+             background:var(--bg); border:1px solid var(--line); color:var(--fg); }
+  #curtime.flip { left:auto; right:6px; } /* near the right end: label on the left of the cursor */
+
+  /* Prompt drawer: click a line to see the LLM request behind it. */
+  main [data-i]:not(.divider) { cursor:pointer; border-radius:8px; }
+  main [data-i]:not(.divider):hover { background:#ffffff08; }
+  main [data-i].sel { background:#ffffff12; }
+  /* Right column: the prompt drawer, or the memories when no prompt is open. */
+  .side { position:fixed; top:41px; right:0; bottom:35px; z-index:3; /* between header and scrubber; top set from the header by layout() */ width:var(--dw); display:none; flex-direction:column;
+          background:var(--panel); border-left:1px solid var(--line); box-shadow:-8px 0 24px #0009; }
+  .side.open { display:flex; }
+  #drawer { z-index:4; }
+  #shot { max-width:min(1400px, 94vw); max-height:94vh; padding:12px 14px; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:10px; }
+  #shot::backdrop { background:rgb(0 0 0 / .75); }
+  #shot img { display:block; max-width:100%; max-height:64vh; margin:6px auto; border-radius:6px; cursor:zoom-out; }
+  #shot .who { display:flex; gap:10px; align-items:baseline; font-size:13px; color:var(--muted); }
+  #shot .txt { font-size:14.5px; line-height:1.45; max-width:110ch; margin:8px auto 0; }
+  #shot .foot { font-size:12px; color:var(--muted); margin-top:6px; }
+  .side .top { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line); font-size:13px; }
+  .side .top .title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .side .x { cursor:pointer; color:var(--muted); font-size:20px; line-height:1; padding:0 4px; }
+  .side .body { overflow:auto; padding:10px 14px 30px; font-size:13px; position:relative; }
+  .memcard { margin:0 0 8px; padding:7px 11px; border-radius:10px; border:1px solid; cursor:pointer; line-height:1.4; transition:opacity .2s; }
+  .memcard .who { display:flex; gap:8px; align-items:baseline; font-size:12px; color:var(--muted); }
+  .memcard .who b { font-size:13px; }
+  .memcard .who .kind { margin-left:auto; font:600 10px/1 "Segoe UI",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
+  .memcard .txt { margin:4px 0; font-size:13.5px; color:var(--fg); }
+  .memcard .foot { font-size:11.5px; color:var(--muted); }
+  .memcard.future { opacity:.4; }
+  .memcard.now { box-shadow:0 0 0 1px var(--fg); }
+  .memtick { position:absolute; top:0; width:3px; height:8px; margin-left:-1px; border-radius:0 0 2px 2px; pointer-events:none; }
+  /* 📄 off: OmniSight descriptions and diaries cut to a few lines, all of it on hover */
+  body.hide-fulltext .memcard.omni .txt { display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
+  body.hide-fulltext .memcard.diary .md { max-height:6.4em; overflow:hidden; -webkit-mask-image:linear-gradient(#000 55%, transparent); }
+  .memcard.diary .md { margin:4px 0; font-size:13.5px; line-height:1.45; }
+  .memcard.diary .md h1, .memcard.diary .md h2, .memcard.diary .md h3 { font-size:14px; margin:6px 0 2px; }
+  #mbody.aligned { overflow:hidden; } /* 📍 the column follows the page; the wheel scrolls the page */
+  #mbody.aligned .memcard { margin:0; }
+  .memcard img { display:block; width:100%; height:170px; object-fit:cover; border-radius:6px; margin:5px 0 3px; }
+  #drawer details { border:1px solid var(--line); border-radius:6px; margin:8px 0; }
+  #drawer summary { cursor:pointer; padding:6px 10px; color:var(--muted); }
+  #drawer summary b { color:var(--fg); }
+  #drawer details > div { padding:0 10px 8px; }
+  #drawer .role { margin:10px 0 3px; font:600 11px/1 "Segoe UI",sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#8fb0d6; }
+  #drawer pre { margin:0; white-space:pre-wrap; word-break:break-word; font:12px/1.5 Consolas,"Cascadia Mono",monospace;
+                background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:8px 10px; }
+  #drawer pre .h { color:#d6c48f; font-weight:700; }             /* # heading */
+  #drawer pre .l { color:#d6a35f; font-weight:700; }             /* - bullet / 1. */
+  #drawer pre .b { color:#f0ece2; font-weight:700; }             /* **bold** */
+  #drawer pre .i { color:#cfc9bb; font-style:italic; }           /* *italic* */
+  #drawer pre .c { color:#9fd49a; }                              /* `code` and ``` blocks */
+  #drawer pre .tg { color:#c79be0; }                              /* <tags> */
+  #drawer pre .k { color:#8fb0d6; }                              /* [brackets] */
+  #drawer pre .q { color:var(--muted); font-style:italic; }      /* > quote */
+  .side .note { color:var(--muted); margin:6px 0; }
+  #drawer .toc { padding:5px 14px; border-bottom:1px solid var(--line); }
+  #drawer .toc select { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 4px; font:12.5px Consolas,"Cascadia Mono",monospace; }
+  #drawer .src { color:var(--muted); font-size:12px; cursor:pointer; user-select:none; white-space:nowrap; }
+  #drawer .md { background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:6px 12px; font-size:13.5px; line-height:1.5; overflow-wrap:anywhere; }
+  /* consecutive messages from one role: one box, a dashed line between messages */
+  #drawer .run { background:var(--bg); border:1px solid var(--line); border-radius:4px; }
+  #drawer .run > .md, #drawer .run > pre { border:0; border-radius:0; background:none; }
+  #drawer .run > * + * { border-top:1px dashed var(--line) !important; }
+  .md h1, .md h2, .md h3, .md h4, .md h5, .md h6 { margin:12px 0 4px; color:#d6c48f; line-height:1.3; }
+  .md h1 { font-size:17px; } .md h2 { font-size:15.5px; } .md h3 { font-size:14.5px; } .md h4, .md h5, .md h6 { font-size:13.5px; }
+  .md p { margin:5px 0; }
+  .md ul, .md ol { margin:4px 0; padding-left:1.4em; }
+  .md li { margin:1px 0; }
+  .md blockquote { margin:5px 0; padding-left:10px; border-left:3px solid var(--line); color:var(--muted); }
+  .md hr { border:0; border-top:1px solid var(--line); margin:10px 0; }
+  .md code { font:12px Consolas,"Cascadia Mono",monospace; background:var(--panel); border-radius:3px; padding:0 4px; color:#9fd49a; }
+  .md pre { margin:6px 0; }
+  .md .tg { color:#c79be0; font:12px Consolas,"Cascadia Mono",monospace; }
+  .md .k { color:#8fb0d6; }
+
+  body.hide-chatnames #feed .nm, body.hide-sidenames #mem .nm { color:inherit !important; }
+  .eid, .tid { font:10.5px Consolas,"Cascadia Mono",monospace; font-style:normal; color:var(--muted); margin-left:8px; }
+  body.hide-ids .eid { display:none; }
+  body.hide-realtime .rt { display:none; }
+  .rt { color:#8fb0d6; }
+  .rtl { font:11px "Segoe UI",sans-serif; font-style:normal; margin-left:8px; }
+  body.hide-thoughts .thought, body.hide-narr .narr, body.hide-other .other, body.hide-acts .act, body.hide-bg .msg.bg { display:none; }
+  .grp { border:1.5px solid; border-radius:10px; padding:3px 6px; margin:4px 0; }
+  .ghead { font-size:12px; font-weight:600; margin:3px 2px 2px; }
+  .gap { color:var(--muted); font-size:11px; font-style:italic; margin:4px 2px; }
+  /* a box whose lines are all hidden by the menu toggles goes too */
+  body.hide-thoughts .grp:not(:has(> :not(.thought, .ghead, .gap))), body.hide-bg .grp:not(:has(> :not(.bg, .ghead, .gap))),
+  body.hide-thoughts.hide-bg .grp:not(:has(> :not(.thought, .bg, .ghead, .gap))) { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot" title="server"></span>
+  <span class="where" id="where">Waiting for SkyrimNet on <b id="host"></b>…</span>
+  <label class="hist" id="ptwrap" hidden title="Older playthroughs and days come from SkyrimNet's files on disk (needs serve.py)">History <select id="pt"></select></label>
+  <details class="menu" id="menu">
+    <summary title="Options">☰</summary>
+    <div class="panel">
+      <label id="mlwrap" class="mlwrap" hidden title="Modlist: its playthroughs, conversation log and prompts in History. Live is always the game being played (●).">modlist <select id="ml"></select></label>
+      <label><input type="checkbox" data-toggle="bg" checked> background chatter</label>
+      <label><input type="checkbox" data-toggle="other"> other events</label>
+      <label title="The right-hand column: memories, mod events (IntelEngine, PoliticalEngine…) and OmniSight"><input type="checkbox" data-toggle="side" checked> context column</label>
+      <label title="Event ids on each line, request ids on each prompt"><input type="checkbox" data-toggle="ids"> ids</label>
+      <label title="Real date and time on every line and card, next to the game time"><input type="checkbox" data-toggle="realtime" checked> real time</label>
+    </div>
+  </details>
+</header>
+<div id="cbar" class="colbar"><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><details class="menu acts" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><label class="tbtn" title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card)"><input type="checkbox" data-toggle="marks" checked hidden>📌 <span class="n" id="nmark">0</span></label><span class="fill"></span><label class="tbtn" title="Colour names in the text"><input type="checkbox" data-toggle="chatnames" checked hidden>🎨</label><label class="tbtn" title="Keep scrolling: jump to the newest line as it arrives"><input type="checkbox" data-toggle="autoscroll" checked hidden>⤓</label></div>
+<main id="feed"></main>
+<nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
+<aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Full text: whole OmniSight descriptions and diaries (off: the first few lines)"><input type="checkbox" data-toggle="fulltext" checked hidden>📄</label><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>📍</label><label class="tbtn" title="Colour names in the cards"><input type="checkbox" data-toggle="sidenames" checked hidden>🎨</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back from the menu)">×</span></div><div class="body" id="mbody"></div></aside>
+<dialog id="shot" title="Esc or a click outside closes"></dialog>
+<aside id="drawer" class="side"><div class="top"><span class="title" id="dtitle"></span><label class="src" title="Show the exact prompt text instead of rendered markdown"><input type="checkbox" id="dsrc"> source</label><span class="x" id="dclose" title="Close (Esc)">×</span></div><div class="toc" id="dtocw" hidden><select id="dtoc" title="Sections of the open prompt: follows your scrolling, pick one to jump"></select></div><div class="body" id="dbody"></div></aside>
+<script>
+// Reads the same feed as the SkyrimNet dashboard's Home page. ?host=… overrides the server.
+const HOST = new URLSearchParams(location.search).get("host")
+  || (location.protocol.startsWith("http") && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? location.origin + "/sn" : "http://127.0.0.1:8080");
+const POLL_COUNT = 50, POLL_MS = 1500; // recent-events never returns more than 50, so it's only for updates
+
+// The whole current playthrough, in pages of 100 (the most /events?api=list gives at once). Used for the first load.
+async function fetchAll() {
+  const all = [];
+  for (let off = 0; ; off += 100) {
+    const d = await (await fetch(`${HOST}/events?api=list&offset=${off}&limit=100&sortBy=id&sortDesc=false`, { cache: "no-store" })).json();
+    all.push(...(d.events || []));
+    if (!d.events?.length || all.length >= (d.pagination?.total ?? 0)) return all;
+  }
+}
+
+const $ = id => document.getElementById(id);
+const feed = $("feed"), scrub = $("scrub"), cursor = $("cursor"), menu = $("menu");
+let rows = [], seen = new Set(), maxId = -1, lastLocation = null, segs = [], mems = [];
+const PLAYER_COLOR = "hsl(212 60% 72%)"; // a lighter version of the player's bubble blue
+const players = new Set(); // player names seen in player lines, so "To <player>" gets the player's blue
+let stay = null; // the current cell's divider: when it started (real time) and its duration span
+let sideEv = [], side = []; // IntelEngine/political events for the right column; side = every card there, in chat order
+let GROUPS = [
+  { key: "g-intelengine", label: "IntelEngine", hue: 190, types: /^(intel_.*|follower_recruited)$/, shown: true },
+  { key: "g-politicalengine", label: "PoliticalEngine", hue: 42, types: /^political_/, shown: true },
+];
+let SHOW_MEM = true, SHOW_OMNI = true, SHOW_DIARY = true; // config.yaml "memories:" / "omnisight:" / "diary:"
+const sideKind = t => GROUPS.find(g => g.types.test(t))?.key || "";
+let omni = [], diaries = []; // OmniSight screenshots and diary entries, anchored like memories
+$("host").textContent = HOST;
+
+// Toggles, remembered across reloads.
+function wireToggle(box) {
+  const key = "snev." + box.dataset.toggle;
+  if (localStorage[key] !== undefined) box.checked = localStorage[key] === "1";
+  const apply = () => { document.body.classList.toggle("hide-" + box.dataset.toggle, !box.checked); localStorage[key] = box.checked ? "1" : "0"; };
+  box.addEventListener("change", () => { apply(); layout(); updatePosition(); });
+  apply();
+}
+document.querySelectorAll("[data-toggle]").forEach(wireToggle);
+document.addEventListener("click", e => { for (const d of document.querySelectorAll("details.menu")) if (!d.contains(e.target)) d.open = false; });
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text; // textContent only: event text is game/LLM output
+  return n;
+}
+
+function nameHue(name) {
+  let h = 0;
+  for (const c of name || "") h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return h % 360;
+}
+const nameColor = name => `hsl(${nameHue(name)} 55% 68%)`;
+
+const stripTags = s => (s || "").replace(/<[^>]+>/g, "").trim();
+const clock = e => (e.gameTimeStr || "").split(",")[0];
+const place = e => e.location || "Unknown";
+// "1:27 PM, Sundas, 17th of Last Seed, 4E 201 · (Whiterun, near the Door to Warmaiden's)": hold and Outdoors dropped.
+// Conversation-log "locations" are session labels, already shown as dividers.
+// The cell, without the "near the Door to …" / "Close to …" detail that flickers as you walk about:
+// "Whiterun, near the Door to Warmaiden's, Hold: Whiterun, Outdoors" and "Some distance from Dragonsreach, Whiterun, Outdoors" are both "Whiterun".
+const cell = e => place(e).split(", ").filter(p => !/^near the /.test(p)).filter((p, k, a) => !(k === 0 && a.length > 1 && /^(Some distance from|Close to) /.test(p)))[0];
+// Approximate real-world duration from seconds: "<1 min", "~12 min", "~1 h 20 min".
+const realDur = sec => sec < 60 ? "<1 min" : sec < 3600 ? `~${Math.round(sec / 60)} min` : `~${Math.floor(sec / 3600)} h ${Math.round(sec % 3600 / 60)} min`;
+const activeGap = sec => sec > 0 && sec < 20 * 60 ? sec : 0;
+const meta = e => [e.gameTimeStr, archive.startsWith("conv:") ? "" : `(${place(e).replace(/, Hold:.*$/, "").replace(/, Outdoors$/, "")})`].filter(Boolean).join(" · ");
+// The header's time line; with ☰ real time on, also when it happened at your desk ("11/25/2026 8:34am").
+// The conversation log's times are real already, so it gets none.
+function rtSpan(sec, cls = "rt", sep = " · ") { // null without a time, and in the conversation log
+  if (!sec || archive.startsWith("conv:")) return null;
+  const d = new Date(sec * 1000);
+  return el("span", cls, sep + d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(/\s/g, "").toLowerCase());
+}
+function metaNode(e) {
+  const t = el("span", "t", e.gameTimeStr || "");
+  const rt = rtSpan(e.localTime);
+  if (rt) t.append(rt);
+  const where = meta({ ...e, gameTimeStr: "" }); // "(place)", after the times
+  if (where) t.append((e.gameTimeStr ? " · " : "") + where);
+  return t;
+}
+const unwrap = s => s.trim().replace(/^\*([^*]+)\*$/, "$1");
+
+// Same label as the dashboard's Events tab: the raw type with underscores as spaces.
+const badge = type => el("span", "type", (type || "event").replace(/_/g, " "));
+
+const NO_BADGE = /^(dialogue|npc_thoughts$|player_thoughts$|gamemaster_dialogue$|direct_narration$|persistent_generic$)/;
+// Shown in the chat as a narration line behind an icon, without a tag.
+const ICON = { book_read: "📖", book_read_manual: "📖", sleep_start: "💤", sleep_stop: "💤" };
+// Actions NPCs (or you) carried out, by kind: a line behind the kind's icon, each kind switched in the 🤝 menu.
+// Event cards configured for the context column are taken out of the chat first, so a type there never lands here.
+const ACT_GROUPS = [
+  { key: "custom", icon: "🎬", label: "custom actions", types: /^custom_action$/ },
+  { key: "trade", icon: "🪙", label: "trades and purchases", types: /^(trade_.*|item_purchased)$/ },
+  { key: "gold", icon: "💰", label: "gold and debts", types: /^(gold_given|payment_collected|debt_created)$/ },
+  { key: "items", icon: "🎁", label: "items given and taken", types: /^(item_given|item_taken_from_player|item_picked_up|book_borrowed)$/ },
+  { key: "loot", icon: "🗝️", label: "looting", types: /^([cC]ontainer_looted|container_searched|corpse_looted|combat_spoils)$/ },
+  { key: "food", icon: "🍖", label: "eating and drinking", types: /^item_consumed$/ },
+  { key: "fight", icon: "👊", label: "brawls and fights", types: /^(brawl_.*|yield_broken)$/ },
+  { key: "theft", icon: "🫳", label: "pickpocketing", types: /^pickpocket$/ },
+  { key: "follow", icon: "🧭", label: "followers", types: /^(follower_(joined|left|dismissed|left_voluntarily|stays)|follow_distance|companion_.*)$/ },
+  { key: "furniture", icon: "🪑", label: "furniture", types: /^furniture_(used|stopped)$/ },
+  { key: "failed", icon: "⚠️", label: "failed actions", types: /_(failed|not_found|unreachable|in_use)$/, off: true },
+  { key: "checks", icon: "📊", label: "relationship checks", types: /^(relationship_(assessed|adjusted)|interfollower_assessed)$/, off: true },
+];
+const actGroup = t => ACT_GROUPS.find(g => g.types.test(t));
+const actIcon = t => actGroup(t)?.icon;
+(function buildActMenu() {
+  const css = [];
+  for (const g of ACT_GROUPS) {
+    const l = el("label"), box = el("input"), n = el("span", "n", "0");
+    box.type = "checkbox"; box.checked = !g.off; box.dataset.toggle = "act-" + g.key;
+    n.dataset.act = g.key;
+    l.title = g.types.source;
+    l.append(box, ` ${g.icon} ${g.label} `, n);
+    $("actpanel").append(l);
+    wireToggle(box);
+    css.push(`body.hide-act-${g.key} .act-${g.key}`);
+  }
+  const st = el("style");
+  st.textContent = css.join(", ") + " { display:none; }";
+  document.head.append(st);
+})();
+// Event ids are SkyrimNet's (the database's); the conversation log has none, only line numbers, so they're left off there.
+const hasIds = () => !archive.startsWith("conv:");
+function render(e) {
+  const n = renderBody(e);
+  if (n.matches(".narr, .act, .other, .mark")) { const rt = rtSpan(e.localTime, "rt rtl", ""); if (rt) n.append(rt); }
+  if (hasIds() && e.id != null) (n.querySelector(".bubble") || n).append(el("span", "eid", "#" + e.id)); // shown with ☰ ids
+  if (NO_BADGE.test(e.type || "") || ICON[e.type] || actIcon(e.type || "")) return n;
+  const who = n.querySelector(".who");
+  if (who) who.insertBefore(badge(e.type), who.querySelector(".t"));
+  else n.prepend(badge(e.type));
+  return n;
+}
+
+// Events read from the databases (serve.py) have no formatted_text, so fall back to the stored fields.
+function plainText(e) {
+  const d = e.data || {};
+  if ("dialogue" in d && !d.dialogue) return `${d.speaker || d.player_name || "Someone"} said nothing (empty line)`;
+  if ("narration" in d && !d.narration) return "(empty narration)";
+  return stripTags(e.formatted_text) || d.line || d.narration || d.raw || (d.book_title && "Read " + d.book_title) || fields(d);
+}
+// Last resort for events that only have fields (trades, sleep…): "merchant: Orgnar · items bought: 1x Venison Chop"
+const fields = d => Object.entries(d).filter(([k, v]) => !k.startsWith("_") && !k.endsWith("form_id") && v !== "" && v !== null && typeof v !== "object")
+  .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join(" · ");
+
+// A chat line whose names are coloured (🎨).
+function colourLine(cls, text) { const n = el("div", cls); n.append(colourNames(text, "span")); return n; }
+// Trades have only fields when read from the database.
+function actText(e) {
+  const d = e.data || {}, t = stripTags(e.formatted_text);
+  if (t || !e.type.startsWith("trade_")) return t || plainText(e);
+  const who = d.merchant || "a merchant";
+  if (e.type !== "trade_complete") return `Trading with ${who}`;
+  const what = [d.items_bought && "bought " + d.items_bought, d.items_sold && "sold " + d.items_sold].filter(Boolean).join("; ") || "nothing changed hands";
+  return `Trade with ${who}: ${what}` + (d.net_gold ? ` (${d.net_gold > 0 ? "+" : ""}${d.net_gold} gold)` : "");
+}
+
+function renderBody(e) {
+  const d = e.data || {};
+  const type = e.type || "";
+
+  if (d.dialogue && type.startsWith("dialogue")) {
+    const you = type.startsWith("dialogue_player");
+    const m = el("div", "msg" + (you ? " you" : "") + (type === "dialogue_background" ? " bg" : ""));
+    const speaker = d.speaker || d.player_name || "?", listener = d.listener || d.target; // older events: player_name/target
+    const bubble = el("div", "bubble", type === "dialogue_background" ? "🗣️ " : null); // 🗣️ marks background chatter (replaces its tag)
+    if (listener) { // the listener's name in their colour: the player's blue, or the NPC's name colour
+      const to = el("span", "to", "To "), nm = el("span", "nm", listener);
+      nm.style.color = players.has(listener) ? PLAYER_COLOR : nameColor(listener);
+      to.append(nm, ": ");
+      bubble.append(to);
+    }
+    // With actions off, small models add made-up "ACTION: speak" stubs, or put ACTION: before more speech;
+    // SkyrimNet only strips the ones it runs. Drop the label and a lowercase stub, keep any sentence after it.
+    bubble.append(colourNames(String(d.dialogue).replace(/\s*\bACTION:\s*(?:[a-z][a-z ,\x27]*?(?=[A-Z]|\n|$))?/g, " ").trim(), "span"));
+    if (you) { // player lines aren't boxed, so they keep their own name line
+      const who = el("div", "who", speaker);
+      who.append(metaNode(e));
+      m.append(who);
+    } else { // same hue as the speaker's name, dark enough to keep text readable
+      const h = nameHue(speaker);
+      bubble.style.background = `hsl(${h} 32% 19%)`;
+      bubble.style.borderColor = `hsl(${h} 38% 32%)`;
+    }
+    m.append(bubble);
+    return m;
+  }
+  if (type === "npc_thoughts" || type === "player_thoughts") {
+    const t = colourLine("thought", "💭 " + (type === "player_thoughts" ? "You: " : "") + (d.thoughts || stripTags(e.formatted_text)));
+    if (type === "npc_thoughts") { // speech bubble is hsl(h 32% 19%): lighter and less saturated here
+      const h = nameHue(d.npc_name);
+      t.style.background = `hsl(${h} 16% 28%)`;
+      t.style.borderColor = `hsl(${h} 20% 42%)`;
+    }
+    return t;
+  }
+  if (ICON[type]) {
+    const t = type.startsWith("book_read") ? d.book_title || stripTags(d.book_name || "") || plainText(e) // book_name can carry <alias=…> tags
+      : type === "sleep_start" ? stripTags(e.formatted_text) || `${d.actor || "Someone"} goes to sleep`
+      : type === "sleep_stop" ? stripTags(e.formatted_text) || `${d.actor || "Someone"} wakes up` + (d.interrupted ? " (woken)" : "")
+      : plainText(e);
+    return colourLine("narr", ICON[type] + " " + unwrap(t));
+  }
+  const ag = actGroup(type);
+  if (ag) return colourLine("act act-" + ag.key, ag.icon + " " + unwrap(actText(e)));
+  if (type === "diary_entry_created") { // the entry itself is a 📔 card in the context column
+    const m = el("div", "mark diary", "📔 "), nm = el("span", "nm", d.actor || "?");
+    nm.style.color = nameColor(d.actor);
+    m.append(nm, " diary written");
+    m.addEventListener("click", () => { // the prompt drawer opens too (the diary request)
+      const i = rows.findIndex(r => r.e === e), mine = diaries.filter(x => x.actor === d.actor);
+      flashCard(mine.sort((a, b) => Math.abs(a.at - i) - Math.abs(b.at - i))[0]);
+    });
+    return m;
+  }
+  if (type === "gamemaster_dialogue" || type.includes("narration") || type === "persistent_generic") {
+    return colourLine("narr", unwrap(d.dialogue || d.narration || plainText(e))); // already italic, so drop the *…* around it
+  }
+  if (type === "death") {
+    return colourLine("narr", "☠ " + (d.victim || d.actor_name || "Someone") + " falls" + (d.killer ? " to " + d.killer : "") + ".");
+  }
+  const o = el("div", "other", plainText(e) || type);
+  o.title = type;
+  return o;
+}
+
+// Within one speaker's box, a pause of at least this many in-game minutes shows as "N minutes passed".
+const GAP_MINUTES = 10;
+const passed = s => {
+  const m = Math.round(s / 60), h = Math.floor(m / 60), r = m % 60;
+  const part = (n, u) => `${n} ${u}${n === 1 ? "" : "s"}`;
+  return (h ? part(h, "hour") + (r ? " " + part(r, "minute") : "") : part(m, "minute")) + " passed";
+};
+
+function add(e) {
+  const i = rows.length;
+  // A divider when the cell changes (or, in the conversation log, the session); finer moves show in each speaker's meta line.
+  if (cell(e) !== lastLocation) {
+    const div = el("div", "divider");
+    div.dataset.i = i;
+    const span = el("span", null, place(e) + " · " + (e.gameTimeStr || ""));
+    stay = { last: e.localTime, total: 0, dur: el("span", "dur") };
+    span.append(stay.dur);
+    div.append(span);
+    feed.append(div);
+    lastLocation = cell(e);
+  }
+  // Real time spent here so far. Gaps over 20 minutes (game closed, a break) don't count, as with the conversation log's sessions.
+  if (e.localTime && stay.last) stay.total += activeGap(e.localTime - stay.last);
+  stay.last = e.localTime || stay.last;
+  stay.dur.textContent = stay.last ? " · ⏱ " + realDur(stay.total) + " real time" : "";
+  const node = render(e);
+  node.dataset.i = i;
+  // An NPC's consecutive thoughts and lines share one box, outlined in their colour.
+  const d = e.data || {}, t = e.type || "";
+  const who = t === "npc_thoughts" ? d.npc_name : d.dialogue && t.startsWith("dialogue") && !t.startsWith("dialogue_player") ? d.speaker || d.player_name : "";
+  let box = feed.lastElementChild;
+  if (who && !(box?.classList.contains("grp") && box.dataset.who === who)) { // a divider in between also starts a new box
+    box = el("div", "grp");
+    box.dataset.who = who;
+    box.style.borderColor = `hsl(${nameHue(who)} 55% 68% / .45)`;
+    box.style.background = `hsl(${nameHue(who)} 55% 68% / .05)`;
+    const head = el("div", "ghead"), name = el("span", null, who);
+    name.style.color = nameColor(who);
+    head.append(name, metaNode(e));
+    box.append(head);
+    feed.append(box);
+  } else if (who && e.gameTime - box.dataset.t >= GAP_MINUTES * 60) { // gameTime is in game seconds; NaN without it
+    box.append(el("div", "gap", passed(e.gameTime - box.dataset.t)));
+  }
+  if (who) box.dataset.t = e.gameTime;
+  (who ? box : feed).append(node);
+  rows.push({ e, node });
+}
+
+// ---- Timeline scrubber ----
+function renderScrubber() {
+  scrub.replaceChildren(cursor);
+  segs = [];
+  for (let i = 0; i < rows.length; i++) {
+    const e = rows[i].e, last = segs[segs.length - 1];
+    if (last && last.loc === cell(e)) { last.end = i; continue; }
+    segs.push({ loc: cell(e), start: i, end: i });
+  }
+  for (const s of segs) {
+    const first = rows[s.start].e, lastE = rows[s.end].e, n = s.end - s.start + 1;
+    const label = s.loc.startsWith("Session from ") ? s.loc.slice(13) + " session" : s.loc.split(",")[0] + " · " + clock(first); // conversation-log sessions already carry their time
+    const div = el("div", "seg", label);
+    div.style.flexGrow = n;
+    div.style.background = `hsl(${nameHue(s.loc)} 28% 21%)`;
+    div.title = `${s.loc}\n${first.gameTimeStr} → ${clock(lastE)}\n${n} event${n > 1 ? "s" : ""}` +
+      (first.localTime ? `, ${realDur(rows.slice(s.start + 1, s.end + 1).reduce((t, r, k) => t + activeGap((r.e.localTime || 0) - (rows[s.start + k].e.localTime || 0)), 0))} real time` : "");
+    s.div = div;
+    scrub.append(div);
+  }
+  for (const m of mems) {
+    const t = el("div", "memtick");
+    t.style.left = ((m.at + 0.5) / rows.length * 100) + "%";
+    t.style.background = nameColor(m.actor);
+    scrub.append(t);
+  }
+}
+
+// Index of the event at the top of the viewport (what you're reading).
+function topIndex() {
+  const y0 = $("cbar").getBoundingClientRect().bottom;
+  const x = feed.getBoundingClientRect().left + 40;
+  for (let y = y0 + 4; y < y0 + 120; y += 8) {
+    const n = document.elementFromPoint(x, y)?.closest("[data-i]");
+    if (n) return +n.dataset.i;
+  }
+  return rows.length - 1;
+}
+
+function updatePosition() {
+  if (!rows.length) return;
+  const atEnd = innerHeight + scrollY >= document.body.scrollHeight - 40; // following live: show the newest
+  const i = atEnd ? rows.length - 1 : topIndex(), e = rows[i].e;
+  cursor.style.display = "block";
+  const pct = (i + 0.5) / rows.length * 100;
+  cursor.style.left = pct + "%";
+  $("curtime").textContent = e.gameTimeStr || "";
+  $("curtime").classList.toggle("flip", pct > 60);
+  for (const s of segs) s.div.classList.toggle("on", i >= s.start && i <= s.end);
+  const w = $("where");
+  w.replaceChildren(el("b", null, place(e)), " · " + (e.gameTimeStr || ""));
+  // Memories: dim the ones formed after what you're reading, keep the newest formed so far in view.
+  let now = null;
+  for (const m of side) { m.node.classList.toggle("future", !aligned() && m.at > i); /* 📍 places cards by time already */ m.node.classList.remove("now"); if (m.at <= i && m.node.offsetParent) now = m; }
+  const mb = $("mbody");
+  if (aligned()) { // 📍 beside their lines
+    if (sizes() !== alignKey) alignSide();
+    const toEnd = document.documentElement.scrollHeight - innerHeight - scrollY; // page scroll left
+    mb.scrollTop = alignScroll(mb) + alignShort * Math.min(1, Math.max(0, 1 - toEnd / innerHeight));
+  }
+  else if (now) {
+    now.node.classList.add("now");
+    if (!$("mem").matches(":hover") && !document.body.classList.contains("hide-memscroll")) mb.scrollTop = now.node.offsetTop - mb.clientHeight / 2 + now.node.offsetHeight / 2;
+  }
+}
+
+function jump(ev) {
+  if (!rows.length) return;
+  const r = scrub.getBoundingClientRect();
+  const i = Math.min(rows.length - 1, Math.max(0, Math.floor((ev.clientX - r.left) / r.width * rows.length)));
+  let j = i; // skip lines hidden by the filters
+  while (j < rows.length && !rows[j].node.offsetParent) j++;
+  if (j === rows.length) for (j = i; j > 0 && !rows[j].node.offsetParent; j--);
+  rows[j].node.scrollIntoView({ block: "start" });
+  updatePosition();
+}
+scrub.addEventListener("pointerdown", ev => { scrub.setPointerCapture(ev.pointerId); jump(ev); });
+scrub.addEventListener("pointermove", ev => { if (ev.buttons) jump(ev); });
+
+let ticking = false;
+addEventListener("scroll", () => {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => { ticking = false; updatePosition(); });
+}, { passive: true });
+
+// ---- Prompt drawer ----
+// The request log has no event id, so a line is matched to the request whose reply contains its text.
+// It only holds requests since the game was launched (SkyrimNet keeps it in memory).
+const drawer = $("drawer"), dbody = $("dbody");
+const flat = s => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
+const noBlocks = s => (s || "").replace(/<(\w+)[^>]*>[\s\S]*?<\/\1>/g, " ").replace(/<[^>]+>/g, " "); // drop <internal_thought>…</internal_thought>
+const noTags = s => (s || "").replace(/<[^>]+>/g, " ");
+
+function eventText(e) {
+  const d = e.data || {};
+  return d.dialogue || d.thoughts || d.narration || plainText(e);
+}
+
+function pretty(s) { // JSON gets indented; anything else stays as it is
+  try { return JSON.stringify(JSON.parse(s), null, 2); } catch { return s || ""; }
+}
+
+// Markdown syntax highlighting: the text stays exactly as sent, only coloured. Text nodes only, never innerHTML.
+const INLINE = /(\*\*[^*\n]+\*\*|`[^`\n]+`|<\/?[A-Za-z][\w-]*[^<>]*>|\*[^*\s][^*\n]*\*|\[[^\]\n]+\])/g;
+const INLINE_CLASS = t => t.startsWith("**") ? "b" : t.startsWith("`") ? "c" : t.startsWith("<") ? "tg" : t.startsWith("[") ? "k" : "i";
+function inline(p, s) {
+  let last = 0;
+  for (const m of s.matchAll(INLINE)) {
+    p.append(s.slice(last, m.index), el("span", INLINE_CLASS(m[0]), m[0]));
+    last = m.index + m[0].length;
+  }
+  p.append(s.slice(last));
+}
+function pre(text) {
+  const p = el("pre");
+  let fence = false;
+  for (const line of String(text).split("\n")) {
+    if (/^\s*```/.test(line)) { fence = !fence; p.append(el("span", "c", line), "\n"); continue; }
+    if (fence) { p.append(el("span", "c", line), "\n"); continue; }
+    const head = line.match(/^\s*#{1,6} /), bullet = line.match(/^(\s*)([-*+]|\d+\.) /), quote = line.match(/^\s*> /);
+    if (head) p.append(el("span", "h", line));
+    else if (quote) p.append(el("span", "q", line));
+    else if (bullet) { p.append(bullet[1], el("span", "l", bullet[2]), " "); inline(p, line.slice(bullet[0].length)); }
+    else inline(p, line);
+    p.append("\n");
+  }
+  return p;
+}
+
+// Rendered markdown: headings, lists, quotes, rules, code fences, **bold**, *italic*, `code`.
+// <tags> such as <internal_thought> stay visible (coloured). Built with DOM nodes only, never innerHTML.
+function mdInline(p, s) {
+  let last = 0;
+  for (const m of s.matchAll(INLINE)) {
+    const t = m[0], k = INLINE_CLASS(t);
+    p.append(s.slice(last, m.index));
+    if (k === "b") p.append(el("strong", null, t.slice(2, -2)));
+    else if (k === "i") p.append(el("em", null, t.slice(1, -1)));
+    else if (k === "c") p.append(el("code", null, t.slice(1, -1)));
+    else p.append(el("span", k, t)); // tags and [brackets] keep their text
+    last = m.index + t.length;
+  }
+  p.append(s.slice(last));
+}
+function md(text) {
+  const root = el("div", "md");
+  let list = null, para = null, fence = null;
+  for (const line of String(text).split("\n")) {
+    if (fence) { if (/^\s*```/.test(line)) fence = null; else fence.append(line + "\n"); continue; }
+    if (/^\s*```/.test(line)) { list = para = null; fence = el("pre"); root.append(fence); continue; }
+    if (!line.trim()) { list = para = null; continue; }
+    let m;
+    if ((m = line.match(/^\s*(#{1,6})\s+(.*)$/))) { list = para = null; const h = el("h" + m[1].length); mdInline(h, m[2]); root.append(h); continue; }
+    if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { list = para = null; root.append(el("hr")); continue; }
+    if ((m = line.match(/^\s*>\s?(.*)$/))) { list = para = null; const q = el("blockquote"); mdInline(q, m[1]); root.append(q); continue; }
+    if ((m = line.match(/^(\s*)([-*+]|\d+\.)\s+(.*)$/))) {
+      const ordered = /\d/.test(m[2]);
+      if (!list || list.tagName !== (ordered ? "OL" : "UL")) { list = el(ordered ? "ol" : "ul"); root.append(list); para = null; }
+      const li = el("li");
+      if (ordered) li.value = parseInt(m[2]);
+      li.style.marginLeft = (m[1].length / 2) + "em"; // indented items nest visually
+      mdInline(li, m[3]);
+      list.append(li);
+      continue;
+    }
+    if (para) para.append(el("br")); else { list = null; para = el("p"); root.append(para); }
+    mdInline(para, line);
+  }
+  return root;
+}
+let MD = localStorage["snev.md"] !== "0"; // rendered by default; the drawer's "source" box shows the exact text
+const view = t => MD ? md(t) : pre(t);
+
+function requestBlock(r, open, why) {
+  const det = el("details");
+  det.open = open;
+  const s = el("summary");
+  const facts = [r.model_name, r.request_tokens && `${r.request_tokens}→${r.response_tokens} tok`, r.duration_ms !== "" && `${r.duration_ms} ms`,
+    new Date(+r.response_timestamp_unix).toLocaleString(), r.source && `from ${r.source}`, why].filter(Boolean);
+  s.append(el("b", null, r.use_case || "dialogue"), " · " + facts.join(" · "), el("span", "eid", r.request_id || ""));
+  const body = el("div");
+  let payload = null;
+  try { payload = JSON.parse(r.request_payload); } catch {}
+  // Consecutive messages from one role (the event history comes as many short user turns) share one label and box.
+  const runs = [];
+  for (const m of payload?.messages || []) {
+    // content is a string or a list of parts ({type:"text", text, cache_control}); show the text, JSON for anything else
+    const text = typeof m.content === "string" ? m.content
+      : (m.content || []).map(c => c?.type === "text" ? c.text : JSON.stringify(c, null, 2)).join("\n\n");
+    if (runs.at(-1)?.role === m.role) runs.at(-1).texts.push(text);
+    else runs.push({ role: m.role, texts: [text] });
+  }
+  for (const { role, texts } of runs) {
+    body.append(el("div", "role", role + (texts.length > 1 ? ` · ${texts.length} messages` : "")));
+    if (texts.length === 1) { body.append(view(texts[0])); continue; }
+    const box = el("div", "run");
+    box.append(...texts.map(view));
+    body.append(box);
+  }
+  const resp = pretty(r.response_payload);
+  body.append(el("div", "role", "response"), resp !== r.response_payload ? pre(resp) : view(resp)); // JSON stays a code block
+  const raw = el("details");
+  raw.append(el("summary", null, "raw request JSON"), pre(payload ? JSON.stringify(payload, null, 2) : r.request_payload));
+  body.append(raw);
+  det.append(s, body);
+  return det;
+}
+
+let openIdx = -1;
+async function openPrompt(i) {
+  openIdx = i;
+  const e = rows[i].e;
+  document.querySelector("main .sel")?.classList.remove("sel");
+  rows[i].node.classList.add("sel");
+  const d = e.data || {}, who = d.speaker || d.npc_name || d.player_name, title = $("dtitle");
+  title.replaceChildren();
+  if (who) { const b = el("b", "nm", who); b.style.color = players.has(who) ? PLAYER_COLOR : nameColor(who); title.append(b); }
+  else title.append(badge(e.type));
+  if (hasIds()) title.append(el("span", "tid", "#" + e.id));
+  title.title = eventText(e);
+  dbody.replaceChildren(el("div", "note", "Loading request log…"));
+  $("dtocw").hidden = true;
+  drawer.classList.add("open");
+  layout();
+  rows[i].node.scrollIntoView({ block: "center" }); // the column got narrower; keep the clicked line in view
+
+  // SkyrimNet's live log (since launch, has token counts) plus, under serve.py, the prompt log files on disk.
+  const sources = [fetch(`${HOST}/logs?api=requests&limit=500`, { cache: "no-store" }).then(r => r.json()).then(d => d.requests || [])];
+  if (LOCAL) sources.push(fetch(`/local/requests?${mlq()}`).then(r => r.json()));
+  const got = await Promise.allSettled(sources);
+  const byId = new Map();
+  for (const g of got) if (g.status === "fulfilled") for (const r of g.value) if (!byId.has(r.request_id)) byId.set(r.request_id, r);
+  const reqs = [...byId.values()];
+  if (!got.some(g => g.status === "fulfilled")) { dbody.replaceChildren(el("div", "note", "Couldn't reach a request log.")); return; }
+
+  const t = (e.localTime || 0) * 1000, off = r => +r.response_timestamp_unix - t;
+  const needle = flat(stripTags(eventText(e))).slice(0, 60);
+  const hits = needle.length > 3 ? reqs.filter(r => flat(noBlocks(r.response_payload)).includes(needle) || flat(noTags(r.response_payload)).includes(needle)) : [];
+  hits.sort((a, b) => Math.abs(off(a)) - Math.abs(off(b))); // short lines ("Done.") can match several; closest in time first
+  dbody.replaceChildren();
+  if (hits.length) {
+    hits.slice(0, 3).forEach((r, k) => dbody.append(requestBlock(r, k === 0, hits.length > 1 ? `text match, ${(off(r) / 1000).toFixed(1)} s` : "")));
+  } else {
+    const oldest = Math.min(...reqs.map(r => +r.request_timestamp_unix));
+    if (!reqs.length || t < oldest) {
+      dbody.append(el("div", "note", (LOCAL
+        ? "This line is older than the oldest prompt log on disk (SkyrimNet deletes old ones)"
+        : "This line is older than SkyrimNet's request log, which only keeps requests since the game was launched. Run serve.py to search the prompt log files too") +
+        (reqs.length ? ` (oldest: ${new Date(oldest).toLocaleString()}).` : ".")));
+    } else {
+      dbody.append(el("div", "note", "No request's reply contains this text (typed player lines and some GM lines have none). Requests around that moment:"));
+      reqs.filter(r => Math.abs(+r.response_timestamp_unix - t) < 20000)
+          .sort((a, b) => Math.abs(+a.response_timestamp_unix - t) - Math.abs(+b.response_timestamp_unix - t))
+          .slice(0, 6).forEach(r => dbody.append(requestBlock(r, false, `${((+r.response_timestamp_unix - t) / 1000).toFixed(1)} s`)));
+    }
+  }
+  const ev = el("details");
+  ev.append(el("summary", null, "event JSON"), pre(JSON.stringify(e, null, 2)));
+  dbody.append(ev);
+  buildToc();
+}
+
+// Table of contents for the open prompt: one dropdown line under the drawer's title. Lists each message
+// (SYSTEM, USER, RESPONSE…) and its markdown headings, indented by level, from the requests that are expanded.
+// It follows your scrolling; picking an entry jumps there.
+let tocTargets = [];
+function buildToc() {
+  const sel = $("dtoc");
+  tocTargets = [...dbody.querySelectorAll(".role, .md h1, .md h2, .md h3, .md h4, .md h5, .md h6, pre .h")].filter(n => !n.parentElement.closest("details:not([open])"));
+  sel.replaceChildren(...tocTargets.map((n, k) => {
+    let label;
+    if (n.classList.contains("role")) label = "▸ " + n.textContent.toUpperCase();
+    else {
+      const level = n.classList.contains("h") ? (n.textContent.match(/#+/) || ["#"])[0].length : +n.tagName[1];
+      label = "\u00a0\u00a0".repeat(level) + n.textContent.replace(/^\s*#+\s*/, "");
+    }
+    const o = el("option", null, label.length > 90 ? label.slice(0, 89) + "…" : label);
+    o.value = k;
+    return o;
+  }));
+  $("dtocw").hidden = tocTargets.length < 2;
+  tocSpy();
+}
+function tocSpy() {
+  const top = dbody.getBoundingClientRect().top + 8;
+  let k = 0;
+  tocTargets.forEach((n, j) => { if (n.getBoundingClientRect().top <= top) k = j; });
+  $("dtoc").value = k;
+}
+$("dtoc").addEventListener("change", ev => {
+  const n = tocTargets[+ev.target.value];
+  if (n) dbody.scrollTop += n.getBoundingClientRect().top - dbody.getBoundingClientRect().top - 4;
+});
+dbody.addEventListener("scroll", () => requestAnimationFrame(tocSpy));
+dbody.addEventListener("toggle", () => { if (openIdx >= 0) buildToc(); }, true); // a request expanded or collapsed
+
+function closeDrawer() {
+  const sel = document.querySelector("main .sel");
+  openIdx = -1;
+  drawer.classList.remove("open");
+  layout();
+  sel?.classList.remove("sel");
+  sel?.scrollIntoView({ block: "center" }); // stay on the same line after the chat widens again
+}
+feed.addEventListener("click", ev => {
+  const n = ev.target.closest("[data-i]:not(.divider)");
+  if (n && !getSelection().toString()) openPrompt(+n.dataset.i); // don't hijack text selection
+});
+$("dclose").addEventListener("click", closeDrawer);
+$("mclose").addEventListener("click", () => { const b = document.querySelector('[data-toggle="side"]'); b.checked = false; b.dispatchEvent(new Event("change")); });
+
+// ---- Memories (serve.py reads them from the playthrough database) ----
+// Two columns whenever the right side has something: the open prompt, or the memories.
+// 📍 Line up: each card at the page height of the chat line it belongs to, pushed down where cards crowd. The column
+// scrolls with the page through pairs (line y, card y): one to one where cards have room, faster through crowded
+// stretches, so the card for the line at the top of the chat is always beside it.
+const aligned = () => !document.body.classList.contains("hide-align");
+let alignPts = [], alignKey = "", alignShort = 0;
+const endMark = el("div", "endmark"); // after the last line: "Now" (live) or the end of a playthrough or day // alignShort: how far the last cards are below the column at the page's end
+const alignSpacer = el("div"); // room under the last card; padding on the column would make the column itself taller // [line's page y, card's y in the column], first card of each line, line y increasing
+const sizes = () => document.documentElement.scrollHeight + "|" + $("mbody").scrollHeight;
+function alignSide() {
+  const mb = $("mbody"), on = aligned() && side.length > 0;
+  alignPts = []; alignKey = ""; alignShort = 0;
+  mb.classList.toggle("aligned", on);
+  for (const x of side) x.node.style.marginTop = "";
+  alignSpacer.style.height = "0";
+  if (!on) return;
+  mb.append(alignSpacer); // last, after renderSide refilled the column
+  const cards = side.filter(x => x.node.offsetParent);
+  if (!cards.length) return;
+  const lineY = at => { let j = Math.min(at, rows.length - 1); while (j > 0 && !rows[j].node.offsetParent) j--; return rows[j] ? Math.round(rows[j].node.getBoundingClientRect().top + scrollY) : 0; }; // whole pixels: crowded stretches multiply any error
+  const want = cards.map(x => x.mark?.offsetParent ? Math.round(x.mark.getBoundingClientRect().top + scrollY) : lineY(x.at)), hs = cards.map(x => x.node.getBoundingClientRect().height); // exact: whole-pixel heights add up over hundreds of cards
+  let end = cards[0].node.offsetTop; // the column's top padding
+  cards.forEach((x, k) => {
+    const top = Math.max(want[k], end + (k ? 8 : 0));
+    x.node.style.marginTop = top - end + "px";
+    if (!alignPts.length || want[k] > alignPts.at(-1)[0]) alignPts.push([want[k], top]);
+    end = top + hs[k];
+  });
+  alignSpacer.style.height = Math.max(30, document.documentElement.scrollHeight - end + innerHeight) + "px";
+  // At the bottom of the page the column stops where alignScroll puts it. If the last cards are still below its edge,
+  // updatePosition makes up the difference over the last screen of scrolling (cards run a little ahead of their lines there).
+  const last = alignPts.at(-1), vp = $("cbar").getBoundingClientRect().bottom;
+  const refMax = document.documentElement.scrollHeight - innerHeight + vp;
+  const shown = last[1] + refMax - last[0] - (vp - mb.getBoundingClientRect().top) + mb.clientHeight;
+  alignShort = Math.max(0, end + 12 - shown);
+  alignKey = sizes(); // measured again when either changes (fonts loading, new lines, toggles)
+}
+function alignScroll(mb) {
+  const P = alignPts, vp = $("cbar").getBoundingClientRect().bottom, ref = Math.round(scrollY + vp); // ref: the page y at the top of the chat
+  if (!P.length) return 0;
+  let k = P.length - 1;
+  while (k > 0 && P[k][0] > ref) k--;
+  const y = ref < P[0][0] || k === P.length - 1 ? P[k][1] + ref - P[k][0] // before the first or after the last: one to one
+    : P[k][1] + (ref - P[k][0]) / (P[k + 1][0] - P[k][0]) * (P[k + 1][1] - P[k][1]);
+  return y - (vp - mb.getBoundingClientRect().top);
+}
+$("mbody").addEventListener("wheel", ev => { if (!aligned()) return; ev.preventDefault(); scrollBy(0, ev.deltaY); }, { passive: false });
+addEventListener("resize", () => { alignSide(); updatePosition(); });
+
+function layout() {
+  const top = document.querySelector("header").getBoundingClientRect().bottom + "px";
+  const memOn = !document.body.classList.contains("hide-side");
+  $("mem").classList.toggle("open", memOn);
+  for (const p of [$("mem"), drawer]) p.style.top = top;
+  $("cbar").style.top = document.querySelector("header").getBoundingClientRect().height + "px";
+  document.body.classList.toggle("split", drawer.classList.contains("open") || memOn);
+  alignSide();
+}
+
+async function loadMemories(g) {
+  const q = (!archive ? "db=live" : archive.startsWith("conv:") ? `day=${archive.slice(5)}` : `db=${encodeURIComponent(archive)}`) + "&" + mlq();
+  const get = async (what, on) => { try { return on && LOCAL ? await (await fetch(`/local/${what}?${q}`, { cache: "no-store" })).json() : []; } catch { return []; } };
+  let [list, shots, dl] = await Promise.all([get("memories", SHOW_MEM), get("omnisight", SHOW_OMNI), get("diary", SHOW_DIARY)]);
+  if (g !== gen) return;
+  if (!Array.isArray(list) || !rows.length) list = []; // nothing to anchor to yet
+  if (!Array.isArray(shots) || !rows.length) shots = [];
+  if (!Array.isArray(dl) || !rows.length) dl = [];
+  const byTime = t => { let at = 0; for (let i = 0; i < rows.length && (rows[i].e.localTime || 0) <= t; i++) at = i; return at; };
+  omni = shots.map(x => ({ ...x, subject: x.kind, kind: "omni", at: byTime(x.time) })); // subject: actor, location…
+  // Anchor each memory to the latest event it came from; failing that (conversation log, unknown ids), to when it was formed.
+  const byId = new Map(rows.map((r, i) => [r.e.id, i]));
+  const conv = archive.startsWith("conv:");
+  const anchor = m => {
+    const at = conv ? -1 : Math.max(-1, ...(m.events || []).map(id => byId.get(id) ?? -1));
+    return { ...m, at: at < 0 ? byTime(m.time) : at };
+  };
+  mems = list.map(anchor).sort((a, b) => a.at - b.at || a.time - b.time);
+  diaries = dl.map(m => ({ ...anchor(m), kind: "diary" }));
+  renderSide();
+}
+
+function cardClick(card, at) {
+  card.addEventListener("click", () => {
+    const n = rows[at]?.node;
+    if (!n) return;
+    document.querySelector("main .sel")?.classList.remove("sel");
+    n.classList.add("sel");
+    n.scrollIntoView({ block: "center" });
+  });
+}
+
+// Event cards (IntelEngine, PoliticalEngine…): what happened, when, and which kind, in their group's colour.
+function eventCard(x) {
+  const e = x.e, g = GROUPS.find(g => g.key === x.kind), h = g?.hue ?? 0, card = el("div", "memcard " + x.kind);
+  card.style.background = `hsl(${h} 25% 17%)`;
+  card.style.borderColor = `hsl(${h} 30% 30%)`;
+  const who = el("div", "who"), src = el("b", null, g?.label || x.kind);
+  src.style.color = `hsl(${h} 55% 68%)`;
+  who.append(src, el("span", null, e.gameTimeStr || ""), rtSpan(e.localTime, "rt", "") || "", el("span", "kind", e.type.replace(/^(intel|political)_/, "").replace(/_/g, " ")));
+  card.append(who, colourNames(plainText(e).replace(/\s*\[PE event [^\]]*\]\s*$/, ""))); // drop the political engine's debug suffix
+  cardClick(card, x.at);
+  return card;
+}
+
+// Every name seen in this view (speakers, listeners, thinkers, memory owners), with and without its "[Whiterun Guard]"-style
+// tag, mapped to its colour; matched whole-word, longest first, so "Bill [Guard]" is one name even when "Guard" is another NPC's.
+let names = null;
+function nameMatcher(extra = []) {
+  const col = new Map();
+  const add = n => {
+    n = (n || "").trim();
+    const c = players.has(n) ? PLAYER_COLOR : nameColor(n);
+    for (const k of [n, n.replace(/\s*\[[^\]]*\]$/, "")]) if (k.length > 1 && !col.has(k)) col.set(k, c);
+  };
+  for (const e of [...rows.map(r => r.e), ...extra]) { const d = e.data || {}; add(d.speaker); add(d.listener); add(d.npc_name); add(d.player_name); add(d.target); }
+  for (const m of mems) add(m.actor);
+  if (!col.size) return null;
+  const alt = [...col.keys()].sort((a, b) => b.length - a.length).map(n => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  return { re: new RegExp(`(?<![\\w'])(?:${alt})(?![\\w'])`, "g"), col };
+}
+function colourNames(text, tag = "div") {
+  text = String(text ?? "");
+  const out = el(tag, tag === "div" ? "txt" : null);
+  let last = 0;
+  if (names) for (const m of text.matchAll(names.re)) {
+    const s = el("span", "nm", m[0]);
+    s.style.color = names.col.get(m[0]);
+    out.append(text.slice(last, m.index), s);
+    last = m.index + m[0].length;
+  }
+  out.append(text.slice(last));
+  return out;
+}
+
+// OmniSight: a screenshot SkyrimNet took of someone or somewhere, with its AI description. Click the picture for full size.
+function omniCard(x) {
+  const h = 280, card = el("div", "memcard omni");
+  card.style.background = `hsl(${h} 20% 18%)`;
+  card.style.borderColor = `hsl(${h} 25% 32%)`;
+  const who = el("div", "who"), name = el("b", null, "📷 " + (x.name || "?"));
+  name.style.color = x.subject === "actor" ? nameColor(x.name) : `hsl(${h} 55% 72%)`;
+  who.append(name, el("span", null, x.gameTimeStr || ""), rtSpan(x.time, "rt", "") || "", el("span", "kind", x.subject || ""));
+  card.append(who);
+  if (x.image) {
+    const a = el("a"), img = el("img");
+    a.href = img.src = `/local/shot?${mlq()}&name=` + encodeURIComponent(x.image);
+    img.loading = "lazy";
+    img.alt = x.name || "";
+    a.addEventListener("click", ev => { // a popup with the picture and its description; middle-click still opens a tab
+      ev.preventDefault(); ev.stopPropagation(); // the card's jump-to-line doesn't fire
+      const d = $("shot"), big = el("img");
+      big.src = a.href; big.alt = img.alt;
+      d.replaceChildren(who.cloneNode(true), big, colourNames(x.description || ""));
+      if (x.location) d.append(el("div", "foot", x.location));
+      d.showModal();
+    });
+    a.append(img);
+    card.append(a);
+  }
+  card.append(colourNames(x.description || ""));
+  if (x.location && x.location !== x.name) card.append(el("div", "foot", x.location));
+  cardClick(card, x.at);
+  return card;
+}
+
+// Bring a context-column card into view and outline it for a moment.
+function flashCard(x) {
+  const mb = $("mbody"), c = x?.node;
+  if (!c || document.body.classList.contains("hide-side")) return;
+  if (!aligned()) mb.scrollTop = c.offsetTop - mb.clientHeight / 2 + c.offsetHeight / 2;
+  c.classList.add("flash");
+  setTimeout(() => c.classList.remove("flash"), 1200);
+}
+
+// 📌 Markers in the chat after the line each memory, diary entry or screenshot belongs to. Rebuilt with the column.
+// A diary whose diary_entry_created event is in the chat gets none: that event is its marker (matched by the entry's text).
+function placeMarks() {
+  for (const m of feed.querySelectorAll(".mark.sm")) m.remove();
+  const head = t => String(t || "").trim().slice(0, 80);
+  const logged = new Set(rows.filter(r => r.e.type === "diary_entry_created").map(r => head(r.e.data?.entry_contents)));
+  const after = new Map(); // top-level chat node -> last marker placed after it, so markers keep the column's order
+  for (const x of side) {
+    x.mark = null;
+    const kind = x.kind === "omni" || x.kind === "diary" ? x.kind : x.e ? "" : "mem";
+    const row = rows[x.at]?.node;
+    if (!kind || !row || (kind === "diary" && logged.has(head(x.content)))) continue; // event cards were taken out of the chat; they need no marker
+    let top = row;
+    while (top.parentElement && top.parentElement !== feed) top = top.parentElement; // after the speaker's box, not inside it
+    const who = kind === "omni" ? x.name : x.actor;
+    const m = el("div", "mark sm " + kind, { mem: "🧠 ", diary: "📔 ", omni: "📷 " }[kind]);
+    const nm = el("span", "nm", who || "?");
+    nm.style.color = kind === "omni" && x.subject !== "actor" ? "" : players.has(who) ? PLAYER_COLOR : nameColor(who);
+    m.append(nm, { mem: " memory created", diary: " diary written", omni: " captured" }[kind], rtSpan(x.time, "rt rtl", "") || "");
+    m.addEventListener("click", ev => { ev.stopPropagation(); flashCard(x); }); // not the prompt drawer
+    (after.get(top) || top).after(m);
+    after.set(top, m);
+    x.mark = m; // 📍 lines the card up with this, not its line inside the speaker's box
+  }
+  $("nmark").textContent = feed.querySelectorAll(".mark").length;
+}
+
+// A diary entry: what an NPC wrote about a stretch of events, rendered as markdown.
+function diaryCard(x) {
+  const h = nameHue(x.actor), card = el("div", "memcard diary");
+  card.style.background = `hsl(${h} 24% 17%)`;
+  card.style.borderColor = `hsl(${h} 30% 34%)`;
+  const who = el("div", "who"), name = el("b", null, "📔 " + (x.actor || "?"));
+  name.style.color = nameColor(x.actor);
+  who.append(name);
+  if (x.emotion) who.append(el("span", null, x.emotion));
+  who.append(el("span", "kind", "diary"));
+  const foot = el("div", "foot", x.location || "");
+  foot.append(rtSpan(x.time, "rt", x.location ? " · " : "") || "");
+  card.append(who, md(x.content || ""), foot);
+  cardClick(card, x.at);
+  return card;
+}
+
+// Column header: 🧠, one toggle per config group, 📷. Counts are filled in by renderSide().
+function buildColumnToggles() {
+  const t = $("mtitle"), css = [];
+  const add = (key, text, title, txt, shown) => {
+    const l = el("label", "tbtn" + (txt ? " txt" : "")), box = el("input"), n = el("span", "n", "0");
+    box.type = "checkbox"; box.hidden = true; box.checked = shown !== false; box.dataset.toggle = key;
+    n.dataset.key = key;
+    l.title = title;
+    l.append(box, text + " ", n);
+    t.append(l);
+    wireToggle(box);
+    css.push(`body.hide-${key} .memcard.${key}`, `body.hide-${key} .mark.${key}`); // the card and its 📌 marker
+  };
+  if (SHOW_MEM) add("mem", "🧠", "Show memories", false);
+  for (const g of GROUPS) add(g.key, g.label, `Show ${g.label} events (${g.types.source})`, !/^\p{Extended_Pictographic}/u.test(g.label), g.shown);
+  if (SHOW_DIARY) add("diary", "📔", "Show diary entries", false);
+  if (SHOW_OMNI) add("omni", "📷", "Show OmniSight screenshots", false);
+  const st = el("style");
+  st.textContent = css.join(", ") + " { display:none; }";
+  document.head.append(st);
+}
+
+function renderSide() {
+  names = nameMatcher();
+  const mb = $("mbody");
+  mb.replaceChildren();
+  for (const m of mems) {
+    const h = nameHue(m.actor), card = el("div", "memcard mem");
+    card.style.background = `hsl(${h} 30% 19%)`;
+    card.style.borderColor = `hsl(${h} 35% 33%)`;
+    const who = el("div", "who"), name = el("b", null, m.actor || "?");
+    name.style.color = nameColor(m.actor);
+    who.append(name);
+    if (m.emotion) who.append(el("span", null, m.emotion));
+    if (m.importance != null) who.append(el("span", null, "★ " + (+m.importance).toFixed(1)));
+    who.append(el("span", "kind", (m.kind || "").toLowerCase()));
+    card.append(who, colourNames(m.content));
+    const foot = el("div", "foot", m.location || "");
+    foot.append(rtSpan(m.time, "rt", m.location ? " · " : "") || "");
+    card.append(foot);
+    card.title = (m.tags || []).join(", ");
+    cardClick(card, m.at);
+    m.node = card;
+  }
+  for (const x of sideEv) x.node = eventCard(x);
+  for (const x of omni) x.node = omniCard(x);
+  for (const x of diaries) x.node = diaryCard(x);
+  side = [...mems, ...diaries, ...omni, ...sideEv].sort((a, b) => a.at - b.at); // stable: memories, diaries, screenshots, then events at the same line
+  mb.append(...side.map(x => x.node));
+  placeMarks();
+  if (!side.length) mb.append(el("div", "note", LOCAL ? "No memories or events yet. Background knowledge entries aren't shown." : "Memories are read by serve.py: open http://localhost:8791/"));
+  for (const c of document.querySelectorAll("#mtitle .n")) c.textContent = side.filter(x => (x.kind === "omni" || x.kind === "diary" || x.e ? x.kind : "mem") === c.dataset.key).length;
+  const atEnd = innerHeight + scrollY >= document.body.scrollHeight - 80;
+  layout(); // the chat may have just narrowed, making the page taller
+  if (atEnd) scrollTo(0, document.body.scrollHeight);
+  renderScrubber();
+  updatePosition();
+}
+$("dsrc").checked = !MD;
+$("dsrc").addEventListener("change", () => { MD = !$("dsrc").checked; localStorage["snev.md"] = MD ? "1" : "0"; if (rows[openIdx]) openPrompt(openIdx); });
+addEventListener("keydown", ev => { if (ev.key === "Escape" && !$("shot").open) closeDrawer(); }); // Esc on the picture closes only it
+$("shot").addEventListener("click", ev => { if (ev.target === ev.currentTarget || ev.target.tagName === "IMG") $("shot").close(); }); // outside, or the picture
+
+// ---- Polling ----
+function reset() {
+  feed.replaceChildren();
+  rows = []; seen = new Set(); maxId = -1; lastLocation = null; mems = []; sideEv = []; side = []; omni = []; diaries = [];
+  $("mbody").replaceChildren(el("div", "note", LOCAL ? "No memories yet." : "Memories are read by serve.py: open http://localhost:8791/"));
+  layout();
+}
+
+function ingest(events) {
+  const fresh = events.filter(e => !seen.has(e.id)).sort((a, b) => a.id - b.id);
+  if (!fresh.length) return false;
+  const first = maxId < 0;
+  for (const e of fresh) if ((e.type || "").startsWith("dialogue_player")) players.add(e.data?.player_name || e.data?.speaker); // before rendering, so earlier lines know too
+  names = nameMatcher(fresh); // 🎨 in the chat: names seen so far, this batch included
+  for (const e of fresh) {
+    seen.add(e.id); maxId = Math.max(maxId, e.id);
+    if (hide.some(r => r.test(eventText(e)))) continue;
+    const kind = sideKind(e.type || "");
+    if (kind) { sideEv.push({ e, kind, at: Math.max(0, rows.length - 1) }); continue; } // placed after the line before it
+    if (e.type === "persistent_generic" && rows.length && unwrap(eventText(rows.at(-1).e)) === unwrap(eventText(e))) continue; // repeats the narration just shown
+    add(e);
+  }
+  const last = rows.at(-1)?.e;
+  endMark.className = "endmark" + (archive ? "" : " live");
+  const label = el("span", null, (!archive ? "Now" : archive.startsWith("conv:") ? "End of this day" : "End of this playthrough")
+    + (last?.gameTimeStr ? " · " + last.gameTimeStr : ""));
+  if (!archive) label.prepend(el("span", "pulse", "●")); // live
+  endMark.replaceChildren(label);
+  if (rows.length) feed.append(endMark); // moved back to the end after new lines
+  renderScrubber();
+  $("nthought").textContent = feed.querySelectorAll(".thought").length;
+  $("nnarr").textContent = feed.querySelectorAll(".narr").length;
+  $("nact").textContent = feed.querySelectorAll(".act").length;
+  for (const n of document.querySelectorAll("#actpanel .n")) n.textContent = feed.querySelectorAll(".act-" + n.dataset.act).length;
+  if (first || !document.body.classList.contains("hide-autoscroll")) scrollTo(0, document.body.scrollHeight); // ⤓ button
+  updatePosition();
+  return true;
+}
+
+// archive = a playthrough database name from serve.py, or "" for the live game.
+// gen stops a poll that was in flight when the view was switched from adding to the new view.
+let archive = "", gen = 0, timer;
+// ML: the modlist picked in History; LIVE_ML: the one being played (serve.py's pick: written to last). Live always reads LIVE_ML.
+let ML = "", LIVE_ML = "";
+const mlq = () => "ml=" + encodeURIComponent(archive ? ML : LIVE_ML);
+function start() { clearTimeout(timer); reset(); poll(++gen); }
+
+async function poll(g) {
+  try {
+    if (archive) { // a finished playthrough: load once, no polling
+      const url = (archive.startsWith("conv:") ? `/local/conversation?day=${archive.slice(5)}` : `/local/events?db=${encodeURIComponent(archive)}`) + "&" + mlq();
+      const events = await (await fetch(url)).json();
+      if (g !== gen) return;
+      ingest(events);
+      loadMemories(g);
+      $("dot").className = "dot arch";
+      $("dot").title = "archived playthrough (not live)";
+      return;
+    }
+    const events = maxId < 0 ? await fetchAll()
+      : (await (await fetch(`${HOST}/?api=recent-events&count=${POLL_COUNT}`, { cache: "no-store" })).json()).events || [];
+    if (g !== gen) return;
+    // Newest id went backwards: another save or playthrough was loaded, so start over.
+    // ponytail: misses a switch to a save whose newest id is higher; compare first-event ids if that bites.
+    if (events.length && maxId >= 0 && Math.max(...events.map(e => e.id)) < maxId) return start();
+    if (ingest(events)) loadMemories(g);
+    $("dot").className = "dot ok";
+    $("dot").title = "live";
+  } catch {
+    if (g !== gen) return;
+    $("dot").className = "dot"; // game closed or server not up yet; keep trying
+    $("dot").title = "not connected";
+  }
+  timer = setTimeout(() => poll(g), POLL_MS);
+}
+
+// Under serve.py (http://localhost:8791) older playthroughs can be picked from the menu.
+const LOCAL = location.protocol.startsWith("http");
+// Two kinds of history: the conversation log (every line ever said, by real day; survives loading older saves)
+// and SkyrimNet's per-playthrough databases (with locations and game time, but cut back when an older save is loaded).
+// One modlist at a time: picking one shows its newest playthrough (or Live, for the one being played).
+async function fillHistory() {
+  const q = "ml=" + encodeURIComponent(ML);
+  const [days, list] = await Promise.all([fetch(`/local/conversation-days?${q}`).then(r => r.json()), fetch(`/local/playthroughs?${q}`).then(r => r.json())]);
+  const live = el("option", null, `Live (current save · ${LIVE_ML})`);
+  live.value = "";
+  const conv = el("optgroup"), dbs = el("optgroup");
+  conv.label = "Conversation log: every line, by real day";
+  dbs.label = "Playthroughs, newest first (cut back when an older save loads)";
+  for (const d of days) {
+    const o = el("option", null, `${new Date(d.day + "T12:00").toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" })} · ${d.lines} lines`);
+    o.value = "conv:" + d.day;
+    conv.append(o);
+  }
+  for (const p of list) {
+    const short = s => (s || "?").split(",")[0];
+    const o = el("option", null, `${p.player || "(no player lines)"} · ${new Date(p.modified * 1000).toLocaleDateString()} · ${short(p.first_location)} → ${short(p.last_location)} · ${p.events} events`);
+    o.value = p.db;
+    o.title = `${p.first_time} → ${p.last_time}`;
+    dbs.append(o);
+  }
+  $("pt").replaceChildren(live, dbs, conv); // playthroughs first, the long list of days after
+  return list;
+}
+if (LOCAL) fetch("/local/modlists").then(r => r.json()).then(async mls => {
+  for (const m of mls) {
+    const o = el("option", null, m.name + (m.live ? " ●" : ""));
+    o.value = m.name;
+    o.title = m.folder + (m.live ? " (being played, or played last)" : "");
+    $("ml").append(o);
+  }
+  ML = LIVE_ML = mls.find(m => m.live)?.name || "";
+  const saved = new URLSearchParams(location.hash.slice(1)); // a refresh reopens the same view (see saveView)
+  if (mls.some(m => m.name === saved.get("ml"))) ML = saved.get("ml");
+  $("ml").value = ML;
+  $("mlwrap").hidden = mls.length < 2; // one SkyrimNet folder: nothing to pick
+  await fillHistory();
+  $("ptwrap").hidden = false;
+  const v = saved.get("view") || "";
+  if (v && [...$("pt").options].some(o => o.value === v)) { archive = v; $("pt").value = v; start(); }
+}).catch(() => {});
+else { // opened from disk: say where the older playthroughs are instead of hiding the option
+  $("ptwrap").replaceChildren("Older playthroughs: run serve.py, then open ", Object.assign(el("a", null, "localhost:8791"), { href: "http://localhost:8791/" }));
+  $("ptwrap").hidden = false;
+}
+// #pt is absent when opened from disk (replaced by the hint above)
+// The modlist and view live in the address (#ml=…&view=…), so a refresh or a bookmark opens them again.
+function saveView() {
+  const h = new URLSearchParams();
+  if (ML && ML !== LIVE_ML) h.set("ml", ML);
+  if (archive) h.set("view", archive);
+  history.replaceState(null, "", String(h) ? "#" + h : location.pathname + location.search);
+}
+$("pt")?.addEventListener("change", ev => { archive = ev.target.value; saveView(); closeDrawer(); start(); });
+$("ml")?.addEventListener("change", async ev => {
+  ML = ev.target.value;
+  const list = await fillHistory();
+  archive = ML === LIVE_ML ? "" : list[0]?.db || ""; // the newest playthrough of a modlist that isn't running
+  $("pt").value = archive;
+  saveView(); closeDrawer(); start();
+  menu.open = false;
+});
+
+// config.yaml. Reads the small part of YAML it uses: "key: value", lists of values ("- 'x'") and lists of maps
+// ("- a: 1" then "  b: 2"). Values: 'quoted' or "quoted" text, yes/no/true/false, numbers, else plain text.
+const hide = [];
+function parseConfig(text) {
+  const scalar = v => {
+    v = v.trim();
+    if (/^'.*'$/.test(v)) return v.slice(1, -1).replace(/''/g, "'");
+    if (/^".*"$/.test(v)) return v.slice(1, -1);
+    v = v.replace(/\s+#.*$/, "");
+    if (/^(yes|true|on)$/i.test(v)) return true;
+    if (/^(no|false|off)$/i.test(v)) return false;
+    return v !== "" && !isNaN(v) ? +v : v;
+  };
+  const cfg = {};
+  let key = null, item = null, m;
+  for (const line of text.split(/\r?\n/)) {
+    if (/^\s*(#|$)/.test(line)) continue;
+    if ((m = line.match(/^(\w+):\s*(.*)$/))) { key = m[1]; item = null; cfg[key] = m[2].trim() ? scalar(m[2]) : []; continue; }
+    if (!Array.isArray(cfg[key])) continue;
+    if ((m = line.match(/^\s+-\s+(\w+):\s+(.*)$/))) { item = { [m[1]]: scalar(m[2]) }; cfg[key].push(item); continue; }
+    if ((m = line.match(/^\s+-\s+(.*)$/))) { item = null; cfg[key].push(scalar(m[1])); continue; }
+    if (item && (m = line.match(/^\s+(\w+):\s+(.*)$/))) item[m[1]] = scalar(m[2]);
+  }
+  return cfg;
+}
+async function loadConfig() {
+  let cfg = {};
+  try { cfg = parseConfig(await (await fetch("config.yaml", { cache: "no-store" })).text()); } catch {} // opened from disk: defaults
+  for (const v of Array.isArray(cfg.hide) ? cfg.hide : []) {
+    try { hide.push(new RegExp(v, "i")); } catch { console.warn("config.yaml: bad hide pattern", v); }
+  }
+  if (Array.isArray(cfg.column)) GROUPS = cfg.column.filter(g => g && g.label && g.types).flatMap(g => {
+    try {
+      return [{ key: "g-" + String(g.label).toLowerCase().replace(/[^a-z0-9]+/g, "") || "g", label: String(g.label),
+                hue: +g.hue || 0, types: new RegExp(g.types), shown: g.shown !== false }];
+    } catch { console.warn("config.yaml: bad column types", g.types); return []; }
+  });
+  if (cfg.memories === false) SHOW_MEM = false;
+  if (cfg.omnisight === false) SHOW_OMNI = false;
+  if (cfg.diary === false) SHOW_DIARY = false;
+  buildColumnToggles();
+}
+loadConfig().then(start);
+</script>
+</body>
+</html>

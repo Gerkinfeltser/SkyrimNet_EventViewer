@@ -13,6 +13,14 @@ A cleaner page for reading what SkyrimNet's NPCs say, think and remember.
 
 It only reads: nothing here writes to the game, SkyrimNet or its files.
 
+## Getting it
+
+1. Install [Python 3](https://www.python.org/downloads/). On Windows, tick **Add python.exe to PATH** on the installer's first screen. Nothing else is needed.
+2. On this repository's GitHub page, click **Code → Download ZIP** and unzip it anywhere (it doesn't go in your Skyrim or MO2 folders). Or `git clone` it.
+3. Play with SkyrimNet at least once, so it has written its data, then follow *Running it* below. The helper finds your SkyrimNet folder by itself; if it doesn't, list the folder under `skyrimnet:` in `config.yaml`.
+
+If double-clicking `sn-eventview.bat` says Python was not found, or opens the Microsoft Store, Python isn't installed or isn't on PATH: install it again with the PATH option ticked, then open a new window.
+
 ## Running it
 
 Double-click `sn-eventview.bat`. It starts a small helper on <http://localhost:8791/> and opens the page in your browser. Close the window to stop it.

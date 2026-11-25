@@ -2,10 +2,14 @@
 
 A cleaner page for reading what SkyrimNet's NPCs say, think and remember.
 
-- **Left column:** the conversation, one box per NPC turn in their colour.
-- **Right column:** memories, IntelEngine and PoliticalEngine events, and OmniSight screenshots, in step with the conversation.
+![The page with 🔄️ on: the end of a playthrough in Whiterun, with Adrianne Avenicci's turn, the player's own turn shifted right with thick blue sides, and beside the chat Dagny the Crude's memory and an OmniSight picture of the Whiterun plains](media/context-column.jpg)
+
+![A line of Dreanna's clicked: the popup shows her thought and line from the same reply at the top, and below them the dialogue request that produced them, starting with her character profile](media/prompt-panel.jpg)
+
+- **Left column:** the conversation, one box per turn (NPC or yours) in the speaker's colour.
+- **Right column:** memories, diaries, OmniSight screenshots and other mods' events (IntelEngine, PoliticalEngine…), in step with the conversation.
 - **History:** the live game, any older playthrough, or any day of the conversation log.
-- **Prompts:** click a line to see the LLM prompt that produced it.
+- **Prompts:** click a line, or 🧾 on a memory, diary or OmniSight card, to see the LLM prompt that produced it.
 
 It only reads: nothing here writes to the game, SkyrimNet or its files.
 
@@ -17,7 +21,7 @@ From a terminal: `python serve.py` (Python 3, standard library only). Options:
 
 | Command | What it does |
 |---|---|
-| `python serve.py <SkyrimNet folder>` | Read only that SkyrimNet folder (default: every `?:/Modlists/<name>/overwrite/SKSE/Plugins/SkyrimNet`) |
+| `python serve.py <SkyrimNet folder>` | Read only that SkyrimNet folder (default: every one it finds, see below) |
 | `python serve.py --no-browser` | Don't open a browser tab |
 | `python serve.py --check` | Self-test against the real folder |
 | `python serve.py --types` | List every event type with counts, for `config.yaml` |
@@ -28,14 +32,14 @@ Opening `index.html` straight from disk also works for the live game, but withou
 
 **Top bar:** where you are (follows your scrolling), the **History** picker, and **☰**.
 
-- Modlist (in ☰, shown when there is more than one): every modlist with a SkyrimNet folder under `?:/Modlists/` (found when the helper starts; restart it after adding one). ● marks the one being played, or played last: the page starts there, and *Live* always reads it. Picking another modlist opens its newest playthrough. The address keeps the modlist and view (`#ml=…&view=…`), so a refresh or a bookmark opens them again.
+- Modlist (in ☰, shown when there is more than one): every SkyrimNet folder the helper finds when it starts (restart it after adding one): the folders listed under `skyrimnet:` in `config.yaml`, then every MO2 instance's overwrite folder (a `ModOrganizer.ini` up to two folders deep on any local drive, or a global instance in `%LOCALAPPDATA%\ModOrganizer`), then the game's own `Data` folder (Vortex, manual installs), then any `<drive>:\Modlists\*\overwrite` folder. Each is named after its MO2 instance, mod or game folder; folders that share a name all get their parent folder added, such as *ADT (Modlists)*. ● marks the one being played, or played last: the page starts there, and *Live* always reads it. Picking another modlist opens its newest playthrough. The address keeps the modlist and view (`#ml=…&view=…`), so a refresh or a bookmark opens them again.
 
 - History: *Live (current save)*, then **playthroughs** (newest first, named after your character), then the **conversation log** by real day.
 - A playthrough's events are cut back to the save point when you load an older save. The conversation log keeps every line ever said, but has no locations or game time.
 
 **Chat column**
 
-- Each NPC turn is one box outlined in their colour. The header shows name, game date and time, and the place within the cell. Inside the box:
+- Each turn, an NPC's or yours, is one box outlined in the speaker's colour (yours in the player blue, shifted to the right, with thick sides), its thoughts and lines together. The header shows name, game date and time, and the place within the cell. Inside the box:
   - 💭 thoughts: a paler bubble.
   - Spoken lines start with **To *listener*:**, with the listener's name in their own colour.
   - 🗣️ marks background chatter.
@@ -46,24 +50,25 @@ Opening `index.html` straight from disk also works for the live game, but withou
 - Your own lines are blue.
 - A separator marks each change of cell. It shows the full location, the game time and ⏱ the real time spent there (gaps over 20 minutes are left out).
 - The chat ends with **● Now** and the game time of the latest line (live), or *End of this playthrough* / *End of this day* in History.
-- 📌 Markers such as *🧠 Hadvar memory created ┄┄┄*, *📔 Camilla Valerius diary written* and *📷 Embershard Mine captured* sit after the line each card in the context column belongs to. Click one to bring its card into view.
-- Bar: 💭 thoughts and 🧾 narration toggles, the 🤝 actions menu, 📌 markers, each with counts; 🎨 colour names in the text; ⤓ keep scrolling (follow new lines as they arrive).
+- 📌 Markers such as *🧠 Hadvar memory created ┄┄┄*, *📔 Camilla Valerius diary written* and *📷 Embershard Mine captured* (and *🧩 IntelEngine · follower recruited* for 🧩 groups) sit after the line each card in the context column belongs to. Click one to bring its card into view.
+- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, each with counts; ⤓ keep scrolling (follow new lines as they arrive).
 
-**Context column** (right; ☰ › context column)
+**Context column** (right; 🗂️ next to History shows or hides it)
 
 | Toggle | Cards |
 |---|---|
-| 🧠 | NPC memories: owner, emotion, importance, kind (background knowledge entries are left out) |
-| IntelEngine, PoliticalEngine | events of those mods, taken out of the chat (set in `config.yaml`) |
+| 🧠 | NPC memories: owner, emotion, importance, kind (background knowledge entries are left out; so is SkyrimNet's memory copy of a diary entry while 📔 cards are loaded) |
+| 🧩 | other mods' events, taken out of the chat: a menu of the `config.yaml` column groups (IntelEngine, PoliticalEngine…) plus a group of its own for any event type the page has no line style for (`dragonsense_event` → *dragonsense*; give it a `column:` group to rename or recolour it). Lists only groups with events in this view ("None in this view" when there are none) |
 | 📔 | NPC diary entries, rendered as markdown |
-| 📷 | OmniSight screenshots with their descriptions (click the picture to see it large with its description, middle-click for a new tab) |
+| 📷 | OmniSight screenshots with their descriptions (click the picture or the description to see both large, middle-click the picture for a new tab) |
 
-- **Following you:** cards after the line you're reading are dimmed (not with 📍 on, where position shows it). ⤓ keeps the current card in view.
-- **📄 Full text:** whole OmniSight descriptions and diaries. Off: the first few lines (an OmniSight picture's popup still has the whole description).
-- **📍 Line up:** each card sits beside the chat line it belongs to and the column scrolls with the chat (the mouse wheel over the column scrolls the chat). Where cards crowd, the column moves faster than the chat so the card for the line at the top of the chat stays beside it. Over the last screen of the chat it runs a little ahead, so the last cards come fully into view as the chat reaches its end. Off: the column scrolls on its own and ⤓ applies.
+- **Following you:** cards whose 📌 marker (or line) is still below the bottom of the chat are dimmed; every card whose marker you can see is lit (not with 🔄️ on, where position shows it). The outlined card is the newest one at or above the chat line under the bar, and ⤓ keeps it in view, gliding the column to each new one (it jumps when the new one is far away, as after picking another view).
+- **🤏 Compact:** each OmniSight picture small with the first four lines of its description beside it, and the start of each diary (an OmniSight picture's popup still has the whole description). Off: whole descriptions and diaries.
+- **🔄️ Line up:** each card sits beside the chat line it belongs to and the column scrolls with the chat (the mouse wheel over the column scrolls the chat). Where cards crowd, the column moves faster than the chat, but never more than 2.5 times as fast: it starts moving before a bunch of markers and catches up after it, so each card there sits a little ahead of or behind its marker instead of flying past. Over the last screen of the chat it runs a little ahead, so the last cards come fully into view as the chat reaches its end. Off: the column scrolls on its own and ⤓ applies.
+- **⏫ ⏬ Previous / next card** (with 🔄️ on; greyed out otherwise): scrolls the chat to the previous or next visible card's 📌 marker, a third of the way down the chat, with the card lined up beside it and outlined for a moment. Press again while it glides to step on.
 - Turning a card type off (🧠, 📔, 📷) also hides its 📌 markers in the chat.
-- **Jump to a line:** clicking a card jumps the chat to where it happened.
-- **Names:** names inside the cards are coloured (🎨 in the column's bar).
+- **Find a card's line:** clicking a card (its header or footer, for memories, diaries and pictures) lights up its 📌 marker (or its line) and the card. The chat scrolls only if the marker is off screen.
+- **Names:** names inside the cards are coloured, as in the chat (🎨 in the top bar turns both off).
 
 **Timeline** (bottom)
 
@@ -71,29 +76,42 @@ Opening `index.html` straight from disk also works for the live game, but withou
 - The cursor shows the date and time of what you're reading. Coloured ticks mark memories.
 - Click or drag to jump.
 
-**Prompt panel:** click any line.
+**Prompt popup:** click any line.
 
-- The panel shows the request that produced it, found by matching the reply text: model, tokens, time, then each message as rendered markdown.
+- A popup opens with the line at the top, as it reads in the chat, and below it the request that produced it, found by matching the reply text: model, tokens, time, then each message as rendered markdown, and at the end the event's JSON. × or Esc closes it.
+- One reply often holds a thought and a line of dialogue (sometimes more). Once its request is found, the top of the popup shows every line of that speaker's box that came from the same reply, and they stay highlighted in the chat. When a speaker has several such pairs in a row, each pair has its own reply, so each line shows only its own pair.
 - Consecutive messages from one role (the event history comes as many short user messages) share one label, such as *USER · 15 messages*, and one box, with a dashed line between messages.
-- **source** shows the exact text.
-- The dropdown under the title lists the messages and headings. It follows your scrolling; pick one to jump there.
-- Prompts come from SkyrimNet's request log (since the game started) and the prompt log files, which SkyrimNet keeps for about two days.
+- **source** (above the prompt) shows the exact text.
+- The dropdown above the prompt lists the messages and headings. It follows your scrolling; pick one to jump there.
+- 🧾 (after the kind, in a memory, diary or OmniSight card's top line) opens the card in the same popup, with the prompt that wrote it (found the same way) on the left, beside it. It is boxed in white when there is a prompt to show, and in grey with a ❌ over it when none can be found for that card: hover it for why, and clicking opens the popup without a prompt column. × or Esc closes the popup.
+- In that popup, 🧾 (next to ×) shows or hides the prompt, or, greyed, says why there is none. Clicking a memory's text opens it as a chat line does, with its prompt shown below it. Opening a diary entry or OmniSight picture by clicking its text or picture starts with the prompt hidden.
+- Prompts come from SkyrimNet's request log (since the game started) and its prompt log files on disk.
+
+**When there's no prompt to show** (the popup says which case it is):
+
+- **The line never had one, or its text isn't in a reply.** The page finds a line's prompt by looking for its text in a model's reply, so only text a model wrote can be matched: NPC dialogue and thoughts, game master and narrator lines, memories, diaries and OmniSight descriptions. Lines you typed, game events such as books, sleep and deaths, and actions (🤝, even when a model chose them) can't be. The popup says no request's reply contains the text and lists the requests made around that moment.
+- **The prompt log has been deleted.** SkyrimNet keeps only its last few prompt log files (`openrouter_input*.log`), rotating them by size, so how far back prompts go depends on how much you've played since: often only the last day or so. Older lines say they're older than the oldest prompt log on disk. The model's replies (`openrouter_output*.log`) are kept longer, but without the prompt they can't be shown.
+- **The page was opened from disk** (no `serve.py`): only SkyrimNet's request log is searched, which holds requests since the game was launched. Run `serve.py` to search the log files too.
+- **A mod wrote the memory, not a model.** A memory tied to no chat event and held by no reply was put there by a mod's code, such as Immersive Diseases' illness memories or PoliticalEngine's letter notes. Its 🧾 is greyed, and the tooltip says so and lists the memory's tags.
+
+Narrative Engine plot memories ("Nenya asked me to keep watch on Narri…", "I sent Helvard to…") are filled in by that mod from its director's plan, so their sentence is in no reply either. Their 🧾 opens that plan instead: the Narrative Engine request answered in the 15 seconds before the memory that names someone the memory names.
 
 **☰ menu:**
 - modlist
-- background chatter
-- other events (the few types the page has no line style for)
-- context column
-- ids: event ids on lines, request ids on prompts
-- real time: the real date and time on every chat line, marker and card, beside the game time (on at first)
+- Show event ids: event ids on lines, request ids on prompts
+- Show empty responses: dialogue lines SkyrimNet stored with no text ("Lucia said nothing")
+- Show real-world time: the real date and time on every chat line, marker and card, beside the game time (on at first)
+- Show line bubbles: a filled, rounded box around each spoken line (on at first; off: the text alone, inside its speaker's box, which then takes the line bubbles' fill while its 💭 thoughts go dark)
 
 Toggles are remembered by the browser.
 
 ## config.yaml
 
-Reload the page after editing. Only read when the page comes from `serve.py`.
+Reload the page after editing (`serve.py` tells the browser to check for a newer page and config.yaml on every load; only OmniSight pictures are cached). Only read when the page comes from `serve.py`.
 
 ```yaml
+skyrimnet:                  # SkyrimNet folders the helper doesn't find by itself (restart the helper)
+  - 'E:\MO2\overwrite\SKSE\Plugins\SkyrimNet'
 lan: no                     # yes = other devices on your network or Tailscale can open http://<this PC's IP>:8791/ (restart the helper)
 
 hide:                       # lines to leave out: regular expressions, case-insensitive
@@ -113,11 +131,11 @@ column:                     # event groups shown as cards in the right column in
     # shown: no            # the toggle starts off
 ```
 
-Keep patterns in single quotes. The reader understands this subset of YAML: `key: value`, lists of values and lists of maps.
+Keep patterns in single quotes. The reader understands this subset of YAML: `key: value`, lists of values and lists of maps, with `# comments` on their own lines or after a value.
 
 ## Where the data comes from
 
-All paths are inside the picked modlist's `overwrite/SKSE/Plugins/SkyrimNet`.
+All paths are inside the picked SkyrimNet folder (for MO2, `overwrite/SKSE/Plugins/SkyrimNet`).
 
 | Source | Used for |
 |---|---|
@@ -130,7 +148,7 @@ All paths are inside the picked modlist's `overwrite/SKSE/Plugins/SkyrimNet`.
 Things SkyrimNet doesn't keep, so the page can't show them:
 
 - **Spoken audio:** TTS plays from memory and is never saved.
-- **Prompts older than about two days:** the prompt log files rotate.
+- **Older prompts:** SkyrimNet keeps only its last few prompt log files (see *When there's no prompt to show*).
 - **Older OmniSight pictures:** OmniSight keeps one picture per subject and replaces it when it retakes it, so an older playthrough can show a newer picture.
 
 ## Files

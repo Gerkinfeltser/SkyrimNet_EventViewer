@@ -2,7 +2,7 @@
 
     python serve.py [SkyrimNet folder]      then open http://localhost:8791
 
-Without a folder it finds every modlist's ?:/Modlists/<name>/overwrite/SKSE/Plugins/SkyrimNet. The page picks one by name
+Without a folder it finds SkyrimNet folders itself (see find_modlists, and "skyrimnet:" in config.yaml). The page picks one by name
 (ml=<name>, never a path); without ml, the one SkyrimNet wrote to last, which is the game running now.
 
 Reads, never writes:
@@ -28,16 +28,9 @@ PORT = 8791
 SN_API = "http://127.0.0.1:8080"  # SkyrimNet's own server, reached through /sn by pages opened from other devices
 
 
-def config_lan():
-    """config.yaml "lan: yes": also listen on the network (LAN, Tailscale). Off unless set."""
-    try:
-        with open(os.path.join(HERE, "config.yaml"), encoding="utf-8") as f:
-            return bool(re.search(r"^lan:\s*['\"]?(yes|true|on)\b", f.read(), re.M | re.I))
-    except OSError:
-        return False
-
-
-LAN = config_lan()
+def no_cache(path):
+    """Every response but a picture makes the browser check for a newer page or config.yaml on each load."""
+    return not path.startswith("/local/shot")  # pictures keep their short cache
 
 
 def host_ok(host):
@@ -53,21 +46,118 @@ def host_ok(host):
         return False
 
 
-def find_modlists():
-    """{modlist name: SkyrimNet folder}. Looked up once at start: restart to see a new modlist."""
-    arg = next((a for a in sys.argv[1:] if not a.startswith("--")), None)
-    found = [arg] if arg else [p for d in "CDEFGHIJ" for p in glob.glob(f"{d}:/Modlists/*/overwrite/SKSE/Plugins/SkyrimNet")]
-    out = {}
-    for p in found:
-        p = os.path.normpath(p)
-        parts = p.split(os.sep)
-        name = parts[-5] if len(parts) >= 5 and parts[-4] == "overwrite" else os.path.basename(os.path.dirname(p)) or p
-        if os.path.isdir(os.path.join(p, "data")):
-            out.setdefault(name, p)
+def config_text():
+    try:
+        with open(os.path.join(HERE, "config.yaml"), encoding="utf-8") as f:
+            return f.read()
+    except OSError:
+        return ""
+
+
+def config_list(text, key):
+    """The "- 'value'" lines under "key:" in config.yaml."""
+    m = re.search(rf"^{key}:[ \t]*(?:#.*)?\n((?:[ \t]+-.*\n?|[ \t]*(?:#.*)?\n)*)", text, re.M)
+    items = re.findall(r"^[ \t]+-[ \t]*(.+?)[ \t]*$", m.group(1), re.M) if m else []
+    out = []
+    for v in items:  # 'single' ('' is a quote), "double", or plain; a " # note" after it is a comment
+        q = re.match(r"'((?:[^']|'')*)'|\"([^\"]*)\"", v)
+        out.append(q.group(1).replace("''", "'") if q and q.group(1) is not None else q.group(2) if q else re.sub(r"\s+#.*$", "", v))
     return out
 
 
+def mo2_overwrite(ini):
+    """An MO2 instance's overwrite folder, from its ModOrganizer.ini (default: <instance>/overwrite)."""
+    try:
+        with open(ini, encoding="utf-8", errors="replace") as f:
+            text = f.read()
+    except OSError:
+        return None
+    def get(key):
+        m = re.search(rf"^{key}=(.*)$", text, re.M)
+        if not m:
+            return None
+        v = m.group(1).strip()
+        if v.startswith("@ByteArray(") and v.endswith(")"):
+            v = v[11:-1].replace("\\\\", "\\")
+        return v or None
+    base = get("base_directory") or os.path.dirname(ini)
+    return os.path.normpath((get("overwrite_directory") or "%BASE_DIR%/overwrite").replace("%BASE_DIR%", base))
+
+
+def game_folders():
+    """Skyrim SE and VR install folders, for SkyrimNet written straight into Data (Vortex, manual installs)."""
+    try:
+        import winreg
+    except ImportError:
+        return []
+    out = []
+    for game in ("Skyrim Special Edition", "Skyrim VR"):
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\WOW6432Node\Bethesda Softworks\{game}") as k:
+                out.append(os.path.join(winreg.QueryValueEx(k, "installed path")[0], "Data"))
+        except OSError:
+            pass
+    return out
+
+
+def folder_name(p):
+    """<instance>/overwrite/SKSE/Plugins/SkyrimNet -> instance, <game>/Data/… -> game, <mod>/SKSE/Plugins/SkyrimNet -> mod."""
+    parts = os.path.normpath(p).split(os.sep)
+    if len(parts) >= 5 and [x.lower() for x in parts[-3:]] == ["skse", "plugins", "skyrimnet"]:
+        return parts[-5] if parts[-4].lower() in ("overwrite", "data") else parts[-4]
+    return os.path.basename(os.path.dirname(p)) or p
+
+
+def fixed_drives():
+    """Local fixed drives: a network, removable or CD drive can stall a glob."""
+    try:
+        from ctypes import windll
+    except ImportError:
+        return []
+    return [d for d in "CDEFGHIJKLMNOPQRSTUVWXYZ" if windll.kernel32.GetDriveTypeW(f"{d}:\\") == 3]  # DRIVE_FIXED
+
+
+def modlist_names(paths):
+    """{name: path}, names from folder_name. A name several folders share gets each one's parent folder added
+    ("ADT (Modlists)"), or the whole path if that clashes too, so a name never moves to another folder as modlists come and go."""
+    def parent(p, name):
+        parts = p.split(os.sep)
+        i = max((i for i, x in enumerate(parts) if x == name), default=0)
+        return f"{name} ({parts[i - 1]})" if i > 0 else f"{name} ({p})"
+    names = [folder_name(p) for p in paths]
+    names = [parent(p, n) if names.count(n) > 1 else n for p, n in zip(paths, names)]
+    names = [f"{folder_name(p)} ({p})" if names.count(n) > 1 else n for p, n in zip(paths, names)]
+    return dict(zip(names, paths))
+
+
+def find_modlists():
+    """{modlist name: SkyrimNet folder}. Looked up once at start: restart to see a new modlist.
+    A folder given on the command line is the only one. Otherwise, in this order: config.yaml "skyrimnet:" folders,
+    MO2 instances (a ModOrganizer.ini up to two folders deep on any drive, or a global instance), the game's Data folder."""
+    arg = next((a for a in sys.argv[1:] if not a.startswith("--")), None)
+    if arg:
+        found = [arg]
+    else:
+        drives = fixed_drives()
+        inis = [p for d in drives
+                for p in glob.glob(f"{d}:/*/ModOrganizer.ini") + glob.glob(f"{d}:/*/*/ModOrganizer.ini")]
+        inis += glob.glob(os.path.join(os.environ.get("LOCALAPPDATA", ""), "ModOrganizer", "*", "ModOrganizer.ini"))
+        found = config_list(config_text(), "skyrimnet")
+        found += [os.path.join(o, "SKSE", "Plugins", "SkyrimNet") for o in map(mo2_overwrite, inis) if o]
+        found += [os.path.join(g, "SKSE", "Plugins", "SkyrimNet") for g in game_folders()]
+        found += [p for d in drives for p in glob.glob(f"{d}:/Modlists/*/overwrite/SKSE/Plugins/SkyrimNet")]  # no readable ModOrganizer.ini
+    paths, seen = [], set()
+    for p in found:
+        p = os.path.normpath(p)
+        if os.path.normcase(p) in seen or not os.path.isdir(os.path.join(p, "data")):
+            continue
+        seen.add(os.path.normcase(p))
+        paths.append(p)
+    return modlist_names(paths)
+
+
 MODLISTS = find_modlists()
+LAN = bool(re.search(r"^lan:\s*['\"]?(yes|true|on)\b", config_text(), re.M | re.I))  # config.yaml: also listen on the network
 
 
 def newest_db_time(sn):
@@ -443,12 +533,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def end_headers(self):
+        # path is unset for a malformed request line (send_error)
+        if no_cache(getattr(self, "path", "")):
+            self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
     def log_message(self, *a):
         pass
 
 
 if __name__ == "__main__":
-    assert MODLISTS, "no SkyrimNet folder found under ?:/Modlists/*/overwrite/SKSE/Plugins/SkyrimNet; pass one as an argument"
+    assert MODLISTS, "no SkyrimNet folder found: list yours under skyrimnet: in config.yaml, or pass one as an argument"
     SN = folder()
     if "--types" in sys.argv:  # every event type in every playthrough, for config.yaml's "types:" patterns
         counts = {}
@@ -495,7 +591,19 @@ if __name__ == "__main__":
         shots = [x for q in p[:40] for x in omnisight(SN, q["db"])]
         assert all(not x["image"] or SHOT_NAME.match(x["image"]) for x in shots)
         assert not SHOT_NAME.match("../x.png") and not SHOT_NAME.match("a/b.png")
+        assert config_list("a: 1\nskyrimnet:\n  # x\n  - 'D:\\MO2\\it''s'\n  - E:/x\nb: 2\n", "skyrimnet") == ["D:\\MO2\\it's", "E:/x"]
+        assert config_list("skyrimnet: []\n", "skyrimnet") == []
+        assert config_list("skyrimnet:\n  - 'E:\\x'  # main\n  - \"F:/y\" # b\n  - G:/z  # c\n", "skyrimnet") == ["E:\\x", "F:/y", "G:/z"]
+        a, b, c = (os.path.normpath(x) for x in (r"D:\Modlists\ADT\overwrite\SKSE\Plugins\SkyrimNet",
+                                                  r"E:\Games\ADT\overwrite\SKSE\Plugins\SkyrimNet", r"F:\Other\SKSE\Plugins\SkyrimNet"))
+        assert modlist_names([a, b, c]) == {"ADT (Modlists)": a, "ADT (Games)": b, "Other": c}
+        assert modlist_names([b, c, a]) == modlist_names([a, b, c])  # names don't depend on discovery order
+        assert folder_name(r"D:\Modlists\ADT\overwrite\SKSE\Plugins\SkyrimNet") == "ADT"
+        assert folder_name(r"E:\MO2\mods\SN data\SKSE\Plugins\SkyrimNet") == "SN data"
+        assert folder_name(r"D:\Steam\Skyrim Special Edition\Data\SKSE\Plugins\SkyrimNet") == "Skyrim Special Edition"
+        assert folder_name(r"E:\Saves\MyGame\SkyrimNet") == "MyGame"
         assert host_ok("localhost:8791") and host_ok("127.0.0.1:8791") and host_ok("[::1]:8791")
+        assert no_cache("/") and no_cache("/config.yaml") and no_cache("/local/events?db=x") and not no_cache("/local/shot?name=a.png")
         assert not host_ok("evil.example:8791") and not host_ok("") and host_ok("192.168.1.5:8791") == LAN
         print(f"omnisight: {len(shots)} screenshots in the 40 newest playthroughs, {sum(bool(x['image']) for x in shots)} with an image on disk")
         print(f"ok: {len(p)} playthroughs, {len(r)} logged prompts, {sum(1 for x in r if x['response_payload'])} with responses")

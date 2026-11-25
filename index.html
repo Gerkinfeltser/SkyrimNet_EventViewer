@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>SkyrimNet Event View</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   :root { --dw:min(720px,55vw); --bg:#14161a; --panel:#1d2026; --fg:#e4e1d8; --muted:#8a8f98; --line:#2a2e36; --you:#2f4a6b; }
@@ -24,11 +25,13 @@
   .menu label { font-size:13px; color:var(--muted); cursor:pointer; user-select:none; }
   .menu .sep { border-top:1px solid var(--line); padding-top:7px; }
   .menu .mlwrap { border-bottom:1px solid var(--line); padding-bottom:7px; }
-  .menu.acts summary { font-size:17px; padding:2px 4px; color:inherit; }
-  .menu.acts .panel { left:0; right:auto; z-index:6; }
-  .menu.acts .n { color:var(--muted); font-size:12px; }
-  body.hide-acts .menu.acts summary { opacity:.35; filter:grayscale(1); }
-  body.hide-acts .menu.acts .panel label:not(.mlwrap) { opacity:.45; }
+  .menu.pick summary { font-size:17px; padding:2px 4px; color:inherit; }
+  .menu.pick .panel { left:0; right:auto; z-index:6; }
+  .menu.pick .n { color:var(--muted); font-size:12px; }
+  .menu.pick summary::after { content:"▾"; margin-left:3px; font-size:14px; color:var(--fg); opacity:.75; } /* 🤝 📌 🧩 open a list */
+  .menu .none { color:var(--muted); font-size:12.5px; font-style:italic; }
+  body.hide-acts #acts summary, body.hide-marks #marks summary, body.hide-modev #modev summary { opacity:.35; filter:grayscale(1); }
+  body.hide-acts #acts .panel label:not(.mlwrap), body.hide-marks #marks .panel label:not(.mlwrap), body.hide-modev #modev .panel label:not(.mlwrap) { opacity:.45; }
   .act-failed, .act-checks { opacity:.75; }
   .menu select { margin-left:4px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:12.5px; }
   .hist { flex:none; font-size:12.5px; color:var(--muted); white-space:nowrap; }
@@ -44,16 +47,17 @@
   .tbtn:has(input:not(:checked)) { opacity:.35; filter:grayscale(1); }
   .tbtn.txt { font-size:13px; margin-left:8px; }
   .tbtn .n { color:var(--muted); font-size:12px; }
+  body.hide-align .tbtn.step { opacity:.35; filter:grayscale(1); cursor:default; background:none; } /* ⏫ ⏬ need 🔄️ */
   [data-i] { scroll-margin-top:96px; } /* below the header and the chat bar */
   .colbar { position:sticky; top:41px; z-index:4; display:flex; align-items:center; gap:10px; padding:10px 14px; font-size:13px;
             background:var(--panel); border-bottom:1px solid var(--line); }
   .colbar .fill { flex:1; }
   /* 📌 where a memory, diary entry or OmniSight picture was made; its card is in the context column */
-  .mark { display:flex; align-items:center; gap:7px; margin:3px 10px; font-size:12px; color:var(--muted); cursor:pointer; white-space:nowrap; }
+  .mark { display:flex; align-items:center; gap:7px; margin:3px calc(-1 * var(--markreach, -10px)) 3px 10px; font-size:12px; color:var(--muted); cursor:pointer; white-space:nowrap; }
   .mark::after { content:""; flex:1; border-top:1px dashed currentColor; opacity:.45; }
+  .mark::before { content:""; order:9; margin-left:-7px; border-left:6px solid currentColor; border-block:4px solid transparent; opacity:.6; } /* ▸ after the line, pointing at the card's column */
   .mark:hover { color:var(--fg); }
-  .memcard.flash { box-shadow:0 0 0 2px var(--fg); }
-  body.hide-marks .mark { display:none; }
+  body.hide-marks .mark, body.hide-mark-mem .mark.mem, body.hide-mark-diary .mark.diary, body.hide-mark-omni .mark.omni { display:none; }
   /* the end of the chat: "Now" when live, the end of a playthrough or day in History */
   .endmark { display:flex; align-items:center; gap:12px; margin:14px 10px 6px;
              color:#d6c48f; font-weight:700; font-size:13px; letter-spacing:.04em; white-space:nowrap; }
@@ -68,7 +72,10 @@
   .who .to { color:var(--muted); font-weight:400; }
   .bubble { max-width:78%; padding:7px 12px; border-radius:14px; background:var(--panel); border:1px solid var(--line); }
   .msg.you .bubble { background:var(--you); border-color:transparent; }
+  body.hide-bubbles .bubble { background:none !important; border-color:transparent !important; } /* ☰ Show line bubbles off: bare text (beats the inline hue) */
   .msg.bg { opacity:.6; }
+  .msg.empty { margin:3px 10px; color:var(--muted); font-size:12.5px; font-style:italic; }
+  body.hide-empty .msg.empty { display:none; }
   /* Thoughts: a paler, greyer bubble in the thinker's hue (set inline), dashed because unspoken. Default = pale player blue. */
   .thought { width:fit-content; max-width:78%; margin:2px 0 6px; padding:7px 12px; border-radius:14px;
              border:1px dashed hsl(212 22% 44%); background:hsl(212 22% 31%); color:#dcd7cd; font-style:italic; }
@@ -90,24 +97,39 @@
              background:var(--bg); border:1px solid var(--line); color:var(--fg); }
   #curtime.flip { left:auto; right:6px; } /* near the right end: label on the left of the cursor */
 
-  /* Prompt drawer: click a line to see the LLM request behind it. */
+  /* Click a line to see the LLM request behind it (in the popup). */
   main [data-i]:not(.divider) { cursor:pointer; border-radius:8px; }
   main [data-i]:not(.divider):hover { background:#ffffff08; }
   main [data-i].sel { background:#ffffff12; }
-  /* Right column: the prompt drawer, or the memories when no prompt is open. */
+  /* Right column: the context column. */
   .side { position:fixed; top:41px; right:0; bottom:35px; z-index:3; /* between header and scrubber; top set from the header by layout() */ width:var(--dw); display:none; flex-direction:column;
           background:var(--panel); border-left:1px solid var(--line); box-shadow:-8px 0 24px #0009; }
   .side.open { display:flex; }
-  #drawer { z-index:4; }
   #shot { max-width:min(1400px, 94vw); max-height:94vh; padding:12px 14px; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:10px; }
   #shot::backdrop { background:rgb(0 0 0 / .75); }
   #shot img { display:block; max-width:100%; max-height:64vh; margin:6px auto; border-radius:6px; cursor:zoom-out; }
   #shot .who { display:flex; gap:10px; align-items:baseline; font-size:13px; color:var(--muted); }
   #shot .txt { font-size:14.5px; line-height:1.45; max-width:110ch; margin:8px auto 0; }
   #shot .foot { font-size:12px; color:var(--muted); margin-top:6px; }
+  #shot .who .x, #shot .who .picon { margin-left:auto; } /* 🧾, then × (a chat line: × alone) */
+  #shot .who .picon + .x { margin-left:0; }
+  #shot .who .picon.none { cursor:help; } /* no prompt: hover for why */
+  #shot.withprompt .who .picon { opacity:1; background:hsl(0 0% 100% / .35); } /* shown */
+  #shot .ppane { display:none; }
+  /* 🧾 open: a picture's or diary's prompt on its left, a chat line or memory above its prompt (.stacked); each part scrolls on its own */
+  #shot[open].withprompt { width:94vw; max-width:94vw; display:flex; gap:16px; }
+  #shot.withprompt .ppane { display:flex; flex-direction:column; flex:1 1 55%; min-width:0; max-height:calc(94vh - 30px); font-size:13px; }
+  #dbody { overflow:auto; flex:1; min-height:0; padding-right:4px; }
+  .ppane .pbar { display:flex; align-items:center; gap:10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+  .ppane .pbar .src { margin-left:auto; }
+  #shot.withprompt .pmain { flex:1 1 45%; min-width:0; max-height:calc(94vh - 30px); overflow:auto; }
+  #shot[open].withprompt.stacked { flex-direction:column; gap:10px; width:min(1300px, 94vw); height:94vh; }
+  #shot.withprompt.stacked .pmain { flex:0 0 auto; max-height:40vh; }
+  #shot.withprompt.stacked .ppane { flex:1 1 auto; min-height:0; max-height:none; }
+  .ppane .note { color:var(--muted); margin:6px 0; }
   .side .top { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line); font-size:13px; }
-  .side .top .title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .side .x { cursor:pointer; color:var(--muted); font-size:20px; line-height:1; padding:0 4px; }
+  .side .top .title { flex:1; min-width:0; display:flex; align-items:center; gap:10px; white-space:nowrap; } /* no overflow:hidden: it would clip the 🧩 menu */
+  .side .x, #shot .x { cursor:pointer; color:var(--muted); font-size:20px; line-height:1; padding:0 4px; }
   .side .body { overflow:auto; padding:10px 14px 30px; font-size:13px; position:relative; }
   .memcard { margin:0 0 8px; padding:7px 11px; border-radius:10px; border:1px solid; cursor:pointer; line-height:1.4; transition:opacity .2s; }
   .memcard .who { display:flex; gap:8px; align-items:baseline; font-size:12px; color:var(--muted); }
@@ -118,38 +140,62 @@
   .memcard.future { opacity:.4; }
   .memcard.now { box-shadow:0 0 0 1px var(--fg); }
   .memtick { position:absolute; top:0; width:3px; height:8px; margin-left:-1px; border-radius:0 0 2px 2px; pointer-events:none; }
-  /* 📄 off: OmniSight descriptions and diaries cut to a few lines, all of it on hover */
-  body.hide-fulltext .memcard.omni .txt { display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
-  body.hide-fulltext .memcard.diary .md { max-height:6.4em; overflow:hidden; -webkit-mask-image:linear-gradient(#000 55%, transparent); }
-  .memcard.diary .md { margin:4px 0; font-size:13.5px; line-height:1.45; }
-  .memcard.diary .md h1, .memcard.diary .md h2, .memcard.diary .md h3 { font-size:14px; margin:6px 0 2px; }
-  #mbody.aligned { overflow:hidden; } /* 📍 the column follows the page; the wheel scrolls the page */
+  /* 🤏 compact: OmniSight descriptions and diaries cut to a few lines */
+  body:not(.hide-compact) .memcard.omni .txt { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  body:not(.hide-compact) .memcard.omni img { height:90px; }
+  /* short view with a picture: picture left, text beside it (as many lines as fit beside the picture) */
+  body:not(.hide-compact) .memcard.omni:has(> a) { display:grid; grid-template-columns:160px 1fr; column-gap:10px; align-items:start; }
+  body:not(.hide-compact) .memcard.omni:has(> a) > .who { grid-column:1 / -1; }
+  body:not(.hide-compact) .memcard.omni:has(> a) > .foot { grid-column:2; }
+  body:not(.hide-compact) .memcard.omni:has(> a) img { margin:3px 0 5px; }
+  body:not(.hide-compact) .memcard.omni:has(> a) .txt { -webkit-line-clamp:4; margin:2px 0 0; }
+  body:not(.hide-compact) .memcard.diary .md { max-height:3.4em; overflow:hidden; -webkit-mask-image:linear-gradient(#000 45%, transparent); }
+  .memcard .md { margin:4px 0; font-size:13.5px; line-height:1.45; }
+  .memcard .md h1, .memcard .md h2, .memcard .md h3 { font-size:14px; margin:6px 0 2px; }
+  .memcard.diary .md, .memcard.omni .txt { cursor:zoom-in; }
+  #shot .pmain > .md { max-width:760px; margin:8px 4px; font-size:14px; line-height:1.55; }
+  .memcard .md p, .pmain > .md p { margin:0 0 .8em; } /* diary paragraphs: a clear gap between them */
+  .memcard .md p:last-child, .pmain > .md p:last-child { margin-bottom:0; }
+  /* 🧾 on a card and in its popup: the prompt that wrote the card. Boxed, white-tinted when there is a prompt to show,
+     grey when none was found (its tooltip says why). */
+  .picon { cursor:pointer; border:1px solid hsl(0 0% 100% / .55); border-radius:3px; background:hsl(0 0% 100% / .2); opacity:.9;
+           position:relative; display:inline-grid; place-items:center; width:18px; height:18px; box-sizing:border-box;
+           align-self:center; flex:none; font-size:11px; line-height:1; } /* a square box */
+  .picon:hover { opacity:1; background:hsl(0 0% 100% / .3); }
+  .picon.none { border-color:hsl(0 0% 40% / .8); background:hsl(0 0% 22% / .85); opacity:1; }
+  .picon.none > span { filter:grayscale(1); opacity:.45; } /* the 🧾 faded, a ❌ over it */
+  .picon.none::after { content:"❌"; position:absolute; inset:0; display:grid; place-items:center; font-size:9px; }
+  #shot .who .x { align-self:center; }
+  #mbody.aligned { overflow:hidden; } /* 🔄️ the column follows the page; the wheel scrolls the page */
+  /* 🔄️: faint vertical dashed lines through the gaps between cards, so the column reads as one track with the chat */
+  #mbody.aligned { --dash:repeating-linear-gradient(to bottom, rgb(255 255 255 / .22) 0 3px, transparent 3px 6px);
+                   background:var(--dash) 35% 0 / 1px 100% no-repeat local, var(--dash) 70% 0 / 1px 100% no-repeat local; }
   #mbody.aligned .memcard { margin:0; }
   .memcard img { display:block; width:100%; height:170px; object-fit:cover; border-radius:6px; margin:5px 0 3px; }
-  #drawer details { border:1px solid var(--line); border-radius:6px; margin:8px 0; }
-  #drawer summary { cursor:pointer; padding:6px 10px; color:var(--muted); }
-  #drawer summary b { color:var(--fg); }
-  #drawer details > div { padding:0 10px 8px; }
-  #drawer .role { margin:10px 0 3px; font:600 11px/1 "Segoe UI",sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#8fb0d6; }
-  #drawer pre { margin:0; white-space:pre-wrap; word-break:break-word; font:12px/1.5 Consolas,"Cascadia Mono",monospace;
+  .ppane details { border:1px solid var(--line); border-radius:6px; margin:8px 0; }
+  .ppane summary { cursor:pointer; padding:6px 10px; color:var(--muted); }
+  .ppane summary b { color:var(--fg); }
+  .ppane details > div { padding:0 10px 8px; }
+  .ppane .role { margin:10px 0 3px; font:600 11px/1 "Segoe UI",sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#8fb0d6; }
+  .ppane pre { margin:0; white-space:pre-wrap; word-break:break-word; font:12px/1.5 Consolas,"Cascadia Mono",monospace;
                 background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:8px 10px; }
-  #drawer pre .h { color:#d6c48f; font-weight:700; }             /* # heading */
-  #drawer pre .l { color:#d6a35f; font-weight:700; }             /* - bullet / 1. */
-  #drawer pre .b { color:#f0ece2; font-weight:700; }             /* **bold** */
-  #drawer pre .i { color:#cfc9bb; font-style:italic; }           /* *italic* */
-  #drawer pre .c { color:#9fd49a; }                              /* `code` and ``` blocks */
-  #drawer pre .tg { color:#c79be0; }                              /* <tags> */
-  #drawer pre .k { color:#8fb0d6; }                              /* [brackets] */
-  #drawer pre .q { color:var(--muted); font-style:italic; }      /* > quote */
+  .ppane pre .h { color:#d6c48f; font-weight:700; }             /* # heading */
+  .ppane pre .l { color:#d6a35f; font-weight:700; }             /* - bullet / 1. */
+  .ppane pre .b { color:#f0ece2; font-weight:700; }             /* **bold** */
+  .ppane pre .i { color:#cfc9bb; font-style:italic; }           /* *italic* */
+  .ppane pre .c { color:#9fd49a; }                              /* `code` and ``` blocks */
+  .ppane pre .tg { color:#c79be0; }                              /* <tags> */
+  .ppane pre .k { color:#8fb0d6; }                              /* [brackets] */
+  .ppane pre .q { color:var(--muted); font-style:italic; }      /* > quote */
   .side .note { color:var(--muted); margin:6px 0; }
-  #drawer .toc { padding:5px 14px; border-bottom:1px solid var(--line); }
-  #drawer .toc select { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 4px; font:12.5px Consolas,"Cascadia Mono",monospace; }
-  #drawer .src { color:var(--muted); font-size:12px; cursor:pointer; user-select:none; white-space:nowrap; }
-  #drawer .md { background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:6px 12px; font-size:13.5px; line-height:1.5; overflow-wrap:anywhere; }
+  .ppane .toc { flex:1; min-width:0; }
+  .ppane .toc select { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 4px; font:12.5px Consolas,"Cascadia Mono",monospace; }
+  .ppane .src { color:var(--muted); font-size:12px; cursor:pointer; user-select:none; white-space:nowrap; }
+  .ppane .md { background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:6px 12px; font-size:13.5px; line-height:1.5; overflow-wrap:anywhere; }
   /* consecutive messages from one role: one box, a dashed line between messages */
-  #drawer .run { background:var(--bg); border:1px solid var(--line); border-radius:4px; }
-  #drawer .run > .md, #drawer .run > pre { border:0; border-radius:0; background:none; }
-  #drawer .run > * + * { border-top:1px dashed var(--line) !important; }
+  .ppane .run { background:var(--bg); border:1px solid var(--line); border-radius:4px; }
+  .ppane .run > .md, .ppane .run > pre { border:0; border-radius:0; background:none; }
+  .ppane .run > * + * { border-top:1px dashed var(--line) !important; }
   .md h1, .md h2, .md h3, .md h4, .md h5, .md h6 { margin:12px 0 4px; color:#d6c48f; line-height:1.3; }
   .md h1 { font-size:17px; } .md h2 { font-size:15.5px; } .md h3 { font-size:14.5px; } .md h4, .md h5, .md h6 { font-size:13.5px; }
   .md p { margin:5px 0; }
@@ -162,44 +208,49 @@
   .md .tg { color:#c79be0; font:12px Consolas,"Cascadia Mono",monospace; }
   .md .k { color:#8fb0d6; }
 
-  body.hide-chatnames #feed .nm, body.hide-sidenames #mem .nm { color:inherit !important; }
+  body.hide-names #feed .nm, body.hide-names #mem .nm { color:inherit !important; }
   .eid, .tid { font:10.5px Consolas,"Cascadia Mono",monospace; font-style:normal; color:var(--muted); margin-left:8px; }
   body.hide-ids .eid { display:none; }
   body.hide-realtime .rt { display:none; }
   .rt { color:#8fb0d6; }
   .rtl { font:11px "Segoe UI",sans-serif; font-style:normal; margin-left:8px; }
-  body.hide-thoughts .thought, body.hide-narr .narr, body.hide-other .other, body.hide-acts .act, body.hide-bg .msg.bg { display:none; }
-  .grp { border:1.5px solid; border-radius:10px; padding:3px 6px; margin:4px 0; }
+  body.hide-thoughts .thought, body.hide-narr .narr, body.hide-acts .act, body.hide-bg .msg.bg, body.hide-dialog .msg:not(.bg) { display:none; }
+  .grp { border:1.5px solid hsl(var(--h) 55% 68% / .45); background:hsl(var(--h) 55% 68% / .05); border-radius:10px; padding:3px 6px; margin:4px 0; }
+  /* line bubbles off: the box takes the line bubbles' fill, and its thoughts the dark */
+  body.hide-bubbles .grp { background:hsl(var(--h) 32% 19%); } /* a line bubble's shade */
+  body.hide-bubbles .grp .thought { background:hsl(var(--h) 18% 12%) !important; }
   .ghead { font-size:12px; font-weight:600; margin:3px 2px 2px; }
+  /* the player's turns stand out: shifted right (NPC boxes stop short of the right edge to make room), with thick sides */
+  .grp:not(.you) { margin-right:40px; }
+  .grp.you { margin-left:40px; border-left:5px solid hsl(var(--h) 55% 68% / .85); border-right:5px solid hsl(var(--h) 55% 68% / .85); }
   .gap { color:var(--muted); font-size:11px; font-style:italic; margin:4px 2px; }
   /* a box whose lines are all hidden by the menu toggles goes too */
-  body.hide-thoughts .grp:not(:has(> :not(.thought, .ghead, .gap))), body.hide-bg .grp:not(:has(> :not(.bg, .ghead, .gap))),
-  body.hide-thoughts.hide-bg .grp:not(:has(> :not(.thought, .bg, .ghead, .gap))) { display:none; }
+
 </style>
 </head>
 <body>
 <header>
   <span class="dot" id="dot" title="server"></span>
   <span class="where" id="where">Waiting for SkyrimNet on <b id="host"></b>…</span>
+  <label class="tbtn" title="Colour names: in the chat and in the context column's cards"><input type="checkbox" data-toggle="names" checked hidden>🎨</label>
+  <label class="tbtn" title="Context column: memories, diaries, OmniSight pictures and mod events beside the chat"><input type="checkbox" data-toggle="side" checked hidden>🗂️</label>
   <label class="hist" id="ptwrap" hidden title="Older playthroughs and days come from SkyrimNet's files on disk (needs serve.py)">History <select id="pt"></select></label>
   <details class="menu" id="menu">
     <summary title="Options">☰</summary>
     <div class="panel">
       <label id="mlwrap" class="mlwrap" hidden title="Modlist: its playthroughs, conversation log and prompts in History. Live is always the game being played (●).">modlist <select id="ml"></select></label>
-      <label><input type="checkbox" data-toggle="bg" checked> background chatter</label>
-      <label><input type="checkbox" data-toggle="other"> other events</label>
-      <label title="The right-hand column: memories, mod events (IntelEngine, PoliticalEngine…) and OmniSight"><input type="checkbox" data-toggle="side" checked> context column</label>
-      <label title="Event ids on each line, request ids on each prompt"><input type="checkbox" data-toggle="ids"> ids</label>
-      <label title="Real date and time on every line and card, next to the game time"><input type="checkbox" data-toggle="realtime" checked> real time</label>
+      <label title="Dialogue lines SkyrimNet stored with no text: &quot;Lucia said nothing (empty line)&quot;"><input type="checkbox" data-toggle="empty" checked> Show empty responses</label>
+      <label title="Event ids on each line, request ids on each prompt"><input type="checkbox" data-toggle="ids"> Show event ids</label>
+      <label title="Real date and time on every line and card, next to the game time"><input type="checkbox" data-toggle="realtime" checked> Show real-world time</label>
+      <label title="A filled, rounded box around each spoken line (off: the text alone, in its speaker's box)"><input type="checkbox" data-toggle="bubbles" checked> Show line bubbles</label>
     </div>
   </details>
 </header>
-<div id="cbar" class="colbar"><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><details class="menu acts" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><label class="tbtn" title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card)"><input type="checkbox" data-toggle="marks" checked hidden>📌 <span class="n" id="nmark">0</span></label><span class="fill"></span><label class="tbtn" title="Colour names in the text"><input type="checkbox" data-toggle="chatnames" checked hidden>🎨</label><label class="tbtn" title="Keep scrolling: jump to the newest line as it arrives"><input type="checkbox" data-toggle="autoscroll" checked hidden>⤓</label></div>
+<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><span class="fill"></span><label class="tbtn" title="Keep scrolling: jump to the newest line as it arrives"><input type="checkbox" data-toggle="autoscroll" checked hidden>⤓</label></div>
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
-<aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Full text: whole OmniSight descriptions and diaries (off: the first few lines)"><input type="checkbox" data-toggle="fulltext" checked hidden>📄</label><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>📍</label><label class="tbtn" title="Colour names in the cards"><input type="checkbox" data-toggle="sidenames" checked hidden>🎨</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back from the menu)">×</span></div><div class="body" id="mbody"></div></aside>
-<dialog id="shot" title="Esc or a click outside closes"></dialog>
-<aside id="drawer" class="side"><div class="top"><span class="title" id="dtitle"></span><label class="src" title="Show the exact prompt text instead of rendered markdown"><input type="checkbox" id="dsrc"> source</label><span class="x" id="dclose" title="Close (Esc)">×</span></div><div class="toc" id="dtocw" hidden><select id="dtoc" title="Sections of the open prompt: follows your scrolling, pick one to jump"></select></div><div class="body" id="dbody"></div></aside>
+<aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
+<dialog id="shot" title="Esc or a click outside closes"><div class="ppane" id="ppane"><div class="pbar"><div class="toc" id="dtocw" hidden><select id="dtoc" title="Sections of the open prompt: follows your scrolling, pick one to jump"></select></div><label class="src" title="Show the exact prompt text instead of rendered markdown"><input type="checkbox" id="dsrc"> source</label></div><div id="dbody"></div></div></dialog>
 <script>
 // Reads the same feed as the SkyrimNet dashboard's Home page. ?host=… overrides the server.
 const HOST = new URLSearchParams(location.search).get("host")
@@ -228,7 +279,24 @@ let GROUPS = [
   { key: "g-politicalengine", label: "PoliticalEngine", hue: 42, types: /^political_/, shown: true },
 ];
 let SHOW_MEM = true, SHOW_OMNI = true, SHOW_DIARY = true; // config.yaml "memories:" / "omnisight:" / "diary:"
-const sideKind = t => GROUPS.find(g => g.types.test(t))?.key || "";
+// Which 🧩 group an event's card goes to ("" = it stays in the chat): a config.yaml group, or for an event type the
+// page has no line style for (another mod's), a group of its own named from the type: dragonsense_event -> "dragonsense".
+// Automatic groups are skipped in the first lookup: follower_recruited's "follower" group must not take follower_joined.
+const sideKind = t => GROUPS.find(g => !g.prefix && g.types.test(t))?.key || (!t || chatType(t) ? "" : autoGroup(t).key);
+const chatType = t => t.startsWith("dialogue") || t === "npc_thoughts" || t === "player_thoughts" || ICON[t] || actGroup(t)
+  || t === "diary_entry_created" || t === "gamemaster_dialogue" || t.includes("narration") || t === "persistent_generic" || t === "death";
+function autoGroup(t) {
+  const prefix = t.split("_")[0] || t, key = "g-" + prefix.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  let g = GROUPS.find(g => g.key === key);
+  if (!g) {
+    g = { key, label: prefix, hue: nameHue(prefix), types: new RegExp("^" + prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(_|$)"), prefix };
+    GROUPS.push(g);
+    if ($("modev")) groupToggles(g); // the header is built already: add its toggles now
+  }
+  return g;
+}
+// "follower recruited" for intel_follower_recruited, "event" for dragonsense_event (the group says the rest)
+const evKind = (t, g) => (g?.prefix ? t.slice(g.prefix.length).replace(/^_/, "") || t : t.replace(/^(intel|political)_/, "")).replace(/_/g, " ");
 let omni = [], diaries = []; // OmniSight screenshots and diary entries, anchored like memories
 $("host").textContent = HOST;
 
@@ -240,6 +308,8 @@ function wireToggle(box) {
   box.addEventListener("change", () => { apply(); layout(); updatePosition(); });
   apply();
 }
+if (localStorage["snev.fulltext"] && !localStorage["snev.compact"]) // ⤵️ full text became 🤏 compact: keep the choice
+  localStorage["snev.compact"] = localStorage["snev.fulltext"] === "1" ? "0" : "1";
 document.querySelectorAll("[data-toggle]").forEach(wireToggle);
 document.addEventListener("click", e => { for (const d of document.querySelectorAll("details.menu")) if (!d.contains(e.target)) d.open = false; });
 
@@ -269,7 +339,7 @@ const cell = e => place(e).split(", ").filter(p => !/^near the /.test(p)).filter
 const realDur = sec => sec < 60 ? "<1 min" : sec < 3600 ? `~${Math.round(sec / 60)} min` : `~${Math.floor(sec / 3600)} h ${Math.round(sec % 3600 / 60)} min`;
 const activeGap = sec => sec > 0 && sec < 20 * 60 ? sec : 0;
 const meta = e => [e.gameTimeStr, archive.startsWith("conv:") ? "" : `(${place(e).replace(/, Hold:.*$/, "").replace(/, Outdoors$/, "")})`].filter(Boolean).join(" · ");
-// The header's time line; with ☰ real time on, also when it happened at your desk ("11/25/2026 8:34am").
+// The header's time line; with ☰ Show real-world time on, also when it happened at your desk ("11/25/2026 8:34am").
 // The conversation log's times are real already, so it gets none.
 function rtSpan(sec, cls = "rt", sep = " · ") { // null without a time, and in the conversation log
   if (!sec || archive.startsWith("conv:")) return null;
@@ -291,7 +361,7 @@ const badge = type => el("span", "type", (type || "event").replace(/_/g, " "));
 
 const NO_BADGE = /^(dialogue|npc_thoughts$|player_thoughts$|gamemaster_dialogue$|direct_narration$|persistent_generic$)/;
 // Shown in the chat as a narration line behind an icon, without a tag.
-const ICON = { book_read: "📖", book_read_manual: "📖", sleep_start: "💤", sleep_stop: "💤" };
+const ICON = { book_read: "📖", book_read_manual: "📖", book_reading_stopped: "📖", sleep_start: "💤", sleep_stop: "💤" };
 // Actions NPCs (or you) carried out, by kind: a line behind the kind's icon, each kind switched in the 🤝 menu.
 // Event cards configured for the context column are taken out of the chat first, so a type there never lands here.
 const ACT_GROUPS = [
@@ -308,6 +378,17 @@ const ACT_GROUPS = [
   { key: "failed", icon: "⚠️", label: "failed actions", types: /_(failed|not_found|unreachable|in_use)$/, off: true },
   { key: "checks", icon: "📊", label: "relationship checks", types: /^(relationship_(assessed|adjusted)|interfollower_assessed)$/, off: true },
 ];
+// A speaker's box goes too when everything in it is hidden: one rule per mix of 💬, 💭 and 🗣️ turned off.
+(function groupHideRules() {
+  const kinds = [["dialog", ".msg:not(.bg)"], ["thoughts", ".thought"], ["bg", ".msg.bg"]], rules = [];
+  for (let m = 1; m < 8; m++) {
+    const off = kinds.filter((_, i) => m & 1 << i);
+    rules.push(`body${off.map(k => ".hide-" + k[0]).join("")} .grp:not(:has(> :not(${off.map(k => k[1]).join(", ")}, .ghead, .gap)))`);
+  }
+  const st = el("style");
+  st.textContent = rules.join(",\n") + " { display:none; }";
+  document.head.append(st);
+})();
 const actGroup = t => ACT_GROUPS.find(g => g.types.test(t));
 const actIcon = t => actGroup(t)?.icon;
 (function buildActMenu() {
@@ -331,7 +412,7 @@ const hasIds = () => !archive.startsWith("conv:");
 function render(e) {
   const n = renderBody(e);
   if (n.matches(".narr, .act, .other, .mark")) { const rt = rtSpan(e.localTime, "rt rtl", ""); if (rt) n.append(rt); }
-  if (hasIds() && e.id != null) (n.querySelector(".bubble") || n).append(el("span", "eid", "#" + e.id)); // shown with ☰ ids
+  if (hasIds() && e.id != null) (n.querySelector(".bubble") || n).append(el("span", "eid", "#" + e.id)); // shown with ☰ Show event ids
   if (NO_BADGE.test(e.type || "") || ICON[e.type] || actIcon(e.type || "")) return n;
   const who = n.querySelector(".who");
   if (who) who.insertBefore(badge(e.type), who.querySelector(".t"));
@@ -380,11 +461,7 @@ function renderBody(e) {
     // With actions off, small models add made-up "ACTION: speak" stubs, or put ACTION: before more speech;
     // SkyrimNet only strips the ones it runs. Drop the label and a lowercase stub, keep any sentence after it.
     bubble.append(colourNames(String(d.dialogue).replace(/\s*\bACTION:\s*(?:[a-z][a-z ,\x27]*?(?=[A-Z]|\n|$))?/g, " ").trim(), "span"));
-    if (you) { // player lines aren't boxed, so they keep their own name line
-      const who = el("div", "who", speaker);
-      who.append(metaNode(e));
-      m.append(who);
-    } else { // same hue as the speaker's name, dark enough to keep text readable
+    if (!you) { // same hue as the speaker's name, dark enough to keep text readable (the player's: --you)
       const h = nameHue(speaker);
       bubble.style.background = `hsl(${h} 32% 19%)`;
       bubble.style.borderColor = `hsl(${h} 38% 32%)`;
@@ -392,8 +469,11 @@ function renderBody(e) {
     m.append(bubble);
     return m;
   }
+  if (type.startsWith("dialogue") && "dialogue" in d) { // an empty line ("Lucia said nothing"): small, and hidden with 💬 (or 🗣️)
+    return el("div", "msg empty" + (type === "dialogue_background" ? " bg" : ""), plainText(e));
+  }
   if (type === "npc_thoughts" || type === "player_thoughts") {
-    const t = colourLine("thought", "💭 " + (type === "player_thoughts" ? "You: " : "") + (d.thoughts || stripTags(e.formatted_text)));
+    const t = colourLine("thought", "💭 " + (type === "player_thoughts" && !(d.player_name || d.speaker) ? "You: " : "") + (d.thoughts || stripTags(e.formatted_text)));
     if (type === "npc_thoughts") { // speech bubble is hsl(h 32% 19%): lighter and less saturated here
       const h = nameHue(d.npc_name);
       t.style.background = `hsl(${h} 16% 28%)`;
@@ -414,7 +494,7 @@ function renderBody(e) {
     const m = el("div", "mark diary", "📔 "), nm = el("span", "nm", d.actor || "?");
     nm.style.color = nameColor(d.actor);
     m.append(nm, " diary written");
-    m.addEventListener("click", () => { // the prompt drawer opens too (the diary request)
+    m.addEventListener("click", () => { // the prompt popup opens too (the diary request)
       const i = rows.findIndex(r => r.e === e), mine = diaries.filter(x => x.actor === d.actor);
       flashCard(mine.sort((a, b) => Math.abs(a.at - i) - Math.abs(b.at - i))[0]);
     });
@@ -458,17 +538,18 @@ function add(e) {
   stay.dur.textContent = stay.last ? " · ⏱ " + realDur(stay.total) + " real time" : "";
   const node = render(e);
   node.dataset.i = i;
-  // An NPC's consecutive thoughts and lines share one box, outlined in their colour.
+  // Someone's consecutive thoughts and lines share one box under their name, outlined in their colour (the player's: blue).
   const d = e.data || {}, t = e.type || "";
-  const who = t === "npc_thoughts" ? d.npc_name : d.dialogue && t.startsWith("dialogue") && !t.startsWith("dialogue_player") ? d.speaker || d.player_name : "";
+  const who = t === "npc_thoughts" ? d.npc_name : t === "player_thoughts" ? d.player_name || d.speaker
+    : d.dialogue && t.startsWith("dialogue") ? d.speaker || d.player_name : "";
   let box = feed.lastElementChild;
   if (who && !(box?.classList.contains("grp") && box.dataset.who === who)) { // a divider in between also starts a new box
-    box = el("div", "grp");
+    box = el("div", "grp" + (players.has(who) ? " you" : ""));
     box.dataset.who = who;
-    box.style.borderColor = `hsl(${nameHue(who)} 55% 68% / .45)`;
-    box.style.background = `hsl(${nameHue(who)} 55% 68% / .05)`;
+    const you = players.has(who), h = you ? 212 : nameHue(who); // 212: PLAYER_COLOR's hue
+    box.style.setProperty("--h", h); // its outline and fill (CSS .grp)
     const head = el("div", "ghead"), name = el("span", null, who);
-    name.style.color = nameColor(who);
+    name.style.color = you ? PLAYER_COLOR : nameColor(who);
     head.append(name, metaNode(e));
     box.append(head);
     feed.append(box);
@@ -519,6 +600,8 @@ function topIndex() {
   return rows.length - 1;
 }
 
+// Where ⤓ last scrolled the column (it scrolls again only when that changes, so a glide isn't restarted every frame).
+let colTarget = null;
 function updatePosition() {
   if (!rows.length) return;
   const atEnd = innerHeight + scrollY >= document.body.scrollHeight - 40; // following live: show the newest
@@ -531,20 +614,31 @@ function updatePosition() {
   for (const s of segs) s.div.classList.toggle("on", i >= s.start && i <= s.end);
   const w = $("where");
   w.replaceChildren(el("b", null, place(e)), " · " + (e.gameTimeStr || ""));
-  // Memories: dim the ones formed after what you're reading, keep the newest formed so far in view.
+  // Cards: dim the ones whose 📌 marker (or line) is still below the chat on screen; keep the newest at or above
+  // the top line in view. 🔄️ places cards beside their lines already, so nothing is dimmed there.
+  const bottom = $("scrub").getBoundingClientRect().top, ahead = side.map(m => { // read every position, then restyle
+    const n = m.mark?.offsetParent ? m.mark : rows[m.at]?.node;
+    return !aligned() && !!n && n.getBoundingClientRect().top > bottom;
+  });
   let now = null;
-  for (const m of side) { m.node.classList.toggle("future", !aligned() && m.at > i); /* 📍 places cards by time already */ m.node.classList.remove("now"); if (m.at <= i && m.node.offsetParent) now = m; }
+  side.forEach((m, k) => { m.node.classList.toggle("future", ahead[k]); m.node.classList.remove("now"); if (m.at <= i && m.node.offsetParent) now = m; });
   const mb = $("mbody");
-  if (aligned()) { // 📍 beside their lines
+  if (aligned()) { // 🔄️ beside their lines
     if (sizes() !== alignKey) alignSide();
     const toEnd = document.documentElement.scrollHeight - innerHeight - scrollY; // page scroll left
     mb.scrollTop = alignScroll(mb) + alignShort * Math.min(1, Math.max(0, 1 - toEnd / innerHeight));
   }
   else if (now) {
     now.node.classList.add("now");
-    if (!$("mem").matches(":hover") && !document.body.classList.contains("hide-memscroll")) mb.scrollTop = now.node.offsetTop - mb.clientHeight / 2 + now.node.offsetHeight / 2;
+    const top = Math.round(now.node.offsetTop - mb.clientHeight / 2 + now.node.offsetHeight / 2);
+    if (top !== colTarget && !$("mem").matches(":hover") && !document.body.classList.contains("hide-memscroll")) {
+      // glide to the new current card (a far one, such as after picking another view, is jumped to)
+      colTarget = top;
+      mb.scrollTo({ top, behavior: Math.abs(top - mb.scrollTop) > 3 * mb.clientHeight ? "instant" : "smooth" });
+    }
   }
 }
+$("mem").addEventListener("mouseleave", () => { colTarget = null; updatePosition(); }); // you may have scrolled it: back to the current card
 
 function jump(ev) {
   if (!rows.length) return;
@@ -566,10 +660,11 @@ addEventListener("scroll", () => {
   requestAnimationFrame(() => { ticking = false; updatePosition(); });
 }, { passive: true });
 
-// ---- Prompt drawer ----
+// ---- Prompts (shown in the popup) ----
 // The request log has no event id, so a line is matched to the request whose reply contains its text.
 // It only holds requests since the game was launched (SkyrimNet keeps it in memory).
-const drawer = $("drawer"), dbody = $("dbody");
+const dbody = $("dbody");
+const diaryText = t => String(t || "").replace(/^[^#\n]{1,40}:\s*(?=#)/, ""); // "Diary Entry: ## Title" -> "## Title"
 const flat = s => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
 const noBlocks = s => (s || "").replace(/<(\w+)[^>]*>[\s\S]*?<\/\1>/g, " ").replace(/<[^>]+>/g, " "); // drop <internal_thought>…</internal_thought>
 const noTags = s => (s || "").replace(/<[^>]+>/g, " ");
@@ -651,7 +746,7 @@ function md(text) {
   }
   return root;
 }
-let MD = localStorage["snev.md"] !== "0"; // rendered by default; the drawer's "source" box shows the exact text
+let MD = localStorage["snev.md"] !== "0"; // rendered by default; the popup's "source" box shows the exact text
 const view = t => MD ? md(t) : pre(t);
 
 function requestBlock(r, open, why) {
@@ -689,61 +784,195 @@ function requestBlock(r, open, why) {
   return det;
 }
 
-let openIdx = -1;
-async function openPrompt(i) {
-  openIdx = i;
-  const e = rows[i].e;
-  document.querySelector("main .sel")?.classList.remove("sel");
-  rows[i].node.classList.add("sel");
-  const d = e.data || {}, who = d.speaker || d.npc_name || d.player_name, title = $("dtitle");
-  title.replaceChildren();
-  if (who) { const b = el("b", "nm", who); b.style.color = players.has(who) ? PLAYER_COLOR : nameColor(who); title.append(b); }
-  else title.append(badge(e.type));
-  if (hasIds()) title.append(el("span", "tid", "#" + e.id));
-  title.title = eventText(e);
-  dbody.replaceChildren(el("div", "note", "Loading request log…"));
-  $("dtocw").hidden = true;
-  drawer.classList.add("open");
-  layout();
-  rows[i].node.scrollIntoView({ block: "center" }); // the column got narrower; keep the clicked line in view
-
-  // SkyrimNet's live log (since launch, has token counts) plus, under serve.py, the prompt log files on disk.
-  const sources = [fetch(`${HOST}/logs?api=requests&limit=500`, { cache: "no-store" }).then(r => r.json()).then(d => d.requests || [])];
-  if (LOCAL) sources.push(fetch(`/local/requests?${mlq()}`).then(r => r.json()));
-  const got = await Promise.allSettled(sources);
-  const byId = new Map();
-  for (const g of got) if (g.status === "fulfilled") for (const r of g.value) if (!byId.has(r.request_id)) byId.set(r.request_id, r);
-  const reqs = [...byId.values()];
-  if (!got.some(g => g.status === "fulfilled")) { dbody.replaceChildren(el("div", "note", "Couldn't reach a request log.")); return; }
-
-  const t = (e.localTime || 0) * 1000, off = r => +r.response_timestamp_unix - t;
-  const needle = flat(stripTags(eventText(e))).slice(0, 60);
-  const hits = needle.length > 3 ? reqs.filter(r => flat(noBlocks(r.response_payload)).includes(needle) || flat(noTags(r.response_payload)).includes(needle)) : [];
-  hits.sort((a, b) => Math.abs(off(a)) - Math.abs(off(b))); // short lines ("Done.") can match several; closest in time first
+// The popup for a memory, diary entry, OmniSight picture or chat line: its header and `body`, and behind its 🧾 the prompt
+// that wrote it (fetched the first time it is shown). `layout`: "" puts the prompt on the left (pictures, diaries); "stack"
+// puts the short text above its prompt (memories); "line" stacks too and drops the 🧾, the prompt being always shown (chat
+// lines). The prompt starts hidden, unless `prompt` asks for it.
+let fillPrompt = null; // fills the open popup's prompt column (again when "source" changes)
+function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node to add after the prompt (a line's event JSON)
+  const stacked = !!layout;
+  const d = $("shot"), w = who.cloneNode(true), main = el("div", "pmain"), pane = $("ppane");
+  const b = el("span", "picon" + (x.noPrompt ? " none" : "")), close = el("span", "x", "×");
+  b.append(el("span", null, "🧾"));
+  b.title = x.noPrompt ? "No prompt: " + x.noPrompt : "Show or hide the prompt that wrote this, beside it";
+  close.title = "Close (Esc)";
+  close.addEventListener("click", () => d.close());
+  w.querySelector(".picon")?.remove(); // the card's own, cloned with its header
+  w.append(...layout === "line" ? [close] : [b, close]); // 🧾 by ×
+  main.append(w, ...body);
+  if (d.open) d.close();
+  d.classList.toggle("stacked", !!stacked);
+  d.replaceChildren(...stacked ? [main, pane] : [pane, main]);
   dbody.replaceChildren();
-  if (hits.length) {
-    hits.slice(0, 3).forEach((r, k) => dbody.append(requestBlock(r, k === 0, hits.length > 1 ? `text match, ${(off(r) / 1000).toFixed(1)} s` : "")));
-  } else {
-    const oldest = Math.min(...reqs.map(r => +r.request_timestamp_unix));
-    if (!reqs.length || t < oldest) {
-      dbody.append(el("div", "note", (LOCAL
-        ? "This line is older than the oldest prompt log on disk (SkyrimNet deletes old ones)"
-        : "This line is older than SkyrimNet's request log, which only keeps requests since the game was launched. Run serve.py to search the prompt log files too") +
-        (reqs.length ? ` (oldest: ${new Date(oldest).toLocaleString()}).` : ".")));
-    } else {
-      dbody.append(el("div", "note", "No request's reply contains this text (typed player lines and some GM lines have none). Requests around that moment:"));
-      reqs.filter(r => Math.abs(+r.response_timestamp_unix - t) < 20000)
-          .sort((a, b) => Math.abs(+a.response_timestamp_unix - t) - Math.abs(+b.response_timestamp_unix - t))
-          .slice(0, 6).forEach(r => dbody.append(requestBlock(r, false, `${((+r.response_timestamp_unix - t) / 1000).toFixed(1)} s`)));
-    }
-  }
-  const ev = el("details");
-  ev.append(el("summary", null, "event JSON"), pre(JSON.stringify(e, null, 2)));
-  dbody.append(ev);
-  buildToc();
+  $("dtocw").hidden = true;
+  d.classList.remove("withprompt");
+  if (x.noPrompt) { fillPrompt = null; return d.showModal(); } // nothing to show beside it: the greyed 🧾's tooltip says why
+  const fill = fillPrompt = async () => {
+    dbody.replaceChildren(el("div", "note", "Loading request log…"));
+    $("dtocw").hidden = true;
+    const nodes = await promptNodes(x.content || x.description || "", (x.time || 0) * 1000, x);
+    if (fillPrompt !== fill) return; // another popup was opened meanwhile
+    if (nodes.hit) x.lines?.(nodes.hit);
+    dbody.replaceChildren(...nodes, ...(extra ? [extra()] : []));
+    buildToc();
+  };
+  const show = on => { d.classList.toggle("withprompt", on); if (on && !dbody.childNodes.length) fill(); };
+  b.addEventListener("click", () => show(!d.classList.contains("withprompt")));
+  d.showModal();
+  show(!!prompt);
 }
 
-// Table of contents for the open prompt: one dropdown line under the drawer's title. Lists each message
+// 🧾 on a memory, diary or OmniSight card (top line, after its kind): the card's popup (x.popup) with the prompt that wrote it beside it,
+// found the same way as a chat line's. Greyed (markInputs) when no prompt can be found for it.
+function promptBtn(x) {
+  const b = el("span", "picon");
+  b.append(el("span", null, "🧾"));
+  b.title = "Show the prompt that wrote this, beside the card";
+  b.addEventListener("click", ev => { ev.stopPropagation(); openCard(x); }); // not the card's flash of its line
+  return b;
+}
+
+// SkyrimNet's live log (since launch, has token counts) plus, under serve.py, the prompt log files on disk: tens of MB,
+// so fetched once per modlist and again only for something newer than the last fetch (t, in ms). list: null if neither answers.
+let reqLog = null;
+function requestLog(t) {
+  if (reqLog && reqLog.key === mlq() && t < reqLog.at) return reqLog;
+  const sources = [fetch(`${HOST}/logs?api=requests&limit=500`, { cache: "no-store" }).then(r => r.json()).then(d => d.requests || [])];
+  if (LOCAL) sources.push(fetch(`/local/requests?${mlq()}`).then(r => r.json()));
+  const unesc = s => (s || "").replace(/\\n/g, " ").replace(/\\"/g, '"');
+  const list = Promise.allSettled(sources).then(got => {
+    if (!got.some(g => g.status === "fulfilled")) return null;
+    const byId = new Map();
+    for (const g of got) if (g.status === "fulfilled") for (const r of g.value) if (!byId.has(r.request_id)) byId.set(r.request_id, r);
+    for (const r of byId.values()) { // the reply as written, without <tags>, and unescaped from JSON ("\"", "\\n"), searched at once
+      const p = r.response_payload;
+      r.hay = [flat(noBlocks(p)), flat(noTags(p)), flat(unesc(p))].join("\0");
+    }
+    return [...byId.values()];
+  });
+  const log = { key: mlq(), at: Date.now(), list };
+  list.then(l => { if (!l && reqLog === log) reqLog = null; }); // a failed fetch isn't kept: the next look tries again
+  return reqLog = log;
+}
+// The requests whose reply contains `text`, closest to time t (ms) first. Matches the first real line (a memory's markdown title).
+const needleOf = text => flat(stripTags(diaryText(text).split("\n").find(l => l.trim().length > 15) || text)).slice(0, 60);
+function promptHits(reqs, text, t) {
+  const needle = needleOf(text);
+  const off = r => Math.abs(+r.response_timestamp_unix - t);
+  return needle.length > 3 ? reqs.filter(r => r.hay.includes(needle)).sort((a, b) => off(a) - off(b)) : []; // short lines ("Done.") can match several
+}
+// A Narrative Engine plot memory ("X asked me to … so I set off to do it") is filled in by the mod from its director's JSON
+// plan, so its sentence is in no reply. Its prompt is that plan's request: a narrative_engine_* reply from just before the
+// memory (up to 15 s) that names someone the memory names, closest first.
+const PLOT_TAG = "narrative_engine_plot";
+function planHits(reqs, x, t) {
+  if (!(x?.tags || []).includes(PLOT_TAG)) return [];
+  const names = [...new Set((x.content || "").match(/\b[A-Z][a-z']{3,}\b/g) || [])].map(n => n.toLowerCase());
+  const at = r => +r.response_timestamp_unix;
+  return reqs.filter(r => /^narrative_engine/.test(r.use_case || "") && at(r) <= t + 2000 && at(r) >= t - 15000 && names.some(n => r.hay.includes(n)))
+    .sort((a, b) => Math.abs(at(a) - t) - Math.abs(at(b) - t));
+}
+// A card's requests: the replies holding its text, or for a plot memory the plan it came from.
+const cardHits = (reqs, x, t) => { const h = promptHits(reqs, x.content || x.description || "", t); return h.length ? h : planHits(reqs, x, t); };
+// Grey the 🧾 of each card with no prompt to show. Only cards older than the last fetch of the log are judged.
+// A card's popup with its prompt shown, or hidden when it has none (looked up first if markInputs hasn't got to it yet).
+async function openCard(x) {
+  if (x.noPrompt === undefined) {
+    const t = (x.time || 0) * 1000, reqs = await requestLog(t).list;
+    x.noPrompt = reqs && cardHits(reqs, x, t).length ? "" : noPrompt(reqs, t, x);
+  }
+  x.popup(!x.noPrompt);
+}
+async function markInputs() {
+  const log = requestLog(-1), reqs = await log.list; // whatever log there is
+  if (reqLog && log !== reqLog) return; // a newer fetch will mark them
+  for (const x of [...mems, ...diaries, ...omni]) {
+    const b = x.node?.querySelector(".picon"), t = (x.time || 0) * 1000;
+    if (!b || t >= log.at) continue;
+    const hits = reqs ? cardHits(reqs, x, t) : [];
+    x.noPrompt = hits.length ? "" : noPrompt(reqs, t, x);
+    b.classList.toggle("none", !!x.noPrompt);
+    b.title = x.noPrompt ? "No prompt: " + x.noPrompt
+      : (x.tags || []).includes(PLOT_TAG) && !promptHits(reqs, x.content, t).length ? "Show the Narrative Engine plan this was written from, beside the card"
+      : "Show the prompt that wrote this, beside the card";
+  }
+}
+
+// Why there's no prompt for something from time t (ms) whose text no reply in `reqs` contains.
+// x: the card, for memories (a memory tied to no chat event that no reply holds was written by a mod, not by a model).
+function noPrompt(reqs, t, x) {
+  if (!reqs) return "Couldn't reach a request log.";
+  const tags = x?.tags || [];
+  if (x?.kind === "mem" && !(x.events || []).length && !tags.includes(PLOT_TAG))
+    return "Written by a mod's code, not by a model: no reply holds it and it is tied to no chat event" + (tags.length ? ` (tags: ${tags.slice(0, 4).join(", ")}).` : ".");
+  const oldest = reqs.reduce((a, r) => Math.min(a, +r.request_timestamp_unix), Infinity);
+  if (!reqs.some(r => Math.abs(+r.response_timestamp_unix - t) < 20000) && LOCAL && reqs.length && t >= oldest) // a gap: a stray older log survived
+    return "The prompt logs on disk have nothing from around this time (SkyrimNet deletes old ones).";
+  if (!reqs.length || t < oldest) return (LOCAL
+    ? "This is older than the oldest prompt log on disk (SkyrimNet deletes old ones)"
+    : "This is older than SkyrimNet's request log, which only keeps requests since the game was launched. Run serve.py to search the prompt log files too") +
+    (reqs.length ? ` (oldest: ${new Date(oldest).toLocaleString()}).` : ".");
+  if (tags.includes(PLOT_TAG)) return "No Narrative Engine plan naming the same people was found in the 15 s before it.";
+  return "No request's reply contains this text (typed player lines and some GM lines have none).";
+}
+
+// The requests whose reply contains `text` (closest to time t, in ms, first), or a note saying why there are none.
+async function promptNodes(text, t, x) { // x: the card or line (for a plot memory's plan, and the reason there's none)
+  const before = reqLog, log = requestLog(t), reqs = await log.list;
+  if (log !== before) markInputs(); // a fresh log: cards may have gained or lost their prompt
+  if (!reqs) return [el("div", "note", noPrompt(reqs, t, x))];
+  const off = r => +r.response_timestamp_unix - t, text_ = promptHits(reqs, text, t), hits = text_.length || !x ? text_ : planHits(reqs, x, t);
+  const plan = hits.length && !text_.length; // a plot memory: the plan it was filled in from
+  const out = [];
+  out.hit = hits[0]; // the request shown first (the closest match), for lines that came from the same reply
+  if (hits.length) {
+    if (plan) out.push(el("div", "note", "This memory was filled in by Narrative Engine from the plan below, so its sentence is in no reply."));
+    hits.slice(0, plan ? 1 : 3).forEach((r, k) => out.push(requestBlock(r, k === 0,
+      plan ? `plan, ${(off(r) / 1000).toFixed(1)} s` : hits.length > 1 ? `text match, ${(off(r) / 1000).toFixed(1)} s` : "")));
+  } else {
+    const why = noPrompt(reqs, t, x), near = reqs.filter(r => Math.abs(+r.response_timestamp_unix - t) < 20000);
+    out.push(el("div", "note", why));
+    if (why.startsWith("No request's")) {
+      out.push(el("div", "note", "Requests around that moment:"));
+      near.sort((a, b) => Math.abs(+a.response_timestamp_unix - t) - Math.abs(+b.response_timestamp_unix - t))
+          .slice(0, 6).forEach(r => out.push(requestBlock(r, false, `${((+r.response_timestamp_unix - t) / 1000).toFixed(1)} s`)));
+    }
+  }
+  return out;
+}
+
+// A chat line's prompt: the popup cards use, with the line on the left (as it reads in the chat) and its prompt beside it.
+function openPrompt(i) {
+  const e = rows[i].e, d = e.data || {}, who = el("div", "who"), name = d.speaker || d.npc_name || d.player_name;
+  if (name) { const b = el("b", "nm", name); b.style.color = players.has(name) ? PLAYER_COLOR : nameColor(name); who.append(b); }
+  else who.append(badge(e.type));
+  if (e.gameTimeStr) who.append(el("span", null, e.gameTimeStr));
+  if (hasIds() && e.id != null) who.append(el("span", "tid", "#" + e.id));
+  const box = el("div", "plines"), clone = j => { const n = rows[j].node.cloneNode(true); n.classList.remove("sel"); return n; };
+  box.append(clone(i));
+  // One reply often holds a thought and a line of dialogue: once its request is found, show every line of this speaker's box
+  // (nearby, in chat order) whose text is in that reply. Pairs in a row each have their own reply, so each keeps its own.
+  const top = n => { while (n.parentElement && n.parentElement !== feed) n = n.parentElement; return n; };
+  const lines = hit => {
+    const grp = top(rows[i].node), js = [];
+    for (let j = Math.max(0, i - 12); j <= Math.min(rows.length - 1, i + 12); j++) {
+      if (j === i) { js.push(j); continue; }
+      const n = needleOf(eventText(rows[j].e));
+      if (top(rows[j].node) === grp && n.length > 3 && hit.hay.includes(n)) js.push(j);
+    }
+    box.replaceChildren(...js.map(clone));
+    for (const j of js) rows[j].node.classList.add("sel");
+  };
+  showShot({ content: eventText(e), time: e.localTime, lines }, who, [box], true, () => {
+    const ev = el("details");
+    ev.append(el("summary", null, "event JSON"), pre(JSON.stringify(e, null, 2)));
+    return ev;
+  }, "line");
+  rows[i].node.classList.add("sel"); // until the popup closes
+}
+$("shot").addEventListener("close", () => { for (const n of document.querySelectorAll("main .sel")) n.classList.remove("sel"); });
+
+// Table of contents for the open prompt: one dropdown line above the popup's prompt column. Lists each message
 // (SYSTEM, USER, RESPONSE…) and its markdown headings, indented by level, from the requests that are expanded.
 // It follows your scrolling; picking an entry jumps there.
 let tocTargets = [];
@@ -775,29 +1004,43 @@ $("dtoc").addEventListener("change", ev => {
   if (n) dbody.scrollTop += n.getBoundingClientRect().top - dbody.getBoundingClientRect().top - 4;
 });
 dbody.addEventListener("scroll", () => requestAnimationFrame(tocSpy));
-dbody.addEventListener("toggle", () => { if (openIdx >= 0) buildToc(); }, true); // a request expanded or collapsed
+dbody.addEventListener("toggle", () => { if ($("shot").open) buildToc(); }, true); // a request expanded or collapsed
 
-function closeDrawer() {
-  const sel = document.querySelector("main .sel");
-  openIdx = -1;
-  drawer.classList.remove("open");
-  layout();
-  sel?.classList.remove("sel");
-  sel?.scrollIntoView({ block: "center" }); // stay on the same line after the chat widens again
-}
 feed.addEventListener("click", ev => {
   const n = ev.target.closest("[data-i]:not(.divider)");
   if (n && !getSelection().toString()) openPrompt(+n.dataset.i); // don't hijack text selection
 });
-$("dclose").addEventListener("click", closeDrawer);
 $("mclose").addEventListener("click", () => { const b = document.querySelector('[data-toggle="side"]'); b.checked = false; b.dispatchEvent(new Event("change")); });
 
 // ---- Memories (serve.py reads them from the playthrough database) ----
 // Two columns whenever the right side has something: the open prompt, or the memories.
-// 📍 Line up: each card at the page height of the chat line it belongs to, pushed down where cards crowd. The column
+// 🔄️ Line up: each card at the page height of the chat line it belongs to, pushed down where cards crowd. The column
 // scrolls with the page through pairs (line y, card y): one to one where cards have room, faster through crowded
 // stretches, so the card for the line at the top of the chat is always beside it.
 const aligned = () => !document.body.classList.contains("hide-align");
+// ⏫ ⏬ (with 🔄️ on): scroll the chat to the previous or next card's 📌 marker (or its line, with markers off), bringing it
+// a third of the way down the chat, where its card lines up beside it. Hidden cards are skipped. Pressed again while the
+// page is still gliding, it steps on from where that glide ends.
+let stepTo = null; // page y the last step is gliding to
+function stepCard(dir) {
+  if (!aligned()) return;
+  const bar = $("cbar").getBoundingClientRect().bottom, ref = bar + (innerHeight - bar) / 3;
+  const base = stepTo ?? scrollY, at = base + ref; // page y of the reference line, once the glide in progress ends
+  const cards = side.filter(x => x.node.offsetParent).map(x => [x, (x.mark?.offsetParent ? x.mark : rows[x.at]?.node)?.getBoundingClientRect().top])
+    .filter(([, y]) => y != null).map(([x, y]) => [x, y + scrollY]) // [card, its marker's page y]
+    .filter(([, y]) => dir > 0 ? y > at + 4 : y < at - 4);
+  if (!cards.length) return;
+  const [x, y] = cards.reduce((a, b) => (dir > 0 ? b[1] < a[1] : b[1] > a[1]) ? b : a);
+  stepTo = Math.max(0, Math.min(y - ref, document.documentElement.scrollHeight - innerHeight));
+  scrollTo({ top: stepTo, behavior: "smooth" });
+  flashCard(x); // outline it, as clicking its 📌 does
+}
+addEventListener("scrollend", () => { stepTo = null; });
+for (const [id, dir] of [["mprev", -1], ["mnext", 1]]) $(id).addEventListener("click", e => {
+  if (!aligned()) return;
+  e.currentTarget.animate([{ boxShadow: "0 0 0 1.5px var(--fg)" }, { boxShadow: "0 0 0 1.5px transparent" }], 450); // flash its border
+  stepCard(dir);
+});
 let alignPts = [], alignKey = "", alignShort = 0;
 const endMark = el("div", "endmark"); // after the last line: "Now" (live) or the end of a playthrough or day // alignShort: how far the last cards are below the column at the page's end
 const alignSpacer = el("div"); // room under the last card; padding on the column would make the column itself taller // [line's page y, card's y in the column], first card of each line, line y increasing
@@ -821,34 +1064,52 @@ function alignSide() {
     if (!alignPts.length || want[k] > alignPts.at(-1)[0]) alignPts.push([want[k], top]);
     end = top + hs[k];
   });
+  alignPts = easeAlign(alignPts);
   alignSpacer.style.height = Math.max(30, document.documentElement.scrollHeight - end + innerHeight) + "px";
   // At the bottom of the page the column stops where alignScroll puts it. If the last cards are still below its edge,
   // updatePosition makes up the difference over the last screen of scrolling (cards run a little ahead of their lines there).
-  const last = alignPts.at(-1), vp = $("cbar").getBoundingClientRect().bottom;
-  const refMax = document.documentElement.scrollHeight - innerHeight + vp;
-  const shown = last[1] + refMax - last[0] - (vp - mb.getBoundingClientRect().top) + mb.clientHeight;
+  const vp = $("cbar").getBoundingClientRect().bottom, refMax = document.documentElement.scrollHeight - innerHeight + vp;
+  const shown = alignY(refMax) - (vp - mb.getBoundingClientRect().top) + mb.clientHeight; // the last lines' cards may still be on their way
   alignShort = Math.max(0, end + 12 - shown);
   alignKey = sizes(); // measured again when either changes (fonts loading, new lines, toggles)
 }
+// Where cards bunch up (six markers in 150px of chat, 2000px of cards), keeping each card beside its marker would
+// scroll the column many times faster than the chat. Cap that at ALIGN_MAX_RATE: the column starts moving earlier and
+// catches up later, so in a bunch each card sits a little ahead of or behind its marker instead of flying past.
+// Each point keeps its column position; its chat position moves to halfway between the earliest and latest it could be.
+const ALIGN_MAX_RATE = 2.5;
+function easeAlign(P) {
+  const n = P.length, late = P.map(p => p[0]), early = P.map(p => p[0]);
+  for (let k = 1; k < n; k++) late[k] = Math.max(late[k], late[k - 1] + (P[k][1] - P[k - 1][1]) / ALIGN_MAX_RATE);
+  for (let k = n - 2; k >= 0; k--) early[k] = Math.min(early[k], early[k + 1] - (P[k + 1][1] - P[k][1]) / ALIGN_MAX_RATE);
+  return P.map((p, k) => [(late[k] + early[k]) / 2, p[1]]);
+}
 function alignScroll(mb) {
-  const P = alignPts, vp = $("cbar").getBoundingClientRect().bottom, ref = Math.round(scrollY + vp); // ref: the page y at the top of the chat
-  if (!P.length) return 0;
+  const vp = $("cbar").getBoundingClientRect().bottom; // the page y at the top of the chat -> the column y at the top of the chat
+  return alignPts.length ? alignY(Math.round(scrollY + vp)) - (vp - mb.getBoundingClientRect().top) : 0;
+}
+function alignY(ref) { // page y at the top of the chat -> the column y beside it
+  const P = alignPts;
   let k = P.length - 1;
   while (k > 0 && P[k][0] > ref) k--;
-  const y = ref < P[0][0] || k === P.length - 1 ? P[k][1] + ref - P[k][0] // before the first or after the last: one to one
+  return ref < P[0][0] || k === P.length - 1 ? P[k][1] + ref - P[k][0] // before the first or after the last: one to one
     : P[k][1] + (ref - P[k][0]) / (P[k + 1][0] - P[k][0]) * (P[k + 1][1] - P[k][1]);
-  return y - (vp - mb.getBoundingClientRect().top);
 }
 $("mbody").addEventListener("wheel", ev => { if (!aligned()) return; ev.preventDefault(); scrollBy(0, ev.deltaY); }, { passive: false });
-addEventListener("resize", () => { alignSide(); updatePosition(); });
+$("mbody").addEventListener("load", () => { if (aligned()) updatePosition(); }, true); // an OmniSight picture arrived: its card grew, so line the column up again
+addEventListener("resize", () => { layout(); updatePosition(); });
 
 function layout() {
   const top = document.querySelector("header").getBoundingClientRect().bottom + "px";
   const memOn = !document.body.classList.contains("hide-side");
   $("mem").classList.toggle("open", memOn);
-  for (const p of [$("mem"), drawer]) p.style.top = top;
+  $("mem").style.top = top;
   $("cbar").style.top = document.querySelector("header").getBoundingClientRect().height + "px";
-  document.body.classList.toggle("split", drawer.classList.contains("open") || memOn);
+  document.body.classList.toggle("split", memOn);
+  // 📌 markers' dashed lines run on to the open right-hand panel (▸ touching it); without one they end inside the chat
+  const panel = memOn ? $("mem") : null;
+  const edge = feed.getBoundingClientRect().right - parseFloat(getComputedStyle(feed).paddingRight); // where a marker ends with no margin
+  document.body.style.setProperty("--markreach", (panel ? Math.max(0, panel.getBoundingClientRect().left - edge - 1) : -10) + "px");
   alignSide();
 }
 
@@ -869,18 +1130,25 @@ async function loadMemories(g) {
     const at = conv ? -1 : Math.max(-1, ...(m.events || []).map(id => byId.get(id) ?? -1));
     return { ...m, at: at < 0 ? byTime(m.time) : at };
   };
-  mems = list.map(anchor).sort((a, b) => a.at - b.at || a.time - b.time);
+  mems = list.map(m => ({ ...anchor(m), memType: m.kind, kind: "mem" })).sort((a, b) => a.at - b.at || a.time - b.time);
   diaries = dl.map(m => ({ ...anchor(m), kind: "diary" }));
+  // SkyrimNet also stores each diary entry as a memory ("Diary Entry: ## Title…"): with 📔 loaded, keep only the diary card
+  const head = t => flat(diaryText(t)).slice(0, 80), written = new Set(diaries.map(d => head(d.content)));
+  mems = mems.filter(m => diaryText(m.content) === m.content || !head(m.content) || !written.has(head(m.content)));
   renderSide();
+  markInputs();
 }
 
-function cardClick(card, at) {
+// Clicking a card shows where it belongs in the chat: its 📌 marker (or, with none, its line) lights up, as a marker's
+// card does when you click the marker. The chat scrolls only when that is off screen, so a click doesn't throw the page around.
+function cardClick(card, x) {
   card.addEventListener("click", () => {
-    const n = rows[at]?.node;
+    if (getSelection().toString()) return; // selecting text
+    const n = x.mark?.offsetParent ? x.mark : rows[x.at]?.node;
     if (!n) return;
-    document.querySelector("main .sel")?.classList.remove("sel");
-    n.classList.add("sel");
-    n.scrollIntoView({ block: "center" });
+    const r = n.getBoundingClientRect();
+    if (r.top < $("cbar").getBoundingClientRect().bottom || r.bottom > innerHeight - 35) n.scrollIntoView({ block: "center" });
+    flash(n); flash(card); // both ends of the pair light up
   });
 }
 
@@ -891,9 +1159,9 @@ function eventCard(x) {
   card.style.borderColor = `hsl(${h} 30% 30%)`;
   const who = el("div", "who"), src = el("b", null, g?.label || x.kind);
   src.style.color = `hsl(${h} 55% 68%)`;
-  who.append(src, el("span", null, e.gameTimeStr || ""), rtSpan(e.localTime, "rt", "") || "", el("span", "kind", e.type.replace(/^(intel|political)_/, "").replace(/_/g, " ")));
+  who.append(src, el("span", null, e.gameTimeStr || ""), rtSpan(e.localTime, "rt", "") || "", el("span", "kind", evKind(e.type, g)));
   card.append(who, colourNames(plainText(e).replace(/\s*\[PE event [^\]]*\]\s*$/, ""))); // drop the political engine's debug suffix
-  cardClick(card, x.at);
+  cardClick(card, x);
   return card;
 }
 
@@ -930,41 +1198,55 @@ function colourNames(text, tag = "div") {
 // OmniSight: a screenshot SkyrimNet took of someone or somewhere, with its AI description. Click the picture for full size.
 function omniCard(x) {
   const h = 280, card = el("div", "memcard omni");
+  x.popup = prompt => { // the picture large with the whole description
+    const body = [];
+    if (x.image) { const big = el("img"); big.src = `/local/shot?${mlq()}&name=` + encodeURIComponent(x.image); big.alt = x.name || ""; body.push(big); }
+    body.push(colourNames(x.description || ""));
+    if (x.location) body.push(el("div", "foot", x.location));
+    showShot(x, who, body, prompt);
+  };
+  const popup = ev => { // the card's 📌 flash doesn't fire
+    if (getSelection().toString()) return;
+    ev.stopPropagation();
+    x.popup();
+  };
   card.style.background = `hsl(${h} 20% 18%)`;
   card.style.borderColor = `hsl(${h} 25% 32%)`;
   const who = el("div", "who"), name = el("b", null, "📷 " + (x.name || "?"));
   name.style.color = x.subject === "actor" ? nameColor(x.name) : `hsl(${h} 55% 72%)`;
-  who.append(name, el("span", null, x.gameTimeStr || ""), rtSpan(x.time, "rt", "") || "", el("span", "kind", x.subject || ""));
+  who.append(name, el("span", null, x.gameTimeStr || ""), rtSpan(x.time, "rt", "") || "", el("span", "kind", x.subject || ""), promptBtn(x));
   card.append(who);
   if (x.image) {
     const a = el("a"), img = el("img");
     a.href = img.src = `/local/shot?${mlq()}&name=` + encodeURIComponent(x.image);
     img.loading = "lazy";
     img.alt = x.name || "";
-    a.addEventListener("click", ev => { // a popup with the picture and its description; middle-click still opens a tab
-      ev.preventDefault(); ev.stopPropagation(); // the card's jump-to-line doesn't fire
-      const d = $("shot"), big = el("img");
-      big.src = a.href; big.alt = img.alt;
-      d.replaceChildren(who.cloneNode(true), big, colourNames(x.description || ""));
-      if (x.location) d.append(el("div", "foot", x.location));
-      d.showModal();
-    });
+    a.addEventListener("click", ev => { ev.preventDefault(); popup(ev); }); // middle-click still opens a tab
     a.append(img);
     card.append(a);
   }
-  card.append(colourNames(x.description || ""));
+  const text = colourNames(x.description || "");
+  text.title = "Click to read the whole description";
+  text.addEventListener("click", popup);
+  card.append(text);
   if (x.location && x.location !== x.name) card.append(el("div", "foot", x.location));
-  cardClick(card, x.at);
+  cardClick(card, x);
   return card;
 }
 
+// Light up a card (outline) or chat line (backdrop) at once, hold it a moment, then fade it out. Clicked again, it restarts.
+function flash(n) {
+  const look = n.classList.contains("memcard") ? { boxShadow: "0 0 0 2px var(--fg)" }
+    : { background: "#ffffff1c", borderRadius: "6px", boxShadow: "0 0 0 1px #ffffff55" };
+  n.getAnimations().forEach(a => a.id === "flash" && a.cancel());
+  n.animate([look, { ...look, offset: .3, easing: "ease-in" }], { duration: 1400, id: "flash" }); // fades to its own style
+}
 // Bring a context-column card into view and outline it for a moment.
 function flashCard(x) {
   const mb = $("mbody"), c = x?.node;
   if (!c || document.body.classList.contains("hide-side")) return;
   if (!aligned()) mb.scrollTop = c.offsetTop - mb.clientHeight / 2 + c.offsetHeight / 2;
-  c.classList.add("flash");
-  setTimeout(() => c.classList.remove("flash"), 1200);
+  flash(c);
 }
 
 // 📌 Markers in the chat after the line each memory, diary entry or screenshot belongs to. Rebuilt with the column.
@@ -976,22 +1258,34 @@ function placeMarks() {
   const after = new Map(); // top-level chat node -> last marker placed after it, so markers keep the column's order
   for (const x of side) {
     x.mark = null;
-    const kind = x.kind === "omni" || x.kind === "diary" ? x.kind : x.e ? "" : "mem";
+    const kind = x.kind; // mem, diary, omni, or a 🧩 group's key (x.e: its event)
     const row = rows[x.at]?.node;
-    if (!kind || !row || (kind === "diary" && logged.has(head(x.content)))) continue; // event cards were taken out of the chat; they need no marker
+    if (!row || (kind === "diary" && logged.has(head(x.content)))) continue;
     let top = row;
     while (top.parentElement && top.parentElement !== feed) top = top.parentElement; // after the speaker's box, not inside it
-    const who = kind === "omni" ? x.name : x.actor;
-    const m = el("div", "mark sm " + kind, { mem: "🧠 ", diary: "📔 ", omni: "📷 " }[kind]);
-    const nm = el("span", "nm", who || "?");
-    nm.style.color = kind === "omni" && x.subject !== "actor" ? "" : players.has(who) ? PLAYER_COLOR : nameColor(who);
-    m.append(nm, { mem: " memory created", diary: " diary written", omni: " captured" }[kind], rtSpan(x.time, "rt rtl", "") || "");
-    m.addEventListener("click", ev => { ev.stopPropagation(); flashCard(x); }); // not the prompt drawer
+    let m;
+    if (x.e) { // "🧩 IntelEngine · follower recruited", in the group's colour
+      const g = GROUPS.find(g => g.key === kind), src = el("span", "nm", g?.label || kind);
+      src.style.color = `hsl(${g?.hue ?? 0} 55% 68%)`;
+      m = el("div", "mark sm ev " + kind, "🧩 ");
+      m.append(src, " · " + evKind(x.e.type, g), rtSpan(x.e.localTime, "rt rtl", "") || "");
+    } else {
+      const who = kind === "omni" ? x.name : x.actor;
+      m = el("div", "mark sm " + kind, { mem: "🧠 ", diary: "📔 ", omni: "📷 " }[kind]);
+      const nm = el("span", "nm", who || "?");
+      nm.style.color = kind === "omni" && x.subject !== "actor" ? "" : players.has(who) ? PLAYER_COLOR : nameColor(who);
+      m.append(nm, { mem: " memory created", diary: " diary written", omni: " captured" }[kind], rtSpan(x.time, "rt rtl", "") || "");
+    }
+    m.addEventListener("click", ev => { ev.stopPropagation(); flashCard(x); }); // not the prompt popup
     (after.get(top) || top).after(m);
     after.set(top, m);
-    x.mark = m; // 📍 lines the card up with this, not its line inside the speaker's box
+    x.mark = m; // 🔄️ lines the card up with this, not its line inside the speaker's box
   }
   $("nmark").textContent = feed.querySelectorAll(".mark").length;
+  for (const n of document.querySelectorAll("#marks .n[data-mark]")) { // 📌 lists only the kinds this view has
+    n.textContent = feed.querySelectorAll(".mark." + n.dataset.mark).length;
+    n.parentElement.hidden = n.textContent === "0";
+  }
 }
 
 // A diary entry: what an NPC wrote about a stretch of events, rendered as markdown.
@@ -1003,15 +1297,24 @@ function diaryCard(x) {
   name.style.color = nameColor(x.actor);
   who.append(name);
   if (x.emotion) who.append(el("span", null, x.emotion));
-  who.append(el("span", "kind", "diary"));
+  who.append(el("span", "kind", "diary"), promptBtn(x));
   const foot = el("div", "foot", x.location || "");
   foot.append(rtSpan(x.time, "rt", x.location ? " · " : "") || "");
-  card.append(who, md(x.content || ""), foot);
-  cardClick(card, x.at);
+  const text = md(x.content || "");
+  text.title = "Click to read the whole entry";
+  x.popup = prompt => showShot(x, who, [md(x.content || ""), foot.cloneNode(true)], prompt); // the whole entry
+  text.addEventListener("click", ev => { // the header and footer still flash its line
+    if (getSelection().toString()) return;
+    ev.stopPropagation();
+    x.popup();
+  });
+  card.append(who, text, foot);
+  cardClick(card, x);
   return card;
 }
 
-// Column header: 🧠, one toggle per config group, 📷. Counts are filled in by renderSide().
+// Column header: 🧠, 📔, 📷, then the 🧩 menu of config groups (other mods' events). Counts are filled in by renderSide(),
+// which also leaves out of 🧩 the groups with no events in this view.
 function buildColumnToggles() {
   const t = $("mtitle"), css = [];
   const add = (key, text, title, txt, shown) => {
@@ -1025,11 +1328,44 @@ function buildColumnToggles() {
     css.push(`body.hide-${key} .memcard.${key}`, `body.hide-${key} .mark.${key}`); // the card and its 📌 marker
   };
   if (SHOW_MEM) add("mem", "🧠", "Show memories", false);
-  for (const g of GROUPS) add(g.key, g.label, `Show ${g.label} events (${g.types.source})`, !/^\p{Extended_Pictographic}/u.test(g.label), g.shown);
   if (SHOW_DIARY) add("diary", "📔", "Show diary entries", false);
   if (SHOW_OMNI) add("omni", "📷", "Show OmniSight screenshots", false);
+  const menu = el("details", "menu pick"), sum = el("summary"), panel = el("div", "panel"), all = el("label", "mlwrap"), box = el("input");
+  menu.id = "modev";
+  sum.title = "Other mods' events (config.yaml column: groups, and any event type the page has no line style for): pick which to show";
+  sum.append("🧩 ", el("span", "n", "0"));
+  box.type = "checkbox"; box.checked = true; box.dataset.toggle = "modev";
+  all.append(box, " all mod events");
+  panel.append(all, el("div", "none", "None in this view")); // 🧩 stays in the header even then
+  menu.append(sum, panel);
+  t.append(menu);
+  wireToggle(box);
+  for (const g of GROUPS) groupToggles(g);
   const st = el("style");
-  st.textContent = css.join(", ") + " { display:none; }";
+  st.textContent = css.join(", ") + " { display:none !important; }"; // beats layout rules such as the short view's display:grid
+  document.head.append(st);
+}
+
+// A 🧩 group's entries in the 🧩 and 📌 menus, and the rules hiding its cards and markers.
+function groupToggles(g) {
+  const l = el("label"), b = el("input"), n = el("span", "n", "0");
+  b.type = "checkbox"; b.checked = g.shown !== false; b.dataset.toggle = g.key;
+  n.dataset.key = g.key;
+  l.title = g.prefix ? `${g.prefix}_… events: a type this page has no line style for (likely another mod's), grouped by itself.
+To rename or recolour it, add a column: group in config.yaml.`
+    : `Events matching ${g.types.source} (config.yaml column: group)`;
+  l.append(b, ` ${g.label} `, n);
+  $("modev").querySelector(".panel").append(l);
+  wireToggle(b);
+  const ml = el("label"), mb = el("input"), mn = el("span", "n", "0"); // its own entry in the 📌 menu
+  mb.type = "checkbox"; mb.checked = true; mb.dataset.toggle = "mark-" + g.key;
+  mn.dataset.mark = g.key;
+  ml.append(mb, ` 🧩 ${g.label} `, mn);
+  document.querySelector("#marks .panel").append(ml);
+  wireToggle(mb);
+  const st = el("style"), k = g.key; // the cards, and with them their 📌 markers; !important beats layout rules
+  st.textContent = `body.hide-${k} .memcard.${k}, body.hide-modev .memcard.${k}, body.hide-${k} .mark.${k}, body.hide-modev .mark.${k},
+    body.hide-mark-${k} .mark.${k} { display:none !important; }`;
   document.head.append(st);
 }
 
@@ -1046,13 +1382,22 @@ function renderSide() {
     who.append(name);
     if (m.emotion) who.append(el("span", null, m.emotion));
     if (m.importance != null) who.append(el("span", null, "★ " + (+m.importance).toFixed(1)));
-    who.append(el("span", "kind", (m.kind || "").toLowerCase()));
-    card.append(who, colourNames(m.content));
+    who.append(el("span", "kind", (m.memType || "").toLowerCase()), promptBtn(m));
+    const text = () => /\n/.test(m.content || "") // a diary written into memory: markdown ("Diary Entry: ## Title\n\n…")
+      ? md(m.content.replace(/^([^#\n]{1,40}):\s*(#+ )/, "$2$1: ")) : colourNames(m.content);
     const foot = el("div", "foot", m.location || "");
     foot.append(rtSpan(m.time, "rt", m.location ? " · " : "") || "");
-    card.append(foot);
+    const body = text();
+    body.title = "Click to open it with the prompt that wrote it";
+    body.addEventListener("click", ev => { // as a chat line does; the header and footer still flash its line
+      if (getSelection().toString()) return;
+      ev.stopPropagation();
+      openCard(m);
+    });
+    card.append(who, body, foot);
+    m.popup = prompt => showShot(m, who, [text(), foot.cloneNode(true)], prompt, null, "stack"); // short: above its prompt
     card.title = (m.tags || []).join(", ");
-    cardClick(card, m.at);
+    cardClick(card, m);
     m.node = card;
   }
   for (const x of sideEv) x.node = eventCard(x);
@@ -1062,7 +1407,13 @@ function renderSide() {
   mb.append(...side.map(x => x.node));
   placeMarks();
   if (!side.length) mb.append(el("div", "note", LOCAL ? "No memories or events yet. Background knowledge entries aren't shown." : "Memories are read by serve.py: open http://localhost:8791/"));
-  for (const c of document.querySelectorAll("#mtitle .n")) c.textContent = side.filter(x => (x.kind === "omni" || x.kind === "diary" || x.e ? x.kind : "mem") === c.dataset.key).length;
+  for (const c of document.querySelectorAll("#mtitle .n[data-key]")) c.textContent = side.filter(x => x.kind === c.dataset.key).length;
+  if ($("modev")) { // 🧩 lists only the groups this view has events for
+    let total = 0;
+    for (const c of $("modev").querySelectorAll(".n[data-key]")) { total += +c.textContent; c.parentElement.hidden = c.textContent === "0"; }
+    $("modev").querySelector("summary .n").textContent = total;
+    $("modev").querySelector(".none").hidden = total > 0;
+  }
   const atEnd = innerHeight + scrollY >= document.body.scrollHeight - 80;
   layout(); // the chat may have just narrowed, making the page taller
   if (atEnd) scrollTo(0, document.body.scrollHeight);
@@ -1070,8 +1421,7 @@ function renderSide() {
   updatePosition();
 }
 $("dsrc").checked = !MD;
-$("dsrc").addEventListener("change", () => { MD = !$("dsrc").checked; localStorage["snev.md"] = MD ? "1" : "0"; if (rows[openIdx]) openPrompt(openIdx); });
-addEventListener("keydown", ev => { if (ev.key === "Escape" && !$("shot").open) closeDrawer(); }); // Esc on the picture closes only it
+$("dsrc").addEventListener("change", () => { MD = !$("dsrc").checked; localStorage["snev.md"] = MD ? "1" : "0"; if (fillPrompt) { dbody.replaceChildren(); if ($("shot").classList.contains("withprompt")) fillPrompt(); } });
 $("shot").addEventListener("click", ev => { if (ev.target === ev.currentTarget || ev.target.tagName === "IMG") $("shot").close(); }); // outside, or the picture
 
 // ---- Polling ----
@@ -1086,7 +1436,8 @@ function ingest(events) {
   const fresh = events.filter(e => !seen.has(e.id)).sort((a, b) => a.id - b.id);
   if (!fresh.length) return false;
   const first = maxId < 0;
-  for (const e of fresh) if ((e.type || "").startsWith("dialogue_player")) players.add(e.data?.player_name || e.data?.speaker); // before rendering, so earlier lines know too
+  for (const e of fresh) if (/^(dialogue_player|player_thoughts$)/.test(e.type || "")) // before rendering, so earlier lines know too
+    for (const n of [e.data?.player_name, e.data?.speaker]) if (n) players.add(n); // both, as lines look them up either way
   names = nameMatcher(fresh); // 🎨 in the chat: names seen so far, this batch included
   for (const e of fresh) {
     seen.add(e.id); maxId = Math.max(maxId, e.id);
@@ -1104,6 +1455,8 @@ function ingest(events) {
   endMark.replaceChildren(label);
   if (rows.length) feed.append(endMark); // moved back to the end after new lines
   renderScrubber();
+  $("ndialog").textContent = feed.querySelectorAll(".msg:not(.bg)").length;
+  $("nbg").textContent = feed.querySelectorAll(".msg.bg").length;
   $("nthought").textContent = feed.querySelectorAll(".thought").length;
   $("nnarr").textContent = feed.querySelectorAll(".narr").length;
   $("nact").textContent = feed.querySelectorAll(".act").length;
@@ -1207,13 +1560,13 @@ function saveView() {
   if (archive) h.set("view", archive);
   history.replaceState(null, "", String(h) ? "#" + h : location.pathname + location.search);
 }
-$("pt")?.addEventListener("change", ev => { archive = ev.target.value; saveView(); closeDrawer(); start(); });
+$("pt")?.addEventListener("change", ev => { archive = ev.target.value; saveView(); $("shot").close(); start(); });
 $("ml")?.addEventListener("change", async ev => {
   ML = ev.target.value;
   const list = await fillHistory();
   archive = ML === LIVE_ML ? "" : list[0]?.db || ""; // the newest playthrough of a modlist that isn't running
   $("pt").value = archive;
-  saveView(); closeDrawer(); start();
+  saveView(); $("shot").close(); start();
   menu.open = false;
 });
 
@@ -1223,8 +1576,9 @@ const hide = [];
 function parseConfig(text) {
   const scalar = v => {
     v = v.trim();
-    if (/^'.*'$/.test(v)) return v.slice(1, -1).replace(/''/g, "'");
-    if (/^".*"$/.test(v)) return v.slice(1, -1);
+    let q; // quoted, then maybe a " # comment"
+    if ((q = v.match(/^'((?:[^']|'')*)'(?:\s+#.*)?$/))) return q[1].replace(/''/g, "'");
+    if ((q = v.match(/^"([^"]*)"(?:\s+#.*)?$/))) return q[1];
     v = v.replace(/\s+#.*$/, "");
     if (/^(yes|true|on)$/i.test(v)) return true;
     if (/^(no|false|off)$/i.test(v)) return false;

@@ -376,8 +376,12 @@ MEM_SQL = """select m.id, m.memory_type,
                     m.content, m.location, m.creation_time,
                     m.related_event_ids, m.emotion, m.importance_score, m.tags
              from memories m left join uuid_mappings u on u.uuid = m.actor_uuid
-             where m.memory_type != 'KNOWLEDGE' and m.creation_time between ? and ?
+             where m.memory_type != 'KNOWLEDGE' and m.creation_time between ? and ?{packs}
              order by m.creation_time"""  # KNOWLEDGE rows are world-knowledge entries, not memories
+# On a save's first load SkyrimNet copies every knowledge pack (overlay/knowledge/) into its memories table, marked by
+# pack_id. Most are typed KNOWLEDGE, but some (disease-awareness's "I've got the Rattles") are EXPERIENCE: skip them all.
+# Older databases have no pack_id column, and asking for it would fail the whole query.
+NO_PACKS = " and m.pack_id is null"
 
 
 def _json(s, default):
@@ -390,7 +394,8 @@ def _json(s, default):
 def memories_in(path, start=0, end=1e12):
     try:
         with ro(path) as c:
-            rows = c.execute(MEM_SQL, (start, end)).fetchall()
+            packs = NO_PACKS if any(r[1] == "pack_id" for r in c.execute("pragma table_info(memories)")) else ""
+            rows = c.execute(MEM_SQL.format(packs=packs), (start, end)).fetchall()
     except sqlite3.Error:
         return []  # older databases may lack the table or columns
     return [{"id": i, "kind": k, "actor": a, "content": ct, "location": loc, "time": t, "events": _json(ev, []),
@@ -584,6 +589,18 @@ if __name__ == "__main__":
         print(f"conversation log: {sum(d['lines'] for d in days)} lines over {len(days)} days, newest {days[0]}")
         m = memories(SN, "live")
         assert all(x["kind"] != "KNOWLEDGE" for x in m)
+        packed = old = 0  # knowledge-pack rows never show as memories; databases from before pack_id still show theirs
+        for q in p:
+            path = os.path.join(SN, "data", q["db"])
+            with ro(path) as c:
+                cols = [r[1] for r in c.execute("pragma table_info(memories)")]
+                pack_ids = {r[0] for r in c.execute("select id from memories where pack_id is not null")} if "pack_id" in cols else set()
+            shown = memories_in(path)
+            assert not pack_ids & {x["id"] for x in shown}, q["db"]
+            packed += bool(pack_ids)
+            old += "pack_id" not in cols and bool(cols) and bool(shown)
+        assert old, "no database from before pack_id kept its memories"
+        print(f"knowledge packs: hidden in {packed} playthroughs; {old} older ones without pack_id still show memories")
         print(f"memories: {len(m)} in the newest playthrough, {len(memories(SN, day=days[0]['day']))} formed on {days[0]['day']}")
         dl = [x for q in p[:40] for x in diary(SN, q["db"])]
         assert all(x["content"] and isinstance(x["events"], list) for x in dl)

@@ -38,7 +38,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 
 ## The page
 
-**Top bar:** where you are (follows your scrolling), the **History** picker, and **☰**.
+**Top bar:** where you are (follows your scrolling), 🎨 coloured names, 🌓 timeline by game time (space the timeline by game time instead of an even share per event, so a sleep or a long journey takes room; off at first), 🗂️ the context column, the **History** picker, and **☰**.
 
 - Modlist (in ☰, shown when there is more than one): every SkyrimNet folder the helper finds when it starts (restart it after adding one): the folders listed under `skyrimnet:` in `config.yaml`, then every MO2 instance's overwrite folder (a `ModOrganizer.ini` up to two folders deep on any local drive, or a global instance in `%LOCALAPPDATA%\ModOrganizer`), then the game's own `Data` folder (Vortex, manual installs), then any `<drive>:\Modlists\*\overwrite` folder. Each is named after its MO2 instance, mod or game folder; folders that share a name all get their parent folder added, such as *ADT (Modlists)*. ● marks the one being played, or played last: the page starts there, and *Live* always reads it. Picking another modlist opens its newest playthrough. The address keeps the modlist and view (`#ml=…&view=…`), so a refresh or a bookmark opens them again.
 
@@ -80,7 +80,8 @@ Opening `index.html` straight from disk also works for the live game, but withou
 
 **Timeline** (bottom)
 
-- One block per stay in a cell. Hover a block for its time span and real time.
+- One block per stay in a cell, as wide as its share of the events, or with 🌓 timeline by game time, its share of the time. There, an hour or more with nothing happening (sleeping, waiting, fast travel) is greyed out. Hover a block for its time span and real time.
+- A wave over the blocks follows the sun, glowing like the sky at that hour (gold at noon, orange at sunrise and sunset, nothing at night): high at noon, flat at midnight. Spaced by event it bends with how busy each hour was; by game time it is an even wave. The conversation log has only real time, so it has no wave and is spaced by real time.
 - The cursor shows the date and time of what you're reading. Coloured ticks mark memories.
 - Click or drag to jump.
 
@@ -110,6 +111,8 @@ Narrative Engine plot memories ("Nenya asked me to keep watch on Narri…", "I s
 - Show empty responses: dialogue lines SkyrimNet stored with no text ("Lucia said nothing")
 - Show real-world time: the real date and time on every chat line, marker and card, beside the game time (on at first)
 - Show line bubbles: a filled, rounded box around each spoken line (on at first; off: the text alone, inside its speaker's box, which then takes the line bubbles' fill while its 💭 thoughts go dark)
+- Text size − / +: make all the page's text smaller or larger, 70% to 160%
+- Sky wave − / +: how strongly the timeline's day and night wave shows, 0% (hidden) to 100%
 
 Toggles are remembered by the browser.
 

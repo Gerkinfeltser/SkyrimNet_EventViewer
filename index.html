@@ -8,92 +8,97 @@
 <style>
   :root { --dw:min(720px,55vw); --bg:#14161a; --panel:#1d2026; --fg:#e4e1d8; --muted:#8a8f98; --line:#2a2e36; --you:#2f4a6b; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.45 "Segoe UI",system-ui,sans-serif; }
+  :root { --fs:1; --sky:.7; } /* ☰ text size, sky wave */
+  body { margin:0; background:var(--bg); color:var(--fg); font:calc(15px * var(--fs))/1.45 "Segoe UI",system-ui,sans-serif; }
 
   header { position:sticky; top:0; z-index:5; display:flex; gap:12px; align-items:center;
            padding:8px 14px; background:var(--panel); border-bottom:1px solid var(--line); }
-  header .where { flex:1; min-width:0; color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  header .where { flex:1; min-width:0; color:var(--muted); font-size:calc(13px * var(--fs)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   header .where b { color:var(--fg); font-weight:600; }
   .dot { width:9px; height:9px; border-radius:50%; background:#a33; flex:none; }
   .dot.ok { background:#4a4; }
   .menu { position:relative; flex:none; }
-  .menu summary { list-style:none; cursor:pointer; font-size:18px; line-height:1; padding:2px 6px; border-radius:4px; color:var(--muted); user-select:none; }
+  .menu summary { list-style:none; cursor:pointer; font-size:calc(18px * var(--fs)); line-height:1; padding:2px 6px; border-radius:4px; color:var(--muted); user-select:none; }
   .menu summary::-webkit-details-marker { display:none; }
   .menu summary:hover, .menu[open] summary { color:var(--fg); background:var(--line); }
   .menu .panel { position:absolute; right:0; top:30px; display:flex; flex-direction:column; gap:7px; white-space:nowrap;
                  padding:10px 14px; background:var(--panel); border:1px solid var(--line); border-radius:6px; box-shadow:0 6px 18px #0008; }
-  .menu label { font-size:13px; color:var(--muted); cursor:pointer; user-select:none; }
+  .menu label { font-size:calc(13px * var(--fs)); color:var(--muted); cursor:pointer; user-select:none; }
+  .menu .step { display:flex; align-items:center; gap:6px; font-size:calc(13px * var(--fs)); color:var(--muted); }
+  .menu .step button { font:inherit; min-width:24px; padding:0 6px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; cursor:pointer; }
+  .menu .step button:hover { background:var(--line); }
   .menu .sep { border-top:1px solid var(--line); padding-top:7px; }
   .menu .mlwrap { border-bottom:1px solid var(--line); padding-bottom:7px; }
-  .menu.pick summary { font-size:17px; padding:2px 4px; color:inherit; }
+  .menu.pick summary { font-size:calc(17px * var(--fs)); padding:2px 4px; color:inherit; }
   .menu.pick .panel { left:0; right:auto; z-index:6; }
-  .menu.pick .n { color:var(--muted); font-size:12px; }
-  .menu.pick summary::after { content:"▾"; margin-left:3px; font-size:14px; color:var(--fg); opacity:.75; } /* 🤝 📌 🧩 open a list */
-  .menu .none { color:var(--muted); font-size:12.5px; font-style:italic; }
+  .menu.pick .n { color:var(--muted); font-size:calc(12px * var(--fs)); }
+  .menu.pick summary::after { content:"▾"; margin-left:3px; font-size:calc(14px * var(--fs)); color:var(--fg); opacity:.75; } /* 🤝 📌 🧩 open a list */
+  .menu .none { color:var(--muted); font-size:calc(12.5px * var(--fs)); font-style:italic; }
   body.hide-acts #acts summary, body.hide-marks #marks summary, body.hide-modev #modev summary { opacity:.35; filter:grayscale(1); }
   body.hide-acts #acts .panel label:not(.mlwrap), body.hide-marks #marks .panel label:not(.mlwrap), body.hide-modev #modev .panel label:not(.mlwrap) { opacity:.45; }
   .act-failed, .act-checks { opacity:.75; }
-  .menu select { margin-left:4px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:12.5px; }
-  .hist { flex:none; font-size:12.5px; color:var(--muted); white-space:nowrap; }
+  .menu select { margin-left:4px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:calc(12.5px * var(--fs)); }
+  .hist { flex:none; font-size:calc(12.5px * var(--fs)); color:var(--muted); white-space:nowrap; }
   .hist a { color:#8fb0d6; }
-  .hist select { max-width:340px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:12.5px; }
+  .hist select { max-width:340px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:calc(12.5px * var(--fs)); }
   .dot.arch { background:#777; }
 
   main { max-width:860px; margin:0 auto; padding:12px 14px 64px; }
   body.split { padding-right:var(--dw); } /* prompt panel open: the chat moves into the left column */
   body.split header { margin-right:calc(-1 * var(--dw)); } /* the header bar still spans both columns */
-  .tbtn { cursor:pointer; font-size:17px; line-height:1; padding:2px 4px; border-radius:4px; user-select:none; }
+  .tbtn { cursor:pointer; font-size:calc(17px * var(--fs)); line-height:1; padding:2px 4px; border-radius:4px; user-select:none; }
   .tbtn:hover { background:var(--line); }
   .tbtn:has(input:not(:checked)) { opacity:.35; filter:grayscale(1); }
-  .tbtn.txt { font-size:13px; margin-left:8px; }
-  .tbtn .n { color:var(--muted); font-size:12px; }
+  .tbtn.txt { font-size:calc(13px * var(--fs)); margin-left:8px; }
+  .tbtn .n { color:var(--muted); font-size:calc(12px * var(--fs)); }
   body.hide-align .tbtn.step { opacity:.35; filter:grayscale(1); cursor:default; background:none; } /* ⏫ ⏬ need 🔄️ */
   [data-i] { scroll-margin-top:96px; } /* below the header and the chat bar */
-  .colbar { position:sticky; top:41px; z-index:4; display:flex; align-items:center; gap:10px; padding:10px 14px; font-size:13px;
+  .colbar { position:sticky; top:41px; z-index:4; display:flex; align-items:center; gap:10px; padding:10px 14px; font-size:calc(13px * var(--fs));
             background:var(--panel); border-bottom:1px solid var(--line); }
   .colbar .fill { flex:1; }
   /* 📌 where a memory, diary entry or OmniSight picture was made; its card is in the context column */
-  .mark { display:flex; align-items:center; gap:7px; margin:3px calc(-1 * var(--markreach, -10px)) 3px 10px; font-size:12px; color:var(--muted); cursor:pointer; white-space:nowrap; }
+  .mark { display:flex; align-items:center; gap:7px; margin:3px calc(-1 * var(--markreach, -10px)) 3px 10px; font-size:calc(12px * var(--fs)); color:var(--muted); cursor:pointer; white-space:nowrap; }
   .mark::after { content:""; flex:1; border-top:1px dashed currentColor; opacity:.45; }
   .mark::before { content:""; order:9; margin-left:-7px; border-left:6px solid currentColor; border-block:4px solid transparent; opacity:.6; } /* ▸ after the line, pointing at the card's column */
   .mark:hover { color:var(--fg); }
   body.hide-marks .mark, body.hide-mark-mem .mark.mem, body.hide-mark-diary .mark.diary, body.hide-mark-omni .mark.omni { display:none; }
   /* the end of the chat: "Now" when live, the end of a playthrough or day in History */
   .endmark { display:flex; align-items:center; gap:12px; margin:14px 10px 6px;
-             color:#d6c48f; font-weight:700; font-size:13px; letter-spacing:.04em; white-space:nowrap; }
+             color:#d6c48f; font-weight:700; font-size:calc(13px * var(--fs)); letter-spacing:.04em; white-space:nowrap; }
   .endmark::before, .endmark::after { content:""; flex:1; border-top:1px solid currentColor; opacity:.45; }
   .endmark .pulse { color:#8fd19e; margin-right:5px; animation:nowpulse 2s ease-in-out infinite; }
   @keyframes nowpulse { 50% { opacity:.3; } }
-  .divider { margin:18px 0 8px; text-align:left; color:var(--muted); font-size:12px; letter-spacing:.04em; }
+  .divider { margin:18px 0 8px; text-align:left; color:var(--muted); font-size:calc(12px * var(--fs)); letter-spacing:.04em; }
   .divider span { background:var(--bg); padding:0 10px 0 0; }
   .divider::before { content:""; display:block; border-top:1px solid var(--line); margin-bottom:-9px; }
   .msg { display:flex; flex-direction:column; align-items:flex-start; margin:6px 0; }
-  .who { font-size:12px; font-weight:600; margin:0 10px 2px; }
+  .who { font-size:calc(12px * var(--fs)); font-weight:600; margin:0 10px 2px; }
   .who .to { color:var(--muted); font-weight:400; }
   .bubble { max-width:78%; padding:7px 12px; border-radius:14px; background:var(--panel); border:1px solid var(--line); }
   .msg.you .bubble { background:var(--you); border-color:transparent; }
   body.hide-bubbles .bubble { background:none !important; border-color:transparent !important; } /* ☰ Show line bubbles off: bare text (beats the inline hue) */
   .msg.bg { opacity:.6; }
-  .msg.empty { margin:3px 10px; color:var(--muted); font-size:12.5px; font-style:italic; }
+  .msg.empty { margin:3px 10px; color:var(--muted); font-size:calc(12.5px * var(--fs)); font-style:italic; }
   body.hide-empty .msg.empty { display:none; }
   /* Thoughts: a paler, greyer bubble in the thinker's hue (set inline), dashed because unspoken. Default = pale player blue. */
   .thought { width:fit-content; max-width:78%; margin:2px 0 6px; padding:7px 12px; border-radius:14px;
              border:1px dashed hsl(212 22% 44%); background:hsl(212 22% 31%); color:#dcd7cd; font-style:italic; }
   .bubble .to { color:var(--muted); font-style:italic; }
   .narr, .act { margin:10px 10px; font-style:italic; color:#d6c48f; }
-  .other { margin:3px 10px; color:var(--muted); font-size:12.5px; }
-  .t { color:var(--muted); font-size:11px; margin-left:6px; font-weight:400; }
-  .type { display:inline-block; font:500 10.5px/1.6 "Segoe UI",system-ui,sans-serif; font-style:normal; color:var(--muted);
+  .other { margin:3px 10px; color:var(--muted); font-size:calc(12.5px * var(--fs)); }
+  .t { color:var(--muted); font-size:calc(11px * var(--fs)); margin-left:6px; font-weight:400; }
+  .type { display:inline-block; font:500 calc(10.5px * var(--fs))/1.6 "Segoe UI",system-ui,sans-serif; font-style:normal; color:var(--muted);
           border:1px solid var(--line); border-radius:4px; padding:0 5px; margin:0 6px; vertical-align:1px; letter-spacing:.02em; }
 
-  /* Timeline scrubber: one block per stay in a location, width = number of events there. */
-  #scrub { position:fixed; left:0; right:0; bottom:0; z-index:2; height:34px; display:flex;
+  /* Timeline scrubber: one block per stay in a location, width = its events there, or with 🌓 timeline by game time, its time there. */
+  #scrub { position:fixed; left:0; right:0; bottom:0; z-index:2; height:34px;
            background:var(--panel); border-top:1px solid var(--line); cursor:pointer; user-select:none; touch-action:none; }
-  .seg { flex:1 1 0; min-width:0; border-right:1px solid var(--bg); padding:0 6px; overflow:hidden;
-         font-size:11px; line-height:33px; white-space:nowrap; text-overflow:ellipsis; color:var(--muted); }
+  .seg { position:absolute; top:0; bottom:0; box-sizing:border-box; border-right:1px solid var(--bg); text-indent:6px; overflow:hidden;
+         font-size:calc(11px * var(--fs)); line-height:33px; white-space:nowrap; text-overflow:ellipsis; color:#c9c6bd; }
+  .seg span { position:relative; z-index:1; text-shadow:0 0 3px #000, 0 1px 2px #000; } /* the label above the sky wave, not blended into it */
   .seg.on { color:var(--fg); box-shadow:inset 0 2px 0 var(--fg); }
-  #cursor { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--fg); pointer-events:none; display:none; z-index:1; }
-  #curtime { position:absolute; top:3px; left:6px; white-space:nowrap; font-size:11.5px; line-height:1; padding:3px 6px; border-radius:4px;
+  #cursor { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--fg); pointer-events:none; display:none; z-index:3; }
+  #curtime { position:absolute; top:3px; left:6px; white-space:nowrap; font-size:calc(11.5px * var(--fs)); line-height:1; padding:3px 6px; border-radius:4px;
              background:var(--bg); border:1px solid var(--line); color:var(--fg); }
   #curtime.flip { left:auto; right:6px; } /* near the right end: label on the left of the cursor */
 
@@ -108,9 +113,9 @@
   #shot { max-width:min(1400px, 94vw); max-height:94vh; padding:12px 14px; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:10px; }
   #shot::backdrop { background:rgb(0 0 0 / .75); }
   #shot img { display:block; max-width:100%; max-height:64vh; margin:6px auto; border-radius:6px; cursor:zoom-out; }
-  #shot .who { display:flex; gap:10px; align-items:baseline; font-size:13px; color:var(--muted); }
-  #shot .txt { font-size:14.5px; line-height:1.45; max-width:110ch; margin:8px auto 0; }
-  #shot .foot { font-size:12px; color:var(--muted); margin-top:6px; }
+  #shot .who { display:flex; gap:10px; align-items:baseline; font-size:calc(13px * var(--fs)); color:var(--muted); }
+  #shot .txt { font-size:calc(14.5px * var(--fs)); line-height:1.45; max-width:110ch; margin:8px auto 0; }
+  #shot .foot { font-size:calc(12px * var(--fs)); color:var(--muted); margin-top:6px; }
   #shot .who .x, #shot .who .picon { margin-left:auto; } /* 🧾, then × (a chat line: × alone) */
   #shot .who .picon + .x { margin-left:0; }
   #shot .who .picon.none { cursor:help; } /* no prompt: hover for why */
@@ -118,7 +123,7 @@
   #shot .ppane { display:none; }
   /* 🧾 open: a picture's or diary's prompt on its left, a chat line or memory above its prompt (.stacked); each part scrolls on its own */
   #shot[open].withprompt { width:94vw; max-width:94vw; display:flex; gap:16px; }
-  #shot.withprompt .ppane { display:flex; flex-direction:column; flex:1 1 55%; min-width:0; max-height:calc(94vh - 30px); font-size:13px; }
+  #shot.withprompt .ppane { display:flex; flex-direction:column; flex:1 1 55%; min-width:0; max-height:calc(94vh - 30px); font-size:calc(13px * var(--fs)); }
   #dbody { overflow:auto; flex:1; min-height:0; padding-right:4px; }
   .ppane .pbar { display:flex; align-items:center; gap:10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
   .ppane .pbar .src { margin-left:auto; }
@@ -127,18 +132,23 @@
   #shot.withprompt.stacked .pmain { flex:0 0 auto; max-height:40vh; }
   #shot.withprompt.stacked .ppane { flex:1 1 auto; min-height:0; max-height:none; }
   .ppane .note { color:var(--muted); margin:6px 0; }
-  .side .top { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line); font-size:13px; }
+  .side .top { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line); font-size:calc(13px * var(--fs)); }
   .side .top .title { flex:1; min-width:0; display:flex; align-items:center; gap:10px; white-space:nowrap; } /* no overflow:hidden: it would clip the 🧩 menu */
-  .side .x, #shot .x { cursor:pointer; color:var(--muted); font-size:20px; line-height:1; padding:0 4px; }
-  .side .body { overflow:auto; padding:10px 14px 30px; font-size:13px; position:relative; }
+  .side .x, #shot .x { cursor:pointer; color:var(--muted); font-size:calc(20px * var(--fs)); line-height:1; padding:0 4px; }
+  .side .body { overflow:auto; padding:10px 14px 30px; font-size:calc(13px * var(--fs)); position:relative; }
   .memcard { margin:0 0 8px; padding:7px 11px; border-radius:10px; border:1px solid; cursor:pointer; line-height:1.4; transition:opacity .2s; }
-  .memcard .who { display:flex; gap:8px; align-items:baseline; font-size:12px; color:var(--muted); }
-  .memcard .who b { font-size:13px; }
-  .memcard .who .kind { margin-left:auto; font:600 10px/1 "Segoe UI",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
-  .memcard .txt { margin:4px 0; font-size:13.5px; color:var(--fg); }
-  .memcard .foot { font-size:11.5px; color:var(--muted); }
+  .memcard .who { display:flex; gap:8px; align-items:baseline; font-size:calc(12px * var(--fs)); color:var(--muted); }
+  .memcard .who b { font-size:calc(13px * var(--fs)); }
+  .memcard .who .kind { margin-left:auto; font:600 calc(10px * var(--fs))/1 "Segoe UI",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
+  .memcard .txt { margin:4px 0; font-size:calc(13.5px * var(--fs)); color:var(--fg); }
+  .memcard .foot { font-size:calc(11.5px * var(--fs)); color:var(--muted); }
   .memcard.future { opacity:.4; }
   .memcard.now { box-shadow:0 0 0 1px var(--fg); }
+  /* Day and night: sun height at each event's time of day, added onto the blocks' own colours. */
+  #sun { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:plus-lighter; }
+  #sun path { fill:url(#sunfill); fill-opacity:var(--sky); }
+  /* Timeline by game time: stretches with no events (sleeping, waiting, fast travel) greyed out. */
+  .skip { position:absolute; top:0; bottom:0; z-index:2; background:#16161a99; backdrop-filter:grayscale(1) brightness(.6); }
   .memtick { position:absolute; top:0; width:3px; height:8px; margin-left:-1px; border-radius:0 0 2px 2px; pointer-events:none; }
   /* 🤏 compact: OmniSight descriptions and diaries cut to a few lines */
   body:not(.hide-compact) .memcard.omni .txt { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
@@ -150,21 +160,21 @@
   body:not(.hide-compact) .memcard.omni:has(> a) img { margin:3px 0 5px; }
   body:not(.hide-compact) .memcard.omni:has(> a) .txt { -webkit-line-clamp:4; margin:2px 0 0; }
   body:not(.hide-compact) .memcard.diary .md { max-height:3.4em; overflow:hidden; -webkit-mask-image:linear-gradient(#000 45%, transparent); }
-  .memcard .md { margin:4px 0; font-size:13.5px; line-height:1.45; }
-  .memcard .md h1, .memcard .md h2, .memcard .md h3 { font-size:14px; margin:6px 0 2px; }
+  .memcard .md { margin:4px 0; font-size:calc(13.5px * var(--fs)); line-height:1.45; }
+  .memcard .md h1, .memcard .md h2, .memcard .md h3 { font-size:calc(14px * var(--fs)); margin:6px 0 2px; }
   .memcard.diary .md, .memcard.omni .txt { cursor:zoom-in; }
-  #shot .pmain > .md { max-width:760px; margin:8px 4px; font-size:14px; line-height:1.55; }
+  #shot .pmain > .md { max-width:760px; margin:8px 4px; font-size:calc(14px * var(--fs)); line-height:1.55; }
   .memcard .md p, .pmain > .md p { margin:0 0 .8em; } /* diary paragraphs: a clear gap between them */
   .memcard .md p:last-child, .pmain > .md p:last-child { margin-bottom:0; }
   /* 🧾 on a card and in its popup: the prompt that wrote the card. Boxed, white-tinted when there is a prompt to show,
      grey when none was found (its tooltip says why). */
   .picon { cursor:pointer; border:1px solid hsl(0 0% 100% / .55); border-radius:3px; background:hsl(0 0% 100% / .2); opacity:.9;
            position:relative; display:inline-grid; place-items:center; width:18px; height:18px; box-sizing:border-box;
-           align-self:center; flex:none; font-size:11px; line-height:1; } /* a square box */
+           align-self:center; flex:none; font-size:calc(11px * var(--fs)); line-height:1; } /* a square box */
   .picon:hover { opacity:1; background:hsl(0 0% 100% / .3); }
   .picon.none { border-color:hsl(0 0% 40% / .8); background:hsl(0 0% 22% / .85); opacity:1; }
   .picon.none > span { filter:grayscale(1); opacity:.45; } /* the 🧾 faded, a ❌ over it */
-  .picon.none::after { content:"❌"; position:absolute; inset:0; display:grid; place-items:center; font-size:9px; }
+  .picon.none::after { content:"❌"; position:absolute; inset:0; display:grid; place-items:center; font-size:calc(9px * var(--fs)); }
   #shot .who .x { align-self:center; }
   #mbody.aligned { overflow:hidden; } /* 🔄️ the column follows the page; the wheel scrolls the page */
   /* 🔄️: faint vertical dashed lines through the gaps between cards, so the column reads as one track with the chat */
@@ -176,8 +186,8 @@
   .ppane summary { cursor:pointer; padding:6px 10px; color:var(--muted); }
   .ppane summary b { color:var(--fg); }
   .ppane details > div { padding:0 10px 8px; }
-  .ppane .role { margin:10px 0 3px; font:600 11px/1 "Segoe UI",sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#8fb0d6; }
-  .ppane pre { margin:0; white-space:pre-wrap; word-break:break-word; font:12px/1.5 Consolas,"Cascadia Mono",monospace;
+  .ppane .role { margin:10px 0 3px; font:600 calc(11px * var(--fs))/1 "Segoe UI",sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#8fb0d6; }
+  .ppane pre { margin:0; white-space:pre-wrap; word-break:break-word; font:calc(12px * var(--fs))/1.5 Consolas,"Cascadia Mono",monospace;
                 background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:8px 10px; }
   .ppane pre .h { color:#d6c48f; font-weight:700; }             /* # heading */
   .ppane pre .l { color:#d6a35f; font-weight:700; }             /* - bullet / 1. */
@@ -189,41 +199,41 @@
   .ppane pre .q { color:var(--muted); font-style:italic; }      /* > quote */
   .side .note { color:var(--muted); margin:6px 0; }
   .ppane .toc { flex:1; min-width:0; }
-  .ppane .toc select { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 4px; font:12.5px Consolas,"Cascadia Mono",monospace; }
-  .ppane .src { color:var(--muted); font-size:12px; cursor:pointer; user-select:none; white-space:nowrap; }
-  .ppane .md { background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:6px 12px; font-size:13.5px; line-height:1.5; overflow-wrap:anywhere; }
+  .ppane .toc select { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 4px; font:calc(12.5px * var(--fs)) Consolas,"Cascadia Mono",monospace; }
+  .ppane .src { color:var(--muted); font-size:calc(12px * var(--fs)); cursor:pointer; user-select:none; white-space:nowrap; }
+  .ppane .md { background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:6px 12px; font-size:calc(13.5px * var(--fs)); line-height:1.5; overflow-wrap:anywhere; }
   /* consecutive messages from one role: one box, a dashed line between messages */
   .ppane .run { background:var(--bg); border:1px solid var(--line); border-radius:4px; }
   .ppane .run > .md, .ppane .run > pre { border:0; border-radius:0; background:none; }
   .ppane .run > * + * { border-top:1px dashed var(--line) !important; }
   .md h1, .md h2, .md h3, .md h4, .md h5, .md h6 { margin:12px 0 4px; color:#d6c48f; line-height:1.3; }
-  .md h1 { font-size:17px; } .md h2 { font-size:15.5px; } .md h3 { font-size:14.5px; } .md h4, .md h5, .md h6 { font-size:13.5px; }
+  .md h1 { font-size:calc(17px * var(--fs)); } .md h2 { font-size:calc(15.5px * var(--fs)); } .md h3 { font-size:calc(14.5px * var(--fs)); } .md h4, .md h5, .md h6 { font-size:calc(13.5px * var(--fs)); }
   .md p { margin:5px 0; }
   .md ul, .md ol { margin:4px 0; padding-left:1.4em; }
   .md li { margin:1px 0; }
   .md blockquote { margin:5px 0; padding-left:10px; border-left:3px solid var(--line); color:var(--muted); }
   .md hr { border:0; border-top:1px solid var(--line); margin:10px 0; }
-  .md code { font:12px Consolas,"Cascadia Mono",monospace; background:var(--panel); border-radius:3px; padding:0 4px; color:#9fd49a; }
+  .md code { font:calc(12px * var(--fs)) Consolas,"Cascadia Mono",monospace; background:var(--panel); border-radius:3px; padding:0 4px; color:#9fd49a; }
   .md pre { margin:6px 0; }
-  .md .tg { color:#c79be0; font:12px Consolas,"Cascadia Mono",monospace; }
+  .md .tg { color:#c79be0; font:calc(12px * var(--fs)) Consolas,"Cascadia Mono",monospace; }
   .md .k { color:#8fb0d6; }
 
   body.hide-names #feed .nm, body.hide-names #mem .nm { color:inherit !important; }
-  .eid, .tid { font:10.5px Consolas,"Cascadia Mono",monospace; font-style:normal; color:var(--muted); margin-left:8px; }
+  .eid, .tid { font:calc(10.5px * var(--fs)) Consolas,"Cascadia Mono",monospace; font-style:normal; color:var(--muted); margin-left:8px; }
   body.hide-ids .eid { display:none; }
   body.hide-realtime .rt { display:none; }
   .rt { color:#8fb0d6; }
-  .rtl { font:11px "Segoe UI",sans-serif; font-style:normal; margin-left:8px; }
+  .rtl { font:calc(11px * var(--fs)) "Segoe UI",sans-serif; font-style:normal; margin-left:8px; }
   body.hide-thoughts .thought, body.hide-narr .narr, body.hide-acts .act, body.hide-bg .msg.bg, body.hide-dialog .msg:not(.bg) { display:none; }
   .grp { border:1.5px solid hsl(var(--h) 55% 68% / .45); background:hsl(var(--h) 55% 68% / .05); border-radius:10px; padding:3px 6px; margin:4px 0; }
   /* line bubbles off: the box takes the line bubbles' fill, and its thoughts the dark */
   body.hide-bubbles .grp { background:hsl(var(--h) 32% 19%); } /* a line bubble's shade */
   body.hide-bubbles .grp .thought { background:hsl(var(--h) 18% 12%) !important; }
-  .ghead { font-size:12px; font-weight:600; margin:3px 2px 2px; }
+  .ghead { font-size:calc(12px * var(--fs)); font-weight:600; margin:3px 2px 2px; }
   /* the player's turns stand out: shifted right (NPC boxes stop short of the right edge to make room), with thick sides */
   .grp:not(.you) { margin-right:40px; }
   .grp.you { margin-left:40px; border-left:5px solid hsl(var(--h) 55% 68% / .85); border-right:5px solid hsl(var(--h) 55% 68% / .85); }
-  .gap { color:var(--muted); font-size:11px; font-style:italic; margin:4px 2px; }
+  .gap { color:var(--muted); font-size:calc(11px * var(--fs)); font-style:italic; margin:4px 2px; }
   /* a box whose lines are all hidden by the menu toggles goes too */
 
 </style>
@@ -233,6 +243,7 @@
   <span class="dot" id="dot" title="server"></span>
   <span class="where" id="where">Waiting for SkyrimNet on <b id="host"></b>…</span>
   <label class="tbtn" title="Colour names: in the chat and in the context column's cards"><input type="checkbox" data-toggle="names" checked hidden>🎨</label>
+  <label class="tbtn" title="Timeline by game time: a long sleep or journey takes room, and gaps of an hour or more are greyed (off: an even share per event)"><input type="checkbox" data-toggle="bytime" hidden>🌓</label>
   <label class="tbtn" title="Context column: memories, diaries, OmniSight pictures and mod events beside the chat"><input type="checkbox" data-toggle="side" checked hidden>🗂️</label>
   <label class="hist" id="ptwrap" hidden title="Older playthroughs and days come from SkyrimNet's files on disk (needs serve.py)">History <select id="pt"></select></label>
   <details class="menu" id="menu">
@@ -243,6 +254,8 @@
       <label title="Event ids on each line, request ids on each prompt"><input type="checkbox" data-toggle="ids"> Show event ids</label>
       <label title="Real date and time on every line and card, next to the game time"><input type="checkbox" data-toggle="realtime" checked> Show real-world time</label>
       <label title="A filled, rounded box around each spoken line (off: the text alone, in its speaker's box)"><input type="checkbox" data-toggle="bubbles" checked> Show line bubbles</label>
+      <div class="step" data-step="fs" title="Text size of the whole page">Text size <button title="Smaller">−</button><span></span><button title="Larger">+</button></div>
+      <div class="step" data-step="sky" title="How strongly the timeline's day and night wave shows (0% hides it)">Sky wave <button title="Fainter">−</button><span></span><button title="Stronger">+</button></div>
     </div>
   </details>
 </header>
@@ -570,23 +583,94 @@ function renderScrubber() {
     if (last && last.loc === cell(e)) { last.end = i; continue; }
     segs.push({ loc: cell(e), start: i, end: i });
   }
+  timeline();
   for (const s of segs) {
     const first = rows[s.start].e, lastE = rows[s.end].e, n = s.end - s.start + 1;
     const label = s.loc.startsWith("Session from ") ? s.loc.slice(13) + " session" : s.loc.split(",")[0] + " · " + clock(first); // conversation-log sessions already carry their time
-    const div = el("div", "seg", label);
-    div.style.flexGrow = n;
+    const div = el("div", "seg");
+    div.append(el("span", null, label));
+    div.style.left = tlEdge[s.start] * 100 + "%";
+    div.style.width = (tlEdge[s.end + 1] - tlEdge[s.start]) * 100 + "%";
     div.style.background = `hsl(${nameHue(s.loc)} 28% 21%)`;
     div.title = `${s.loc}\n${first.gameTimeStr} → ${clock(lastE)}\n${n} event${n > 1 ? "s" : ""}` +
       (first.localTime ? `, ${realDur(rows.slice(s.start + 1, s.end + 1).reduce((t, r, k) => t + activeGap((r.e.localTime || 0) - (rows[s.start + k].e.localTime || 0)), 0))} real time` : "");
     s.div = div;
     scrub.append(div);
   }
+  scrub.append(sunWave());
+  if (tlT) for (let i = 0; i + 1 < rows.length; i++) { // spaced by time: grey out the gaps of an hour or more
+    const gap = (tlX[i + 1] - tlX[i]) * tlT[1];
+    if (gap < SKIP_MINUTES * 60) continue;
+    const g = el("div", "skip");
+    g.style.left = tlX[i] * 100 + "%";
+    g.style.width = (tlX[i + 1] - tlX[i]) * 100 + "%";
+    g.title = passed(gap); // "8 hours passed"
+    scrub.append(g);
+  }
   for (const m of mems) {
     const t = el("div", "memtick");
-    t.style.left = ((m.at + 0.5) / rows.length * 100) + "%";
+    t.style.left = tlX[Math.max(0, Math.min(rows.length - 1, Math.round(m.at)))] * 100 + "%";
     t.style.background = nameColor(m.actor);
     scrub.append(t);
   }
+}
+
+// Where each event sits on the timeline (0 to 1): tlX its point, tlEdge[i] where its slot starts (tlEdge[n] = 1).
+// By default each event gets an even share; with 🌓 timeline by game time, the share is the time until the next one.
+// The conversation log has no game time, so it is spaced by real time there.
+let tlX = [], tlEdge = [], tlT = null; // tlT: [start, span] in seconds when spaced by time
+const SKIP_MINUTES = 60; // a gap this long is greyed out on the timeline (game minutes; real ones in the conversation log)
+const timeOf = e => archive.startsWith("conv:") ? e.localTime : e.gameTime;
+function timeline() {
+  const n = rows.length, t = rows.map(r => timeOf(r.e));
+  tlT = null;
+  if (!document.body.classList.contains("hide-bytime") && n > 1 && t.every(Number.isFinite)) {
+    for (let i = 1; i < n; i++) t[i] = Math.max(t[i], t[i - 1]); // ponytail: a reloaded save steps back in time; held flat
+    tlT = [t[0], t[n - 1] - t[0] || 1];
+    tlX = t.map(v => (v - tlT[0]) / tlT[1]);
+    tlEdge = [...tlX, 1];
+  } else {
+    tlX = rows.map((_, i) => (i + 0.5) / n);
+    tlEdge = [...rows.map((_, i) => i / n), 1];
+  }
+}
+// Sun height (0 at midnight, 1 at noon) from game time, added over the blocks. Spaced by event, one point per event:
+// a busy hour stretches the wave, a sleep jumps it. Spaced by time, a true wave. None in the conversation log (real time only).
+const sunAt = sec => (1 - Math.cos(2 * Math.PI * (sec / 3600 % 24) / 24)) / 2;
+// Sky colour for a sun height (0 to 1), added onto the blocks: nothing at night, orange at sunrise and sunset, gold at noon.
+// Saturated on purpose: added white or grey washes the blocks out.
+const SKY = [[0, [0, 0, 0]], [0.5, [255, 80, 0]], [1, [255, 200, 30]]];
+function skyAt(h) {
+  const k = h < SKY[1][0] ? 0 : 1, [a, ca] = SKY[k], [b, cb] = SKY[k + 1], f = (h - a) / (b - a);
+  return `rgb(${ca.map((c, i) => Math.round(c + (cb[i] - c) * f)).join(",")})`;
+}
+function sunWave() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"), area = document.createElementNS(svg.namespaceURI, "path");
+  svg.id = "sun";
+  svg.setAttribute("viewBox", "0 0 1 1");
+  svg.setAttribute("preserveAspectRatio", "none");
+  svg.append(area);
+  if (archive.startsWith("conv:")) return svg;
+  const pts = []; // [x, sun height]
+  if (tlT) for (let k = 0, steps = 2000; k <= steps; k++) pts.push([k / steps, sunAt(tlT[0] + tlT[1] * k / steps)]);
+  else rows.forEach((r, i) => { if (Number.isFinite(r.e.gameTime)) pts.push([tlX[i], sunAt(r.e.gameTime)]); });
+  if (!pts.length) return svg;
+  // Coloured along the bar by the time of day at each point (a stop every few points: thousands of events make thousands of points).
+  const grad = document.createElementNS(svg.namespaceURI, "linearGradient"), defs = document.createElementNS(svg.namespaceURI, "defs");
+  grad.id = "sunfill";
+  for (const [k, v] of [["x1", 0], ["x2", 1], ["y1", 0], ["y2", 0], ["gradientUnits", "userSpaceOnUse"]]) grad.setAttribute(k, v);
+  const every = Math.ceil(pts.length / 1500);
+  pts.forEach(([x, h], k) => {
+    if (k % every && k !== pts.length - 1) return;
+    const st = document.createElementNS(svg.namespaceURI, "stop");
+    st.setAttribute("offset", x.toFixed(5)); st.setAttribute("stop-color", skyAt(h));
+    grad.append(st);
+  });
+  defs.append(grad);
+  svg.prepend(defs);
+  const d = pts.map(([x, h]) => `${x.toFixed(5)},${(1 - 0.8 * h).toFixed(3)}`).join("L");
+  area.setAttribute("d", `M${pts[0][0].toFixed(5)},1L${d}L${pts[pts.length - 1][0].toFixed(5)},1Z`);
+  return svg;
 }
 
 // Index of the event at the top of the viewport (what you're reading).
@@ -607,7 +691,7 @@ function updatePosition() {
   const atEnd = innerHeight + scrollY >= document.body.scrollHeight - 40; // following live: show the newest
   const i = atEnd ? rows.length - 1 : topIndex(), e = rows[i].e;
   cursor.style.display = "block";
-  const pct = (i + 0.5) / rows.length * 100;
+  const pct = tlX[i] * 100;
   cursor.style.left = pct + "%";
   $("curtime").textContent = e.gameTimeStr || "";
   $("curtime").classList.toggle("flip", pct > 60);
@@ -643,13 +727,33 @@ $("mem").addEventListener("mouseleave", () => { colTarget = null; updatePosition
 function jump(ev) {
   if (!rows.length) return;
   const r = scrub.getBoundingClientRect();
-  const i = Math.min(rows.length - 1, Math.max(0, Math.floor((ev.clientX - r.left) / r.width * rows.length)));
+  const x = (ev.clientX - r.left) / r.width;
+  let lo = 0, hi = rows.length - 1; // the last event whose slot starts at or before x
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (tlEdge[mid] <= x) lo = mid; else hi = mid - 1; }
+  const i = lo;
   let j = i; // skip lines hidden by the filters
   while (j < rows.length && !rows[j].node.offsetParent) j++;
   if (j === rows.length) for (j = i; j > 0 && !rows[j].node.offsetParent; j--);
   rows[j].node.scrollIntoView({ block: "start" });
   updatePosition();
 }
+// ☰ − / + rows: each sets a CSS variable in steps of 10%, remembered like the toggles. Text size (--fs): every font
+// size is calc(Npx * var(--fs)), spacing stays as it is. Sky wave (--sky): the timeline wave's opacity, 0 hides it.
+function stepper(key, min, max, def, after) {
+  const row = document.querySelector(`[data-step=${key}]`), [down, up] = row.querySelectorAll("button"), store = "snev." + key;
+  let cur;
+  const set = f => {
+    cur = Math.round(Math.min(max, Math.max(min, f)) * 10) / 10;
+    document.documentElement.style.setProperty("--" + key, cur);
+    row.querySelector("span").textContent = Math.round(cur * 100) + "%";
+  };
+  // saved only when changed, so an untouched one follows a new default
+  for (const [b, d] of [[down, -0.1], [up, 0.1]]) b.addEventListener("click", () => { set(cur + d); localStorage[store] = cur; after?.(); });
+  set(+(localStorage[store] ?? def));
+}
+stepper("fs", 0.7, 1.6, 1, () => { layout(); updatePosition(); });
+stepper("sky", 0, 1, 0.7);
+document.querySelector("[data-toggle=bytime]").addEventListener("change", () => { renderScrubber(); updatePosition(); });
 scrub.addEventListener("pointerdown", ev => { scrub.setPointerCapture(ev.pointerId); jump(ev); });
 scrub.addEventListener("pointermove", ev => { if (ev.buttons) jump(ev); });
 

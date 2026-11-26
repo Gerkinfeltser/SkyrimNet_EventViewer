@@ -47,7 +47,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 
 **Chat column**
 
-- Each turn, an NPC's or yours, is one box outlined in the speaker's colour (yours in the player blue, shifted to the right, with thick sides), its thoughts and lines together. The header shows name, game date and time, and the place within the cell. Inside the box:
+- Each turn, an NPC's or yours, is one box outlined in the speaker's colour (yours in the player blue, shifted to the right, with thick sides and a striped backing), its thoughts and lines together. The header shows name, game date and time, and the place within the cell. Inside the box:
   - 💭 thoughts: a paler bubble.
   - Spoken lines start with **To *listener*:**, with the listener's name in their own colour.
   - 🗣️ marks background chatter.
@@ -58,7 +58,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 - 🎯 An action the model picked in an NPC's reply (`ACTION: drink_alcohol PARAMS: …`), under the line from that reply. SkyrimNet takes that part out of the line it saves, but the prompt logs keep the whole reply, so this needs serve.py or the live game, and only shows while those logs exist. It is what the NPC tried: SkyrimNet drops an action that isn't allowed at that moment, so it may not have happened. Made-up stubs (`speak`, `None`) and the game master's directions are left out.
 - 💤 marks going to sleep and waking up.
 - Your own lines are blue.
-- A striped band with a double outline, in the colour of the cell's block in the timeline, marks each change of cell: "📍 Arrived at **Whiterun** from Drunken Huntsman" (where you came from greyed, so a door and a jump across the map, such as `coc` or fast travel, read differently), with the rest of the location beside it, and under it the game date and time and *Here for* (the real time from the first line there to the last, gaps over 20 minutes left out; shown once it reaches a minute).
+- A band with faint › chevrons in its own colour across its right two thirds, edged like your turns (thick sides), in the colour of the cell's block in the timeline, marks each change of cell: "📍 Arrived at **Whiterun** from Drunken Huntsman" (where you came from greyed, so a door and a jump across the map, such as `coc` or fast travel, read differently), with the rest of the location beside it, and under it the game date and time and *Here for* (the real time from the first line there to the last, gaps over 20 minutes left out; shown once it reaches a minute).
 - The chat ends with **● Now** and the game time of the latest line (live), or *End of this playthrough* / *End of this day* in History.
 - 📌 Markers such as *🧠 Hadvar memory created ┄┄┄*, *📔 Camilla Valerius diary written* and *📷 Embershard Mine captured* (and *🧩 IntelEngine · follower recruited* for 🧩 groups) sit after the line each card in the context column belongs to. Click one to bring its card into view.
 - Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, 🎮 the game's own dialogue, each with counts; ⏫ ⏬ previous and next place (scroll to where you arrived in a cell); ⤓ keep scrolling (follow new lines as they arrive).

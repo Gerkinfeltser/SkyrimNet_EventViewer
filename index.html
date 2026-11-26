@@ -154,7 +154,8 @@
   #dbody, #shot .pmain, .menu .panel { overscroll-behavior:contain; }
   .ppane .pbar { display:flex; align-items:center; gap:10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
   #shot.withprompt .pmain { flex:1 1 45%; min-width:0; max-height:calc(94vh - 30px); overflow:auto; }
-  #shot[open].withprompt.stacked { flex-direction:column; gap:10px; width:min(1300px, 94vw); height:94vh; }
+  /* as tall as it needs (a few picked sections make a short popup), up to 94vh; the 🏷️ list may hang out of a short one */
+  #shot[open].withprompt.stacked { flex-direction:column; gap:10px; width:min(1300px, 94vw); overflow:visible; }
   #shot.withprompt.stacked .pmain { flex:0 0 auto; max-height:40vh; }
   #shot.withprompt.stacked .ppane { flex:1 1 auto; min-height:0; max-height:none; }
   .ppane .note { color:var(--muted); margin:6px 0; }
@@ -259,6 +260,13 @@
   body.hide-names #feed .nm, body.hide-names #mem .nm { color:inherit !important; }
   .eid, .tid { font:calc(10.5px * var(--fs)) Consolas,"Cascadia Mono",monospace; font-style:normal; color:var(--muted); margin-left:8px; }
   body.hide-ids .eid { display:none; }
+  body.hide-inloc .inloc { display:none; }
+  body.hide-shortdates .gs, body:not(.hide-shortdates) .gl { display:none; } /* ☰ Short game dates */
+  /* 🧠 the reply's prompt had recalled memories: a note under the reply's last line, as 🎯 is */
+  .msg :is(.recalled, .saw) { margin:3px 12px 0; font-size:calc(12.5px * var(--fs)); color:var(--muted); font-style:italic; cursor:pointer; }
+  .msg :is(.recalled, .saw):hover { color:var(--fg); }
+  body.hide-saw .saw { display:none; }
+  body.hide-recalled .recalled { display:none; }
   body.hide-realtime .rt { display:none; }
   .rt { color:#8fb0d6; }
   .rtl { font:calc(11px * var(--fs)) "Segoe UI",sans-serif; font-style:normal; margin-left:8px; }
@@ -310,7 +318,7 @@
 <symbol id="i-arrow-up-to-line" viewBox="0 0 24 24"><path d="M5 3h14"/><path d="m18 13-6-6-6 6"/><path d="M12 7v14"/></symbol>
 <symbol id="i-arrow-down-to-line" viewBox="0 0 24 24"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></symbol>
 <symbol id="i-radio" viewBox="0 0 24 24"><path d="M16.247 7.761a6 6 0 0 1 0 8.478"/><path d="M19.075 4.933a10 10 0 0 1 0 14.134"/><path d="M4.925 19.067a10 10 0 0 1 0-14.134"/><path d="M7.753 16.239a6 6 0 0 1 0-8.478"/><circle cx="12" cy="12" r="2"/></symbol>
-<symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></symbol><symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></symbol><symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol>
 <symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
 <symbol id="i-shopping-bag" viewBox="0 0 24 24"><path d="M16 10a4 4 0 0 1-8 0"/><path d="M3.103 6.034h17.794"/><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/></symbol>
 <symbol id="i-skull" viewBox="0 0 24 24"><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M15 22a1 1 0 0 0 1-1v-1a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20v1a1 1 0 0 0 1 1z"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="12" r="1"/></symbol>
@@ -336,15 +344,17 @@
       <label title="Dialogue lines SkyrimNet stored with no text: &quot;Lucia said nothing (empty line)&quot;"><input type="checkbox" data-toggle="empty" checked> Show empty responses</label>
       <label title="Event ids on each line, request ids on each prompt"><input type="checkbox" data-toggle="ids"> Show event ids</label>
       <label title="Real date and time on every line and card, next to the game time"><input type="checkbox" data-toggle="realtime" checked> Show real-world time</label>
-      <label title="Emoji as the page's icons, as they were (off: plain line icons in the text colour)"><input type="checkbox" data-toggle="emoji"> Use emoji</label>
+      <label title="Where each speaker was, after the times on their lines: (The Bannered Mare, near the Door to Bannered Mare Cellar)"><input type="checkbox" data-toggle="inloc" checked> Show locations on lines</label>
       <label title="A filled, rounded box around each spoken line (off: the text alone, in its speaker's box)"><input type="checkbox" data-toggle="bubbles" checked> Show line bubbles</label>
+      <label title="Emoji as the page's icons, as they were (off: plain line icons in the text colour)"><input type="checkbox" data-toggle="emoji"> Use emoji</label>
+      <label title="Game dates as 8/18/201 12:40 AM, Mor. (off: 12:40 AM, Morndas, 18th of Last Seed, 4E 201)"><input type="checkbox" data-toggle="shortdates"> Short game dates</label>
       <div class="step" data-step="fs" title="Text size of the whole page">Text size <button title="Smaller">−</button><span></span><button title="Larger">+</button></div>
       <div class="step" data-step="cw" title="Width of the context column, as a share of the window">Column width <button title="Narrower">−</button><span></span><button title="Wider">+</button></div>
       <div class="step" data-step="sky" title="How strongly the timeline's day and night wave shows (0% hides it)">Sky wave <button title="Fainter">−</button><span></span><button title="Stronger">+</button></div>
     </div>
   </details>
 </header>
-<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
+<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><label class="tbtn" title="Show &quot;🧠 recalled N memories&quot; under NPC replies whose prompt had recalled memories: hover one to read them, click it to open the line with only its memories. Only while the prompt logs exist."><input type="checkbox" data-toggle="recalled" checked hidden>🧠 <span class="n" id="nrecalled">0</span></label><label class="tbtn" title="Show &quot;👁️ saw a new scene&quot; under the NPC reply whose prompt first had a new OmniSight scene (What You Currently See Around You): hover one to read it, click it to open the line with only that scene. SkyrimNet keeps no picture of these scenes. Only while the prompt logs exist."><input type="checkbox" data-toggle="saw" checked hidden>👁️ <span class="n" id="nsaw">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
 <aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on) (before the first one: the top of the chat)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on) (after the last one: the end of the chat)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
@@ -401,7 +411,7 @@ $("host").textContent = HOST;
 // Toggles, remembered across reloads.
 // Emoji → icon in the sprite above. The code keeps writing emoji: iconize() swaps each one it finds in text for an icon,
 // keeping the emoji beside it (hidden) for ☰ Use emoji, on the page at start and on anything added later.
-const EMOJI_ICON = { "🤝": "handshake", "📌": "pin", "🧩": "puzzle", "⏫": "chevrons-up", "⏬": "chevrons-down", "🔄": "refresh-cw", "🎮": "gamepad-2", "🌓": "sun-moon", "🧾": "receipt", "🤏": "minimize-2", "🎨": "palette", "🗂": "panel-right", "💬": "message-circle", "💭": "cloud", "🧠": "brain", "📔": "notebook-pen", "📷": "camera", "🗣": "messages-square", "📖": "book-open", "💤": "bed", "🎬": "clapperboard", "🪙": "shopping-bag", "💰": "coins", "🎁": "gift", "🗝": "key-round", "🍖": "utensils", "👊": "swords", "🫳": "hand", "🧭": "compass", "🪑": "armchair", "🎯": "target", "⚠": "triangle-alert", "📊": "chart-column", "☠": "skull", "📍": "map-pin", "⏱": "timer", "🔝": "arrow-up-to-line", "🔚": "arrow-down-to-line", "📡": "radio", "🏷": "tag" };
+const EMOJI_ICON = { "🤝": "handshake", "📌": "pin", "🧩": "puzzle", "⏫": "chevrons-up", "⏬": "chevrons-down", "🔄": "refresh-cw", "🎮": "gamepad-2", "🌓": "sun-moon", "🧾": "receipt", "🤏": "minimize-2", "🎨": "palette", "🗂": "panel-right", "💬": "message-circle", "💭": "cloud", "🧠": "brain", "📔": "notebook-pen", "📷": "camera", "🗣": "messages-square", "📖": "book-open", "💤": "bed", "🎬": "clapperboard", "🪙": "shopping-bag", "💰": "coins", "🎁": "gift", "🗝": "key-round", "🍖": "utensils", "👊": "swords", "🫳": "hand", "🧭": "compass", "🪑": "armchair", "🎯": "target", "⚠": "triangle-alert", "📊": "chart-column", "☠": "skull", "📍": "map-pin", "⏱": "timer", "🔝": "arrow-up-to-line", "🔚": "arrow-down-to-line", "📡": "radio", "🏷": "tag", "👁": "eye" };
 const EMOJI_RE = new RegExp(`(?:${Object.keys(EMOJI_ICON).join("|")})\uFE0F?`, "gu");
 const SVG_NS = "http://www.w3.org/2000/svg";
 function icon(e, name = EMOJI_ICON[e.replace("\uFE0F", "")]) { // name: another icon for the same emoji (the prompt's \uD83E\uDDFE)
@@ -476,12 +486,30 @@ function rtSpan(sec, cls = "rt", sep = " · ") { // null without a time, and in 
   const d = new Date(sec * 1000);
   return el("span", cls, sep + d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(/\s/g, "").toLowerCase());
 }
+// ☰ Short game dates: "12:40 AM, Morndas, 18th of Last Seed, 4E 201" → "8/18/201 12:40 AM, Mor." (anything else stays as it is).
+// gameTime() puts both forms in the page and CSS shows one, so the toggle needs no redraw; plain text asks shortDates().
+const MONTHS = ["Morning Star", "Sun's Dawn", "First Seed", "Rain's Hand", "Second Seed", "Midyear", "Sun's Height", "Last Seed", "Hearthfire", "Frostfall", "Sun's Dusk", "Evening Star"];
+function shortGame(s) {
+  const m = String(s || "").match(/^(\d{1,2}:\d\d [AP]M), (\w+), (\d+)\w* of (.+?), 4E (\d+)$/), mo = m ? MONTHS.indexOf(m[4]) + 1 : 0;
+  return mo ? `${mo}/${m[3]}/${m[5]} ${m[1]}, ${m[2].slice(0, 3)}.` : s;
+}
+const shortDates = () => !document.body.classList.contains("hide-shortdates");
+const gameTimeText = s => shortDates() ? shortGame(s) : s;
+function gameTime(s) {
+  if (!s) return "";
+  const short = shortGame(s);
+  if (short === s) return s;
+  const n = el("span", "gt");
+  n.append(el("span", "gl", s), el("span", "gs", short));
+  return n;
+}
 function metaNode(e) {
-  const t = el("span", "t", e.gameTimeStr || "");
+  const t = el("span", "t");
+  t.append(gameTime(e.gameTimeStr));
   const rt = rtSpan(e.localTime);
   if (rt) t.append(rt);
   const where = meta({ ...e, gameTimeStr: "" }); // "(place)", after the times
-  if (where) t.append((e.gameTimeStr ? " · " : "") + where);
+  if (where) t.append(el("span", "inloc", (e.gameTimeStr ? " · " : "") + where)); // ☰ Show locations on lines
   return t;
 }
 const unwrap = s => s.trim().replace(/^\*([^*]+)\*$/, "$1");
@@ -668,7 +696,7 @@ function add(e) {
     // Conversation-log sessions keep a plain label.
     const conv = archive.startsWith("conv:"), [name, ...rest] = place(e).split(", "), h = nameHue(cell(e));
     stay = { last: e.localTime, total: 0, dur: el("span", "dur") };
-    if (conv) div.append(el("span", null, place(e) + " · " + (e.gameTimeStr || "")));
+    if (conv) { const l = el("span", null, place(e) + " · "); l.append(gameTime(e.gameTimeStr)); div.append(l); }
     else {
       div.classList.add("cell");
       div.style.setProperty("--band", `hsl(${h} 28% 21%)`); // the same as its block in the timeline (renderScrubber)
@@ -679,7 +707,9 @@ function add(e) {
       if (rest.length) head.append(" ", el("span", "rest", rest.join(", "))); // real spaces, so copied text reads right
       if (lastLocation) head.append(" ", el("span", "from", "from " + lastLocation));
       // under it: the game date and time, then the real time spent here (below)
-      div.append(head, el("div", "sub", e.gameTimeStr || ""));
+      const sub = el("div", "sub");
+      sub.append(gameTime(e.gameTimeStr));
+      div.append(head, sub);
     }
     div.lastChild.append(stay.dur);
     feed.append(div);
@@ -834,11 +864,11 @@ function updatePosition() {
   cursor.style.display = "block";
   const pct = tlX[i] * 100;
   cursor.style.left = pct + "%";
-  $("curtime").textContent = e.gameTimeStr || "";
+  $("curtime").textContent = gameTimeText(e.gameTimeStr || "");
   $("curtime").classList.toggle("flip", pct > 60);
   for (const s of segs) s.div.classList.toggle("on", i >= s.start && i <= s.end);
   const w = $("where");
-  w.replaceChildren(el("b", null, place(e)), " · " + (e.gameTimeStr || ""));
+  w.replaceChildren(el("b", null, place(e)), " · ", gameTime(e.gameTimeStr));
   // Cards: dim the ones whose 📌 marker (or line) is still below the chat on screen; keep the newest at or above
   // the top line in view. 🔄️ places cards beside their lines already, so nothing is dimmed there.
   const bottom = $("scrub").getBoundingClientRect().top, ahead = side.map(m => { // read every position, then restyle
@@ -1070,6 +1100,7 @@ function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node t
   d.replaceChildren(...stacked ? [main, pane] : [pane, main]);
   dbody.replaceChildren();
   $("dtocw").hidden = $("dsect").hidden = true;
+  wholeOnce = false; focusOnce = null; // a new popup follows the picks again
   d.classList.remove("withprompt");
   if (x.noPrompt) { fillPrompt = null; return d.showModal(); } // nothing to show beside it: the greyed 🧾's tooltip says why
   const fill = fillPrompt = async () => {
@@ -1077,7 +1108,7 @@ function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node t
     $("dtocw").hidden = $("dsect").hidden = true;
     const nodes = await promptNodes(x.content || x.description || "", (x.time || 0) * 1000, x);
     if (fillPrompt !== fill) return; // another popup was opened meanwhile
-    if (nodes.hit) x.lines?.(nodes.hit);
+    if (nodes.hit) x.lines?.(nodes.hit, nodes.reqs);
     dbody.replaceChildren(...nodes, ...(extra ? [extra()] : []));
     buildToc();
   };
@@ -1150,6 +1181,8 @@ async function openCard(x) {
 }
 function countActs() {
   $("nact").textContent = feed.querySelectorAll(".act").length;
+  $("nrecalled").textContent = feed.querySelectorAll(".recalled").length;
+  $("nsaw").textContent = feed.querySelectorAll(".saw").length;
   for (const n of document.querySelectorAll("#actpanel .n")) n.textContent = feed.querySelectorAll(".act-" + n.dataset.act).length;
 }
 // 🎯 The action a reply picked: SkyrimNet strips the reply's "ACTION: name PARAMS: {...}" line before saving the dialogue,
@@ -1178,7 +1211,58 @@ async function markActions() {
     n.title = "Picked in the model's reply. SkyrimNet may not have carried it out (it drops actions that aren't allowed at that moment).";
     line.node.append(n);
   }
+  markContext(reqs);
   countActs();
+}
+// Notes under an NPC's reply from the prompt that wrote it, once per reply, after its last line (as 🎯):
+// "🧠 recalled 2 memories" when it had recalled memories (a "…Potentially Relevant Memories" section), and
+// "👁️ saw a new scene: …" when its scene (OmniSight's "What You Currently See Around You", written by a vision request whose
+// picture SkyrimNet doesn't keep) differs from the one before it in the chat. Hover a note for the section, click it for the
+// line's popup with only that section. The prompt is the one the popup shows for the line (the closest reply holding its
+// text), looked for only near a request with either section, so a long playthrough stays quick.
+const MEM_SEC = "Potentially Relevant Memories", SCENE_SEC = "What You Currently See Around You";
+function markContext(reqs) {
+  const useful = reqs.filter(r => { const p = r.request_payload || ""; return p.includes(MEM_SEC) || p.includes(SCENE_SEC); });
+  if (!useful.length) return;
+  const near = (list, t) => list.filter(r => Math.abs(+r.response_timestamp_unix - t) < 30000);
+  const last = new Map(); // reply → its last line: a thought and a line from one reply share one note
+  rows.forEach((row, i) => {
+    const e = row.e, t = (e.localTime || 0) * 1000;
+    if (!(/^dialogue/.test(e.type || "") && !/^dialogue_player/.test(e.type) || e.type === "npc_thoughts") || GAME_LINE.test(e.type) || !t
+        || !near(useful, t).length) return;
+    const hit = promptHits(near(reqs, t), eventText(e), t)[0];
+    if (hit && useful.includes(hit)) last.set(hit, { row, i });
+  });
+  const note = (row, cls, text, title, focus) => {
+    if (row.node.querySelector("." + cls)) return;
+    const b = el("div", cls, text);
+    b.title = title;
+    b.addEventListener("click", ev => { ev.stopPropagation(); openPrompt(rows.indexOf(row)); focusOnce = focus; });
+    row.node.append(b);
+  };
+  let scene = null;
+  for (const [hit, { row }] of [...last].sort((x, y) => x[1].i - y[1].i)) { // chat order, for "new scene"
+    const secs = promptSections(hit), body = s => s.text.replace(/^\s*#+\s*/, "");
+    const mem = secs.filter(s => ANY_LEVEL.test(s.label)).map(body).join("\n\n"), n = (mem.match(/^\s*\d+\.\s/gm) || []).length;
+    if (mem) note(row, "recalled", n ? `🧠 recalled ${n} ${n === 1 ? "memory" : "memories"}` : "🧠 recalled memories",
+      "In this reply's prompt (click to open them):\n\n" + clip(mem), MEM_SEC);
+    const sc = secs.find(s => s.label === SCENE_SEC);
+    if (!sc) continue;
+    const what = body(sc).replace(/^What You Currently See Around You\s*/, "").trim();
+    if (what === scene) continue;
+    scene = what;
+    const first = what.replace(/\*\*[^*]+:\*\*/g, " ").replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0];
+    note(row, "saw", `👁️ saw a new scene: ${first.length > 90 ? first.slice(0, 89) + "…" : first}`,
+      "What OmniSight described to this reply's prompt, new since the reply before (click to open it):\n\n" + clip(what), SCENE_SEC);
+  }
+}
+const clip = t => t.length > 900 ? t.slice(0, 899) + "…" : t;
+// A request's # sections (parsed once per request)
+function promptSections(r) {
+  if (r.secs) return r.secs;
+  let ms = [];
+  try { ms = JSON.parse(r.request_payload).messages || []; } catch {}
+  return r.secs = ms.map(m => typeof m.content === "string" ? m.content : (m.content || []).map(c => c?.text || "").join("\n\n")).flatMap(sections);
 }
 async function markInputs() {
   const log = requestLog(-1), reqs = await log.list; // whatever log there is
@@ -1223,6 +1307,7 @@ async function promptNodes(text, t, x) { // x: the card or line (for a plot memo
   const plan = hits.length && !text_.length; // a plot memory: the plan it was filled in from
   const out = [];
   out.hit = hits[0]; // the request shown first (the closest match), for lines that came from the same reply
+  out.reqs = reqs;
   if (hits.length) {
     if (plan) out.push(el("div", "note", "This memory was filled in by Narrative Engine from the plan below, so its sentence is in no reply."));
     hits.slice(0, plan ? 1 : 3).forEach((r, k) => out.push(requestBlock(r, k === 0,
@@ -1245,19 +1330,21 @@ function openPrompt(i) {
   const e = rows[i].e, d = e.data || {}, who = el("div", "who"), name = d.speaker || d.npc_name || d.player_name;
   if (name) { const b = el("b", "nm", name); b.style.color = players.has(name) ? PLAYER_COLOR : nameColor(name); who.append(b); }
   else who.append(badge(e.type));
-  if (e.gameTimeStr) who.append(el("span", null, e.gameTimeStr));
+  if (e.gameTimeStr) { const g = el("span"); g.append(gameTime(e.gameTimeStr)); who.append(g); }
   if (hasIds() && e.id != null) who.append(el("span", "tid", "#" + e.id));
-  const box = el("div", "plines"), clone = j => { const n = rows[j].node.cloneNode(true); n.classList.remove("sel"); return n; };
+  const box = el("div", "plines"), clone = j => { const n = rows[j].node.cloneNode(true); n.classList.remove("sel"); n.querySelectorAll(".recalled, .saw").forEach(x => x.remove()); return n; }; // the popup shows the memories itself
   box.append(clone(i));
   // One reply often holds a thought and a line of dialogue: once its request is found, show every line of this speaker's box
-  // (nearby, in chat order) whose text is in that reply. Pairs in a row each have their own reply, so each keeps its own.
+  // (nearby, in chat order) whose text is in that reply. Pairs in a row each have their own reply, so each keeps its own:
+  // a line is this reply's only if this reply is also the closest one holding its text (two replies in a row can say the same thing).
   const top = n => { while (n.parentElement && n.parentElement !== feed) n = n.parentElement; return n; };
-  const lines = hit => {
+  const lines = (hit, reqs) => {
     const grp = top(rows[i].node), js = [];
     for (let j = Math.max(0, i - 12); j <= Math.min(rows.length - 1, i + 12); j++) {
       if (j === i) { js.push(j); continue; }
       const n = needleOf(eventText(rows[j].e));
-      if (top(rows[j].node) === grp && n.length > 3 && hit.hay.includes(n)) js.push(j);
+      if (top(rows[j].node) === grp && n.length > 3 && hit.hay.includes(n)
+          && promptHits(reqs, eventText(rows[j].e), (rows[j].e.localTime || 0) * 1000)[0] === hit) js.push(j);
     }
     box.replaceChildren(...js.map(clone));
     for (const j of js) rows[j].node.classList.add("sel");
@@ -1303,16 +1390,19 @@ function tocSpy() {
 // it's in the cached part). Picking some shows only those sections (a heading down to the next one at its level or above),
 // in prompt order; none picked shows the whole prompt. The NPC's name is left out of an entry ("Olfina's Potentially
 // Relevant Memories" → "Potentially Relevant Memories", "Speech Profile of Sinmir" → "Speech Profile"), so a pick stays on
-// from one line's popup to the next.
+// from one line's popup to the next. When none of the picked sections is in a prompt, it says so instead of showing it all.
 let PICK = new Set(JSON.parse(localStorage["snev.pick"] || "[]"));
+let wholeOnce = false; // "show the whole prompt" under that note: this popup only, the picks stay
+let focusOnce = null; // a section shown alone in this popup only (a 🧠's memories), the picks stay
+const ANY_LEVEL = /Potentially Relevant Memories/i; // listed at any heading level (other NPCs' recalled memories come as ###)
 function sections(text) {
   const lines = String(text).split("\n"), hs = [], bold = [];
   let fence = false;
   lines.forEach((l, i) => {
     if (/^\s*```/.test(l)) fence = !fence;
     if (fence) return;
-    const m = l.match(/^\s*(#{1,2})\s+(.*\S)/), b = l.match(/^\s*\*\*([^*]+?)[\s:.]*\*\*/);
-    if (m) hs.push({ i, lv: m[1].length, label: m[2] });
+    const m = l.match(/^\s*(#{1,6})\s+(.*\S)/), b = l.match(/^\s*\*\*([^*]+?)[\s:.]*\*\*/);
+    if (m && (m[1].length <= 2 || ANY_LEVEL.test(m[2]))) hs.push({ i, lv: m[1].length, label: m[2] });
     else if (b) bold.push({ i, lv: 3, label: b[1], bold: true });
   });
   const use = hs.length ? hs : bold; // a message with no # headings (OmniSight's) is laid out in lines that start in **bold**
@@ -1327,32 +1417,45 @@ function buildTags() {
     s.key = s.bold ? s.label : s.label.replace(owner, "");
     for (const n of names) if (s.key.endsWith(" of " + n)) s.key = s.key.slice(0, -n.length - 4);
   }
-  const keys = [...new Set(secs.map(s => s.key))], picked = keys.filter(k => PICK.has(k)), on = picked.length > 0;
+  const pick = focusOnce ? new Set([focusOnce]) : PICK; // a 🧠's popup: its memories only, the picks untouched
+  const keys = [...new Set(secs.map(s => s.key))], picked = keys.filter(k => pick.has(k)), missing = [...pick].filter(k => !keys.includes(k));
+  const on = pick.size > 0 && keys.length > 0 && !wholeOnce; // keys: a prompt was found (no prompt: its own note stays)
   const item = (text, checked, title, change, cls) => {
     const l = el("label", cls), box = el("input");
     box.type = "checkbox"; box.checked = checked;
-    box.addEventListener("change", () => { change(box.checked); localStorage["snev.pick"] = JSON.stringify([...PICK]); buildToc(); dbody.scrollTop = 0; });
+    box.addEventListener("change", () => { focusOnce = null; change(box.checked); wholeOnce = false; localStorage["snev.pick"] = JSON.stringify([...PICK]); buildToc(); dbody.scrollTop = 0; });
     l.title = title;
     l.append(box, " " + text);
     return l;
   };
-  $("sectpanel").replaceChildren(item("whole prompt", !on, "Show every section (turns the picked ones off)", () => PICK.clear(), "mlwrap"), ...keys.map(k => {
+  $("sectpanel").replaceChildren(item("whole prompt", !pick.size, "Show every section (turns the picked ones off)", () => PICK.clear(), "mlwrap"),
+    ...missing.map(k => item(k + " (not in this prompt)", true, "Picked, but this prompt has no such section", () => PICK.delete(k))), ...keys.map(k => {
     const of = secs.filter(s => s.key === k), cached = of.every(s => s.cached);
-    return item(k + (cached ? " *" : ""), PICK.has(k), [...new Set(of.map(s => s.label))].join("\n") + (cached ? "\n* in the cached part of the prompt" : ""),
+    return item(k + (cached ? " *" : ""), pick.has(k), [...new Set(of.map(s => s.label))].join("\n") + (cached ? "\n* in the cached part of the prompt" : ""),
       v => v ? PICK.add(k) : PICK.delete(k));
   }));
   if (secs.some(s => s.cached)) $("sectpanel").append(el("div", "none sep", "* cached part of the prompt (green bar)"));
-  $("nsect").textContent = on ? `${picked.length}/${keys.length}` : keys.length;
-  $("dsect").classList.toggle("on", on);
-  $("dsect").hidden = keys.length < 2;
+  $("nsect").textContent = pick.size ? `${picked.length}/${keys.length}` : keys.length;
+  $("dsect").classList.toggle("on", pick.size > 0);
+  $("dsect").hidden = keys.length < (pick.size ? 1 : 2);
   dbody.querySelector(":scope > .picked")?.remove();
   for (const n of dbody.children) n.hidden = on;
   if (on) {
     const p = el("div", "picked");
-    p.append(...secs.filter(s => PICK.has(s.key)).map(s => { const n = view(s.text); if (s.cached) n.classList.add("cached"); return n; }));
+    p.append(...secs.filter(s => pick.has(s.key)).map(s => { const n = view(s.text); if (s.cached) n.classList.add("cached"); return n; }));
+    if (!picked.length) {
+      const all = el("a", null, "Show the whole prompt");
+      all.href = "#";
+      all.addEventListener("click", ev => { ev.preventDefault(); wholeOnce = true; buildToc(); });
+      const note = el("div", "note", `None of your picked sections is in this prompt (${missing.join(", ")}). `);
+      note.append(all);
+      p.append(note);
+    }
     dbody.prepend(p);
   }
 }
+// The list may hang out of a short popup: it stops at the window's bottom and scrolls.
+$("dsect").addEventListener("toggle", () => { const p = $("sectpanel"); p.style.maxHeight = `${Math.max(160, innerHeight - p.getBoundingClientRect().top - 12)}px`; });
 $("dtoc").addEventListener("change", ev => {
   const n = tocTargets[+ev.target.value];
   if (n) dbody.scrollTop += n.getBoundingClientRect().top - dbody.getBoundingClientRect().top - 4;
@@ -1541,7 +1644,9 @@ function eventCard(x) {
   card.style.borderColor = `hsl(${h} 30% 30%)`;
   const who = el("div", "who"), src = el("b", null, g?.label || x.kind);
   src.style.color = `hsl(${h} 55% 68%)`;
-  who.append(src, el("span", null, e.gameTimeStr || ""), rtSpan(e.localTime, "rt", "") || "", el("span", "kind", evKind(e.type, g)));
+  const gtn = el("span");
+  gtn.append(gameTime(e.gameTimeStr));
+  who.append(src, gtn, rtSpan(e.localTime, "rt", "") || "", el("span", "kind", evKind(e.type, g)));
   card.append(who, colourNames(plainText(e).replace(/\s*\[PE event [^\]]*\]\s*$/, ""))); // drop the political engine's debug suffix
   cardClick(card, x);
   return card;
@@ -1596,7 +1701,9 @@ function omniCard(x) {
   card.style.borderColor = `hsl(${h} 25% 32%)`;
   const who = el("div", "who"), name = el("b", null, "📷 " + (x.name || "?"));
   name.style.color = x.subject === "actor" ? nameColor(x.name) : `hsl(${h} 55% 72%)`;
-  who.append(name, el("span", null, x.gameTimeStr || ""), rtSpan(x.time, "rt", "") || "", el("span", "kind", x.subject || ""), promptBtn(x));
+  const gtn = el("span");
+  gtn.append(gameTime(x.gameTimeStr));
+  who.append(name, gtn, rtSpan(x.time, "rt", "") || "", el("span", "kind", x.subject || ""), promptBtn(x));
   card.append(who);
   if (x.image) {
     const a = el("a"), img = el("img");
@@ -1833,8 +1940,8 @@ function ingest(events) {
   }
   const last = rows.at(-1)?.e;
   endMark.className = "endmark" + (archive ? "" : " live");
-  const label = el("span", null, (!archive ? "Now" : archive.startsWith("conv:") ? "End of this day" : "End of this playthrough")
-    + (last?.gameTimeStr ? " · " + last.gameTimeStr : ""));
+  const label = el("span", null, (!archive ? "Now" : archive.startsWith("conv:") ? "End of this day" : "End of this playthrough") + (last?.gameTimeStr ? " · " : ""));
+  label.append(gameTime(last?.gameTimeStr));
   if (!archive) label.prepend(el("span", "pulse", "●")); // live
   endMark.replaceChildren(label);
   if (rows.length) feed.append(endMark); // moved back to the end after new lines

@@ -38,7 +38,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 
 ## The page
 
-**Top bar:** where you are (follows your scrolling), 🎨 coloured names, 🌓 timeline by game time (space the timeline by game time instead of an even share per event, so a sleep or a long journey takes room; off at first), 🗂️ the context column, the **History** picker, and **☰**.
+**Top bar:** where you are (follows your scrolling), 🔝 🔚 both columns to the start or the end, 📡 follow live (keep the newest line in view as new lines arrive, while you're at the end: scroll up to read and it waits, its button dashed and faded, until you're back at the end or press 🔚; switching it on goes to the end; off: new lines are added below without scrolling), 🎨 coloured names, 🌓 timeline by game time (space the timeline by game time instead of an even share per event, so a sleep or a long journey takes room; off at first), 🗂️ the context column, the **History** picker, and **☰**.
 
 - Modlist (in ☰, shown when there is more than one): every SkyrimNet folder the helper finds when it starts (restart it after adding one): the folders listed under `skyrimnet:` in `config.yaml`, then every MO2 instance's overwrite folder (a `ModOrganizer.ini` up to two folders deep on any local drive, or a global instance in `%LOCALAPPDATA%\ModOrganizer`), then the game's own `Data` folder (Vortex, manual installs), then any `<drive>:\Modlists\*\overwrite` folder. Each is named after its MO2 instance, mod or game folder; folders that share a name all get their parent folder added, such as *ADT (Modlists)*. ● marks the one being played, or played last: the page starts there, and *Live* always reads it. Picking another modlist opens its newest playthrough. The address keeps the modlist and view (`#ml=…&view=…`), so a refresh or a bookmark opens them again.
 
@@ -61,7 +61,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 - A band with faint › chevrons in its own colour across its right two thirds, edged like your turns (thick sides), in the colour of the cell's block in the timeline, marks each change of cell: "📍 Arrived at **Whiterun** from Drunken Huntsman" (where you came from greyed, so a door and a jump across the map, such as `coc` or fast travel, read differently), with the rest of the location beside it, and under it the game date and time and *Here for* (the real time from the first line there to the last, gaps over 20 minutes left out; shown once it reaches a minute).
 - The chat ends with **● Now** and the game time of the latest line (live), or *End of this playthrough* / *End of this day* in History.
 - 📌 Markers such as *🧠 Hadvar memory created ┄┄┄*, *📔 Camilla Valerius diary written* and *📷 Embershard Mine captured* (and *🧩 IntelEngine · follower recruited* for 🧩 groups) sit after the line each card in the context column belongs to. Click one to bring its card into view.
-- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, 🎮 the game's own dialogue, each with counts; ⏫ ⏬ previous and next place (scroll to where you arrived in a cell); ⤓ keep scrolling (follow new lines as they arrive).
+- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, 🎮 the game's own dialogue, each with counts; ⏫ ⏬ previous and next place (scroll to where you arrived in a cell; ⏫ before the first one goes to the top of the chat, ⏬ after the last one to its end).
 
 **Context column** (right; 🗂️ next to History shows or hides it)
 
@@ -75,7 +75,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 - **Following you:** cards whose 📌 marker (or line) is still below the bottom of the chat are dimmed; every card whose marker you can see is lit (not with 🔄️ on, where position shows it). The outlined card is the newest one at or above the chat line under the bar, and ⤓ keeps it in view, gliding the column to each new one (it jumps when the new one is far away, as after picking another view).
 - **🤏 Compact:** each OmniSight picture small with the first four lines of its description beside it, and the start of each diary (an OmniSight picture's popup still has the whole description). Off: whole descriptions and diaries.
 - **🔄️ Line up:** each card sits beside the chat line it belongs to and the column scrolls with the chat (the mouse wheel over the column scrolls the chat). Where cards crowd, the column moves faster than the chat, but never more than 2.5 times as fast: it starts moving before a bunch of markers and catches up after it, so each card there sits a little ahead of or behind its marker instead of flying past. Over the last screen of the chat it runs a little ahead, so the last cards come fully into view as the chat reaches its end. Off: the column scrolls on its own and ⤓ applies.
-- **⏫ ⏬ Previous / next card** (with 🔄️ on; greyed out otherwise): scrolls the chat to the previous or next visible card's 📌 marker, a third of the way down the chat, with the card lined up beside it and outlined for a moment. Press again while it glides to step on.
+- **⏫ ⏬ Previous / next card** (shown only with 🔄️ on): scrolls the chat to the previous or next visible card's 📌 marker, a third of the way down the chat, with the card lined up beside it and outlined for a moment. ⏫ before the first card goes to the top of the chat, ⏬ after the last one to its end. Press again while it glides to step on.
 - Turning a card type off (🧠, 📔, 📷) also hides its 📌 markers in the chat.
 - **Find a card's line:** clicking a card (its header or footer, for memories, diaries and pictures) lights up its 📌 marker (or its line) and the card. The chat scrolls only if the marker is off screen.
 - **Names:** names inside the cards are coloured, as in the chat (🎨 in the top bar turns both off).
@@ -113,10 +113,12 @@ Narrative Engine plot memories ("Nenya asked me to keep watch on Narri…", "I s
 - Show empty responses: dialogue lines SkyrimNet stored with no text ("Lucia said nothing")
 - Show real-world time: the real date and time on every chat line, marker and card, beside the game time (on at first)
 - Show line bubbles: a filled, rounded box around each spoken line (on at first; off: the text alone, inside its speaker's box, which then takes the line bubbles' fill while its 💭 thoughts go dark)
+- Use emoji: the page's icons as the coloured emoji this README uses (off at first: plain line icons in the text colour, from [Lucide](https://lucide.dev))
 - Text size − / +: make all the page's text smaller or larger, 70% to 160%
+- Column width − / +: the context column's share of the window, 25% to 60% (40% at first)
 - Sky wave − / +: how strongly the timeline's day and night wave shows, 0% (hidden) to 100%
 
-Toggles are remembered by the browser.
+Toggles are remembered by the browser. Every toggle's tooltip ends with its default, such as *(default: off)*.
 
 ## config.yaml
 
@@ -172,6 +174,6 @@ Things SkyrimNet doesn't keep, so the page can't show them:
 | `serve.py` | the read-only helper: static files plus `/local/*` JSON routes, bound to 127.0.0.1 only (all addresses with `lan: yes`); answers only requests addressed to localhost, or to an IP address with `lan: yes` |
 | `sn-eventview.bat` | double-click launcher |
 | `config.yaml` | LAN access, hide list and right-column groups |
-| `LICENSE` | MIT |
+| `LICENSE` | MIT (the line icons are Lucide's, ISC licence) |
 
 With `lan: yes`, a page opened from another device reaches SkyrimNet through the helper (`/sn/…`, only the three read-only calls the page makes), since SkyrimNet itself answers only on this PC. Anyone who can reach this PC can then read your dialogue, memories and diaries.

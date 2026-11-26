@@ -6,9 +6,12 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  :root { --dw:min(720px,55vw); --bg:#14161a; --panel:#1d2026; --fg:#e4e1d8; --muted:#8a8f98; --line:#2a2e36; --you:#2f4a6b; }
+  :root { --cw:.4; --dw:calc(var(--cw) * 100vw); /* the context column: ☰ Column width of the window */ --bg:#14161a; --panel:#1d2026; --fg:#e4e1d8; --muted:#8a8f98; --line:#2a2e36; --you:#2f4a6b; }
   * { box-sizing:border-box; }
   :root { --fs:1; --sky:.7; } /* ☰ text size, sky wave */
+  /* emoji shown as line icons (☰ Use emoji brings the emoji back): both are in the page, CSS picks one */
+  .ico svg { width:1.15em; height:1.15em; vertical-align:-.2em; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  body.hide-emoji .ico .emo, body:not(.hide-emoji) .ico svg { display:none; }
   body { margin:0; background:var(--bg); color:var(--fg); font:calc(15px * var(--fs))/1.45 "Segoe UI",system-ui,sans-serif; }
 
   header { position:sticky; top:0; z-index:5; display:flex; gap:12px; align-items:center;
@@ -51,10 +54,11 @@
   .tbtn:hover { background:var(--line); }
   .tbtn:has(input:not(:checked)) { opacity:.35; filter:grayscale(1); }
   .tbtn.txt { font-size:calc(13px * var(--fs)); margin-left:8px; }
+  body.follow-paused:not(.hide-autoscroll) .tbtn:has([data-toggle=autoscroll]) { outline:1px dashed var(--muted); outline-offset:-1px; opacity:.55; } /* 📡 on but waiting */
   .tbtn .n { color:var(--muted); font-size:calc(12px * var(--fs)); }
-  body.hide-align .tbtn.step { opacity:.35; filter:grayscale(1); cursor:default; background:none; } /* ⏫ ⏬ need 🔄️ */
+  body.hide-align .tbtn.step { display:none; } /* ⏫ ⏬ need 🔄️ */
   [data-i] { scroll-margin-top:96px; } /* below the header and the chat bar */
-  .colbar { position:sticky; top:41px; z-index:4; display:flex; align-items:center; gap:10px; padding:10px 14px; font-size:calc(13px * var(--fs));
+  .colbar { position:sticky; top:41px; z-index:4; display:flex; align-items:center; gap:8px; padding:7px 12px; font-size:calc(12px * var(--fs));
             background:var(--panel); border-bottom:1px solid var(--line); }
   .colbar .fill { flex:1; }
   /* 📌 where a memory, diary entry or OmniSight picture was made; its card is in the context column */
@@ -74,12 +78,12 @@
   .divider::before { content:""; display:block; border-top:1px solid var(--line); margin-bottom:-9px; }
   /* a cell's divider: a band in its timeline block's colour (conversation-log sessions keep the plain line) */
   /* edged like the player's turn box (thick sides, thin top and bottom). Over its right two thirds, faint > chevrons in the cell's
-     colour: arms at 60°, 18 px thick with 18 px between them, only whole ones (mask-repeat: space), the arms running just
-     off the top and bottom. Filled shapes, so the tips are points, never bevelled */
+     colour: arms at 60°, 18 px thick with 18 px between them, only whole ones (mask-repeat: space), each as tall as the band
+     (it scales with it, angle kept), the arms running just off the top and bottom. Filled shapes, so the tips are points, never bevelled */
   .divider.cell { position:relative; isolation:isolate; padding:6px 10px; border-radius:6px; background:var(--band);
                   border:1.5px solid var(--edge); border-width:1.5px 5px; }
   .divider.cell::after { content:""; position:absolute; inset:0 8px 0 33%; z-index:-1; pointer-events:none; background:var(--name); opacity:.04;
-    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='62'%3E%3Cpath d='M18 0L36 31 18 62H0L18 31 0 0z'/%3E%3C/svg%3E") center / 36px 62px space no-repeat; }
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 3 36 56'%3E%3Cpath d='M18 0L36 31 18 62H0L18 31 0 0z'/%3E%3C/svg%3E") center / auto 100% space no-repeat; }
   .divider.cell::before { display:none; }
   .divider.cell span { background:none; padding:0; }
   .divider.cell .head { color:var(--fg); font-size:calc(14px * var(--fs)); letter-spacing:.02em; }
@@ -138,7 +142,7 @@
   #shot .who .x, #shot .who .picon { margin-left:auto; } /* 🧾, then × (a chat line: × alone) */
   #shot .who .picon + .x { margin-left:0; }
   #shot .who .picon.none { cursor:help; } /* no prompt: hover for why */
-  #shot.withprompt .who .picon { opacity:1; background:hsl(0 0% 100% / .35); } /* shown */
+  #shot.withprompt .who .picon { opacity:1; color:var(--fg); } /* shown */
   #shot .ppane { display:none; }
   /* 🧾 open: a picture's or diary's prompt on its left, a chat line or memory above its prompt (.stacked); each part scrolls on its own */
   #shot[open].withprompt { width:94vw; max-width:94vw; display:flex; gap:16px; }
@@ -151,12 +155,15 @@
   #shot.withprompt.stacked .pmain { flex:0 0 auto; max-height:40vh; }
   #shot.withprompt.stacked .ppane { flex:1 1 auto; min-height:0; max-height:none; }
   .ppane .note { color:var(--muted); margin:6px 0; }
-  .side .top { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line); font-size:calc(13px * var(--fs)); }
+  .side .top { display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid var(--line); font-size:calc(12px * var(--fs)); }
+  /* the two column bars at 80% of the top bar's button size */
+  :is(.colbar, .side .top) :is(.tbtn:not(.txt), .menu summary) { font-size:calc(14px * var(--fs)); }
+  :is(.colbar, .side .top) .tbtn .n { font-size:calc(11px * var(--fs)); }
   .side .top .title { flex:1; min-width:0; display:flex; align-items:center; gap:10px; white-space:nowrap; } /* no overflow:hidden: it would clip the 🧩 menu */
   .side .x, #shot .x { cursor:pointer; color:var(--muted); font-size:calc(20px * var(--fs)); line-height:1; padding:0 4px; }
   .side .body { overflow:auto; padding:10px 14px 30px; font-size:calc(13px * var(--fs)); position:relative; }
   .memcard { margin:0 0 8px; padding:7px 11px; border-radius:10px; border:1px solid; cursor:pointer; line-height:1.4; transition:opacity .2s; }
-  .memcard .who { display:flex; gap:8px; align-items:baseline; font-size:calc(12px * var(--fs)); color:var(--muted); }
+  .memcard .who { display:flex; gap:8px; align-items:baseline; margin:0 0 2px; font-size:calc(12px * var(--fs)); color:var(--muted); } /* flush with the card's text and picture */
   .memcard .who b { font-size:calc(13px * var(--fs)); }
   .memcard .who .kind { margin-left:auto; font:600 calc(10px * var(--fs))/1 "Segoe UI",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
   .memcard .txt { margin:4px 0; font-size:calc(13.5px * var(--fs)); color:var(--fg); }
@@ -185,14 +192,15 @@
   #shot .pmain > .md { max-width:760px; margin:8px 4px; font-size:calc(14px * var(--fs)); line-height:1.55; }
   .memcard .md p, .pmain > .md p { margin:0 0 .8em; } /* diary paragraphs: a clear gap between them */
   .memcard .md p:last-child, .pmain > .md p:last-child { margin-bottom:0; }
-  /* 🧾 on a card and in its popup: the prompt that wrote the card. Boxed, white-tinted when there is a prompt to show,
-     grey when none was found (its tooltip says why). */
-  .picon { cursor:pointer; border:1px solid hsl(0 0% 100% / .55); border-radius:3px; background:hsl(0 0% 100% / .2); opacity:.9;
+  /* 🧾 on a card and in its popup: the prompt that wrote the card (a page icon, no box). Muted, lit on hover;
+     faded with a ✕ over it when none was found (its tooltip says why). */
+  .picon { cursor:pointer; color:var(--muted); opacity:.9;
            position:relative; display:inline-grid; place-items:center; width:18px; height:18px; box-sizing:border-box;
-           align-self:center; flex:none; font-size:calc(11px * var(--fs)); line-height:1; } /* a square box */
-  .picon:hover { opacity:1; background:hsl(0 0% 100% / .3); }
-  .picon.none { border-color:hsl(0 0% 40% / .8); background:hsl(0 0% 22% / .85); opacity:1; }
+           align-self:center; flex:none; font-size:calc(13px * var(--fs)); line-height:1; }
+  .picon:hover { opacity:1; color:var(--fg); }
+  .picon.none { opacity:1; }
   .picon.none > span { filter:grayscale(1); opacity:.45; } /* the 🧾 faded, a ❌ over it */
+  body.hide-emoji .picon.none::after { content:"✕"; color:var(--muted); font-weight:700; }
   .picon.none::after { content:"❌"; position:absolute; inset:0; display:grid; place-items:center; font-size:calc(9px * var(--fs)); }
   #shot .who .x { align-self:center; }
   #mbody.aligned { overflow:hidden; } /* 🔄️ the column follows the page; the wheel scrolls the page */
@@ -259,9 +267,53 @@
 </style>
 </head>
 <body>
+<!-- icons: Lucide (lucide.dev, ISC licence), shown in place of emoji unless ☰ Use emoji is on -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-armchair" viewBox="0 0 24 24"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/></symbol>
+<symbol id="i-bed" viewBox="0 0 24 24"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></symbol>
+<symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 5v16"/><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"/></symbol>
+<symbol id="i-brain" viewBox="0 0 24 24"><path d="M12 18V5"/><path d="M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4"/><path d="M17.707 6.294A3 3 0 1012 5a3 3 0 10-5.707 1.294"/><path d="M17.996 5.125a4 4 0 012.526 5.77"/><path d="M18 18a4 4 0 002-7.465"/><path d="M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517"/><path d="M6 18a4 4 0 01-2-7.465"/><path d="M6.004 5.125a4 4 0 00-2.526 5.77"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></symbol>
+<symbol id="i-chart-column" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+<symbol id="i-chevrons-down" viewBox="0 0 24 24"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></symbol>
+<symbol id="i-chevrons-up" viewBox="0 0 24 24"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></symbol>
+<symbol id="i-clapperboard" viewBox="0 0 24 24"><path d="m12.296 3.464 3.02 3.956"/><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3z"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="m6.18 5.276 3.1 3.899"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></symbol>
+<symbol id="i-coins" viewBox="0 0 24 24"><path d="M13.744 17.736a6 6 0 1 1-7.48-7.48"/><path d="M15 6h1v4"/><path d="m6.134 14.768.866-.5 2 3.464"/><circle cx="16" cy="8" r="6"/></symbol>
+<symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/></symbol>
+<symbol id="i-gamepad-2" viewBox="0 0 24 24"><line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></symbol>
+<symbol id="i-gift" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/><path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5"/><rect x="3" y="7" width="18" height="4" rx="1"/></symbol>
+<symbol id="i-hand" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></symbol>
+<symbol id="i-handshake" viewBox="0 0 24 24"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></symbol>
+<symbol id="i-key-round" viewBox="0 0 24 24"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></symbol>
+<symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+<symbol id="i-message-circle" viewBox="0 0 24 24"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></symbol>
+<symbol id="i-messages-square" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1"/></symbol>
+<symbol id="i-minimize-2" viewBox="0 0 24 24"><path d="m14 10 7-7"/><path d="M20 10h-6V4"/><path d="m3 21 7-7"/><path d="M4 14h6v6"/></symbol>
+<symbol id="i-notebook-pen" viewBox="0 0 24 24"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></symbol>
+<symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/></symbol>
+<symbol id="i-panel-right" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+<symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"/></symbol>
+<symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+<symbol id="i-arrow-up-to-line" viewBox="0 0 24 24"><path d="M5 3h14"/><path d="m18 13-6-6-6 6"/><path d="M12 7v14"/></symbol>
+<symbol id="i-arrow-down-to-line" viewBox="0 0 24 24"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></symbol>
+<symbol id="i-radio" viewBox="0 0 24 24"><path d="M16.247 7.761a6 6 0 0 1 0 8.478"/><path d="M19.075 4.933a10 10 0 0 1 0 14.134"/><path d="M4.925 19.067a10 10 0 0 1 0-14.134"/><path d="M7.753 16.239a6 6 0 0 1 0-8.478"/><circle cx="12" cy="12" r="2"/></symbol>
+<symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol>
+<symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+<symbol id="i-shopping-bag" viewBox="0 0 24 24"><path d="M16 10a4 4 0 0 1-8 0"/><path d="M3.103 6.034h17.794"/><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/></symbol>
+<symbol id="i-skull" viewBox="0 0 24 24"><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M15 22a1 1 0 0 0 1-1v-1a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20v1a1 1 0 0 0 1 1z"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="12" r="1"/></symbol>
+<symbol id="i-sun-moon" viewBox="0 0 24 24"><path d="M12 2v2"/><path d="M14.837 16.385a6 6 0 1 1-7.223-7.222c.624-.147.97.66.715 1.248a4 4 0 0 0 5.26 5.259c.589-.255 1.396.09 1.248.715"/><path d="M16 12a4 4 0 0 0-4-4"/><path d="m19 5-1.256 1.256"/><path d="M20 12h2"/></symbol>
+<symbol id="i-swords" viewBox="0 0 24 24"><path d="m13 19 6-6"/><path d="M14.5 17.5 3.586 6.586A2 2 0 013 5.172V3h2.172a2 2 0 011.414.586L17.5 14.5"/><path d="m14.828 6.172 2.586-2.586A2 2 0 0118.828 3H21v2.172a2 2 0 01-.586 1.414l-2.586 2.586"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/><path d="m5 14 4 4"/><path d="m5 21-2-2"/><path d="M7.5 16.5 4 20"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+<symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></symbol>
+<symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+<symbol id="i-utensils" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></symbol>
+</svg>
 <header>
   <span class="dot" id="dot" title="server"></span>
   <span class="where" id="where">Waiting for SkyrimNet on <b id="host"></b>…</span>
+  <span class="tbtn" id="jtop" title="Top: both columns to the start">🔝</span><span class="tbtn" id="jend" title="End: both columns to the latest line (just a jump: 📡 follow live keeps following)">🔚</span><label class="tbtn" title="Follow live: keep the newest line in view as new lines arrive, while you are at the end (scroll up to read and it waits, dashed, until you come back down). Off: new lines are added below without scrolling"><input type="checkbox" data-toggle="autoscroll" checked hidden>📡</label>
   <label class="tbtn" title="Colour names: in the chat and in the context column's cards"><input type="checkbox" data-toggle="names" checked hidden>🎨</label>
   <label class="tbtn" title="Timeline by game time: a long sleep or journey takes room, and gaps of an hour or more are greyed (off: an even share per event)"><input type="checkbox" data-toggle="bytime" hidden>🌓</label>
   <label class="tbtn" title="Context column: memories, diaries, OmniSight pictures and mod events beside the chat"><input type="checkbox" data-toggle="side" checked hidden>🗂️</label>
@@ -273,16 +325,18 @@
       <label title="Dialogue lines SkyrimNet stored with no text: &quot;Lucia said nothing (empty line)&quot;"><input type="checkbox" data-toggle="empty" checked> Show empty responses</label>
       <label title="Event ids on each line, request ids on each prompt"><input type="checkbox" data-toggle="ids"> Show event ids</label>
       <label title="Real date and time on every line and card, next to the game time"><input type="checkbox" data-toggle="realtime" checked> Show real-world time</label>
+      <label title="Emoji as the page's icons, as they were (off: plain line icons in the text colour)"><input type="checkbox" data-toggle="emoji"> Use emoji</label>
       <label title="A filled, rounded box around each spoken line (off: the text alone, in its speaker's box)"><input type="checkbox" data-toggle="bubbles" checked> Show line bubbles</label>
       <div class="step" data-step="fs" title="Text size of the whole page">Text size <button title="Smaller">−</button><span></span><button title="Larger">+</button></div>
+      <div class="step" data-step="cw" title="Width of the context column, as a share of the window">Column width <button title="Narrower">−</button><span></span><button title="Wider">+</button></div>
       <div class="step" data-step="sky" title="How strongly the timeline's day and night wave shows (0% hides it)">Sky wave <button title="Fainter">−</button><span></span><button title="Stronger">+</button></div>
     </div>
   </details>
 </header>
-<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell">⏬</span><label class="tbtn" title="Keep scrolling: jump to the newest line as it arrives"><input type="checkbox" data-toggle="autoscroll" checked hidden>⤓</label></div>
+<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
-<aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
+<aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on) (before the first one: the top of the chat)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on) (after the last one: the end of the chat)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
 <dialog id="shot" title="Esc or a click outside closes"><div class="ppane" id="ppane"><div class="pbar"><div class="toc" id="dtocw" hidden><select id="dtoc" title="Sections of the open prompt: follows your scrolling, pick one to jump"></select></div><label class="src" title="Show the exact prompt text instead of rendered markdown"><input type="checkbox" id="dsrc"> source</label></div><div id="dbody"></div></div></dialog>
 <script>
 // Reads the same feed as the SkyrimNet dashboard's Home page. ?host=… overrides the server.
@@ -334,8 +388,40 @@ let omni = [], diaries = []; // OmniSight screenshots and diary entries, anchore
 $("host").textContent = HOST;
 
 // Toggles, remembered across reloads.
+// Emoji → icon in the sprite above. The code keeps writing emoji: iconize() swaps each one it finds in text for an icon,
+// keeping the emoji beside it (hidden) for ☰ Use emoji, on the page at start and on anything added later.
+const EMOJI_ICON = { "🤝": "handshake", "📌": "pin", "🧩": "puzzle", "⏫": "chevrons-up", "⏬": "chevrons-down", "🔄": "refresh-cw", "🎮": "gamepad-2", "🌓": "sun-moon", "🧾": "receipt", "🤏": "minimize-2", "🎨": "palette", "🗂": "panel-right", "💬": "message-circle", "💭": "cloud", "🧠": "brain", "📔": "notebook-pen", "📷": "camera", "🗣": "messages-square", "📖": "book-open", "💤": "bed", "🎬": "clapperboard", "🪙": "shopping-bag", "💰": "coins", "🎁": "gift", "🗝": "key-round", "🍖": "utensils", "👊": "swords", "🫳": "hand", "🧭": "compass", "🪑": "armchair", "🎯": "target", "⚠": "triangle-alert", "📊": "chart-column", "☠": "skull", "📍": "map-pin", "⏱": "timer", "🔝": "arrow-up-to-line", "🔚": "arrow-down-to-line", "📡": "radio" };
+const EMOJI_RE = new RegExp(`(?:${Object.keys(EMOJI_ICON).join("|")})\uFE0F?`, "gu");
+const SVG_NS = "http://www.w3.org/2000/svg";
+function icon(e, name = EMOJI_ICON[e.replace("\uFE0F", "")]) { // name: another icon for the same emoji (the prompt's \uD83E\uDDFE)
+  const s = el("span", "ico"), svg = document.createElementNS(SVG_NS, "svg"), use = document.createElementNS(SVG_NS, "use");
+  use.setAttribute("href", "#i-" + name);
+  svg.append(use);
+  s.append(svg, el("span", "emo", e));
+  return s;
+}
+function iconize(root) {
+  const skip = n => n.parentElement?.closest(".ico, option, select, textarea, script, style, pre"); // pre: a prompt's exact text
+  const texts = [];
+  if (root.nodeType === Node.TEXT_NODE) { if (!skip(root)) texts.push(root); }
+  else if (root.nodeType === Node.ELEMENT_NODE && !root.closest(".ico")) {
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n; (n = w.nextNode());) if (!skip(n)) texts.push(n);
+  }
+  for (const n of texts) {
+    const parts = []; let last = 0;
+    const name = n.parentElement?.closest("[data-ico]")?.dataset.ico; // a spot that wants another icon for its emoji
+    for (const m of n.data.matchAll(EMOJI_RE)) { parts.push(n.data.slice(last, m.index), icon(m[0], name)); last = m.index + m[0].length; }
+    if (parts.length) n.replaceWith(...parts, n.data.slice(last));
+  }
+}
+iconize(document.body);
+new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.isConnected) iconize(n); })
+  .observe(document.body, { childList: true, subtree: true });
+
 function wireToggle(box) {
-  const key = "snev." + box.dataset.toggle;
+  const key = "snev." + box.dataset.toggle, tip = box.closest("label") || box.parentElement;
+  tip.title = (tip.title ? tip.title + "\n" : "") + `(default: ${box.checked ? "on" : "off"})`; // as built, before the saved choice
   if (localStorage[key] !== undefined) box.checked = localStorage[key] === "1";
   const apply = () => { document.body.classList.toggle("hide-" + box.dataset.toggle, !box.checked); localStorage[key] = box.checked ? "1" : "0"; };
   box.addEventListener("change", () => { apply(); layout(); updatePosition(); });
@@ -783,20 +869,29 @@ function jump(ev) {
 }
 // ☰ − / + rows: each sets a CSS variable in steps of 10%, remembered like the toggles. Text size (--fs): every font
 // size is calc(Npx * var(--fs)), spacing stays as it is. Sky wave (--sky): the timeline wave's opacity, 0 hides it.
-function stepper(key, min, max, def, after) {
+function stepper(key, min, max, def, after, step = 0.1) {
   const row = document.querySelector(`[data-step=${key}]`), [down, up] = row.querySelectorAll("button"), store = "snev." + key;
   let cur;
   const set = f => {
-    cur = Math.round(Math.min(max, Math.max(min, f)) * 10) / 10;
+    cur = Math.round(Math.round(Math.min(max, Math.max(min, f)) / step) * step * 100) / 100; // in steps, no float dust
     document.documentElement.style.setProperty("--" + key, cur);
     row.querySelector("span").textContent = Math.round(cur * 100) + "%";
   };
   // saved only when changed, so an untouched one follows a new default
-  for (const [b, d] of [[down, -0.1], [up, 0.1]]) b.addEventListener("click", () => { set(cur + d); localStorage[store] = cur; after?.(); });
+  row.title += `\n(default: ${Math.round(def * 100)}%)`;
+  for (const [b, d] of [[down, -step], [up, step]]) b.addEventListener("click", () => { set(cur + d); localStorage[store] = cur; after?.(); });
   set(+(localStorage[store] ?? def));
 }
 stepper("fs", 0.7, 1.6, 1, () => { layout(); updatePosition(); });
 stepper("sky", 0, 1, 0.7);
+stepper("cw", 0.25, 0.6, 0.4, () => { layout(); updatePosition(); }, 0.05);
+// 📡 waits while you're away from the end of the chat: its button shows that (dashed and faded) until you're back
+const atEndNow = () => scrollY + innerHeight >= document.documentElement.scrollHeight - 80;
+const markFollow = () => document.body.classList.toggle("follow-paused", !atEndNow());
+addEventListener("scroll", markFollow, { passive: true });
+addEventListener("resize", markFollow);
+// 📡 switched on: go to the end, where following starts
+document.querySelector("[data-toggle=autoscroll]").addEventListener("change", ev => { if (ev.target.checked) scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }); });
 document.querySelector("[data-toggle=bytime]").addEventListener("change", () => { renderScrubber(); updatePosition(); });
 scrub.addEventListener("pointerdown", ev => { scrub.setPointerCapture(ev.pointerId); jump(ev); });
 scrub.addEventListener("pointermove", ev => { if (ev.buttons) jump(ev); });
@@ -941,7 +1036,7 @@ function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node t
   const stacked = !!layout;
   const d = $("shot"), w = who.cloneNode(true), main = el("div", "pmain"), pane = $("ppane");
   const b = el("span", "picon" + (x.noPrompt ? " none" : "")), close = el("span", "x", "×");
-  b.append(el("span", null, "🧾"));
+  b.append(icon("🧾", "file-text"));
   b.title = x.noPrompt ? "No prompt: " + x.noPrompt : "Show or hide the prompt that wrote this, beside it";
   close.title = "Close (Esc)";
   close.addEventListener("click", () => d.close());
@@ -974,7 +1069,7 @@ function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node t
 // found the same way as a chat line's. Greyed (markInputs) when no prompt can be found for it.
 function promptBtn(x) {
   const b = el("span", "picon");
-  b.append(el("span", null, "🧾"));
+  b.append(icon("🧾", "file-text")); // a page, not narration's receipt
   b.title = "Show the prompt that wrote this, beside the card";
   b.addEventListener("click", ev => { ev.stopPropagation(); openCard(x); }); // not the card's flash of its line
   return b;
@@ -1211,13 +1306,18 @@ function stepCard(dir) {
   const cards = side.filter(x => x.node.offsetParent).map(x => [x, (x.mark?.offsetParent ? x.mark : rows[x.at]?.node)?.getBoundingClientRect().top])
     .filter(([, y]) => y != null).map(([x, y]) => [x, y + scrollY]) // [card, its marker's page y]
     .filter(([, y]) => dir > 0 ? y > at + 4 : y < at - 4);
-  if (!cards.length) return;
+  if (!cards.length) { toEdge(dir, base, v => stepTo = v); return; } // past the first or last card: the top or end of the chat
   const [x, y] = cards.reduce((a, b) => (dir > 0 ? b[1] < a[1] : b[1] > a[1]) ? b : a);
   stepTo = Math.max(0, Math.min(y - ref, document.documentElement.scrollHeight - innerHeight));
   scrollTo({ top: stepTo, behavior: "smooth" });
   flashCard(x); // outline it, as clicking its 📌 does
 }
 addEventListener("scrollend", () => { stepTo = null; });
+// ⏫ ⏬ with nothing further that way, and 🔝 🔚: glide to the top of the chat or its end (the latest line), unless already there
+function toEdge(dir, base, keep) {
+  const end = document.documentElement.scrollHeight - innerHeight, to = dir > 0 ? end : 0;
+  if (Math.abs(base - to) > 4) { keep(to); scrollTo({ top: to, behavior: "smooth" }); }
+}
 // ⏫ ⏬ in the chat's bar: scroll to the previous or next place's band (a change of cell), just under the bar. Pressed
 // again while the page is still gliding, it steps on from where that glide ends.
 let placeTo = null;
@@ -1225,11 +1325,17 @@ function stepPlace(dir) {
   const bar = $("cbar").getBoundingClientRect().bottom, base = placeTo ?? scrollY;
   const ys = [...feed.querySelectorAll(".divider")].map(d => d.getBoundingClientRect().top + scrollY - bar - 8); // page y that puts each band under the bar
   const y = dir > 0 ? ys.find(y => y > base + 4) : ys.reverse().find(y => y < base - 4);
-  if (y == null) return;
+  if (y == null) { toEdge(dir, base, v => placeTo = v); return; } // past the first or last place: the top or end of the chat
   placeTo = Math.max(0, Math.min(y, document.documentElement.scrollHeight - innerHeight));
   scrollTo({ top: placeTo, behavior: "smooth" });
 }
 addEventListener("scrollend", () => { placeTo = null; });
+// 🔝 🔚 in the top bar: both columns to the start or the end (the column follows by itself with 🔄️ line up on)
+for (const [id, dir] of [["jtop", -1], ["jend", 1]]) $(id).addEventListener("click", () => {
+  toEdge(dir, scrollY, () => {});
+  const mb = $("mbody");
+  if (!aligned()) mb.scrollTo({ top: dir > 0 ? mb.scrollHeight : 0, behavior: "smooth" });
+});
 for (const [id, dir] of [["lprev", -1], ["lnext", 1]]) $(id).addEventListener("click", e => {
   e.currentTarget.animate([{ boxShadow: "0 0 0 1.5px var(--fg)" }, { boxShadow: "0 0 0 1.5px transparent" }], 450);
   stepPlace(dir);
@@ -1635,6 +1741,8 @@ function ingest(events) {
   const fresh = events.filter(e => !seen.has(e.id)).sort((a, b) => a.id - b.id);
   if (!fresh.length) return false;
   const first = maxId < 0;
+  // 📡 follows only while you're at the end: scrolled up to read, you stay put until you come back down (or press 🔚)
+  const atEnd = atEndNow();
   for (const e of fresh) if (/^(dialogue_player|player_thoughts$)/.test(e.type || "")) // before rendering, so earlier lines know too
     for (const n of [e.data?.player_name, e.data?.speaker]) if (n) players.add(n); // both, as lines look them up either way
   names = nameMatcher(fresh); // 🎨 in the chat: names seen so far, this batch included
@@ -1660,8 +1768,9 @@ function ingest(events) {
   $("nthought").textContent = feed.querySelectorAll(".thought").length;
   $("nnarr").textContent = feed.querySelectorAll(".narr").length;
   countActs();
-  if (first || !document.body.classList.contains("hide-autoscroll")) scrollTo(0, document.body.scrollHeight); // ⤓ button
+  if (first || (atEnd && !document.body.classList.contains("hide-autoscroll"))) scrollTo(0, document.body.scrollHeight); // 📡 follow live
   updatePosition();
+  markFollow();
   return true;
 }
 

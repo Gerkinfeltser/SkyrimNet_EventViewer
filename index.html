@@ -72,6 +72,17 @@
   .divider { margin:18px 0 8px; text-align:left; color:var(--muted); font-size:calc(12px * var(--fs)); letter-spacing:.04em; }
   .divider span { background:var(--bg); padding:0 10px 0 0; }
   .divider::before { content:""; display:block; border-top:1px solid var(--line); margin-bottom:-9px; }
+  /* a cell's divider: a band in its timeline block's colour (conversation-log sessions keep the plain line) */
+  .divider.cell { padding:6px 10px; border-radius:6px; border:3px double var(--edge);
+                  background:repeating-linear-gradient(135deg, #ffffff0a 0 6px, transparent 6px 12px), var(--band); } /* //// over the block's colour */
+  .divider.cell::before { display:none; }
+  .divider.cell span { background:none; padding:0; }
+  .divider.cell .head { color:var(--fg); font-size:calc(14px * var(--fs)); letter-spacing:.02em; }
+  .divider.cell b { color:var(--name); font-weight:600; } /* the cell, in its timeline block's hue */
+  .divider.cell .rest, .divider.cell .from { margin-left:10px; color:var(--muted); font-size:calc(12px * var(--fs)); }
+  .divider.cell .from { font-style:italic; }
+  .divider.cell .rest, .divider.cell .from { white-space:nowrap; display:inline-block; } /* wrap as a whole, never mid-name */
+  .divider.cell .sub { margin-top:2px; }
   .msg { display:flex; flex-direction:column; align-items:flex-start; margin:6px 0; }
   .who { font-size:calc(12px * var(--fs)); font-weight:600; margin:0 10px 2px; }
   .who .to { color:var(--muted); font-weight:400; }
@@ -262,7 +273,7 @@
     </div>
   </details>
 </header>
-<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><label class="tbtn" title="Keep scrolling: jump to the newest line as it arrives"><input type="checkbox" data-toggle="autoscroll" checked hidden>⤓</label></div>
+<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell">⏬</span><label class="tbtn" title="Keep scrolling: jump to the newest line as it arrives"><input type="checkbox" data-toggle="autoscroll" checked hidden>⤓</label></div>
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
 <aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
@@ -386,7 +397,7 @@ const ACT_GROUPS = [
   { key: "gold", icon: "💰", label: "gold and debts", types: /^(gold_given|payment_collected|debt_created)$/ },
   { key: "items", icon: "🎁", label: "items given and taken", types: /^(item_given|item_taken_from_player|item_picked_up|book_borrowed)$/ },
   { key: "loot", icon: "🗝️", label: "looting", types: /^([cC]ontainer_looted|container_searched|corpse_looted|combat_spoils)$/ },
-  { key: "food", icon: "🍖", label: "eating and drinking", types: /^item_consumed$/ },
+  { key: "food", icon: "🍖", label: "consumed (food, drink, potions)", types: /^item_consumed$/ },
   { key: "fight", icon: "👊", label: "brawls and fights", types: /^(brawl_.*|yield_broken)$/ },
   { key: "theft", icon: "🫳", label: "pickpocketing", types: /^pickpocket$/ },
   { key: "follow", icon: "🧭", label: "followers", types: /^(follower_(joined|left|dismissed|left_voluntarily|stays)|follow_distance|companion_.*)$/ },
@@ -453,6 +464,8 @@ function colourLine(cls, text) { const n = el("div", cls); n.append(colourNames(
 // Trades have only fields when read from the database.
 function actText(e) {
   const d = e.data || {}, t = stripTags(e.formatted_text);
+  // SkyrimNet writes "ate" for drinks too ("Jenassa ate Ale"), and "drank" for potions: one word for both
+  if (e.type === "item_consumed") return (t || plainText(e)).replace(/ (ate|drank) /, " consumed ");
   if (t || !e.type.startsWith("trade_")) return t || plainText(e);
   const who = d.merchant || "a merchant";
   if (e.type !== "trade_complete") return `Trading with ${who}`;
@@ -547,17 +560,33 @@ function add(e) {
   if (cell(e) !== lastLocation) {
     const div = el("div", "divider");
     div.dataset.i = i;
-    const span = el("span", null, place(e) + " · " + (e.gameTimeStr || ""));
+    // "📍 Arrived at Whiterun  Hold: Whiterun, Outdoors  from Drunken Huntsman" over the game time and ⏱, in a band the colour of
+    // the cell's timeline block: a door and a jump across the map (coc, fast travel) read differently at a glance.
+    // Conversation-log sessions keep a plain label.
+    const conv = archive.startsWith("conv:"), [name, ...rest] = place(e).split(", "), h = nameHue(cell(e));
     stay = { last: e.localTime, total: 0, dur: el("span", "dur") };
-    span.append(stay.dur);
-    div.append(span);
+    if (conv) div.append(el("span", null, place(e) + " · " + (e.gameTimeStr || "")));
+    else {
+      div.classList.add("cell");
+      div.style.setProperty("--band", `hsl(${h} 28% 21%)`); // the same as its block in the timeline (renderScrubber)
+      div.style.setProperty("--edge", `hsl(${h} 35% 42%)`);
+      div.style.setProperty("--name", `hsl(${h} 50% 72%)`);
+      const head = el("div", "head", "📍 " + (lastLocation ? "Arrived at " : ""));
+      head.append(el("b", null, name));
+      if (rest.length) head.append(" ", el("span", "rest", rest.join(", "))); // real spaces, so copied text reads right
+      if (lastLocation) head.append(" ", el("span", "from", "from " + lastLocation));
+      // under it: the game date and time, then the real time spent here (below)
+      div.append(head, el("div", "sub", e.gameTimeStr || ""));
+    }
+    div.lastChild.append(stay.dur);
     feed.append(div);
     lastLocation = cell(e);
   }
   // Real time spent here so far. Gaps over 20 minutes (game closed, a break) don't count, as with the conversation log's sessions.
   if (e.localTime && stay.last) stay.total += activeGap(e.localTime - stay.last);
   stay.last = e.localTime || stay.last;
-  stay.dur.textContent = stay.last ? " · ⏱ " + realDur(stay.total) + " real time" : "";
+  // a visit of one or two quick lines says nothing, so the band shows it only once it reaches a minute
+  stay.dur.textContent = stay.last && stay.total >= 60 ? (archive.startsWith("conv:") ? " · ⏱ " : " · Here for: ") + realDur(stay.total) + " real time" : "";
   const node = render(e);
   node.dataset.i = i;
   // Someone's consecutive thoughts and lines share one box under their name, outlined in their colour (the player's: blue).
@@ -1183,6 +1212,22 @@ function stepCard(dir) {
   flashCard(x); // outline it, as clicking its 📌 does
 }
 addEventListener("scrollend", () => { stepTo = null; });
+// ⏫ ⏬ in the chat's bar: scroll to the previous or next place's band (a change of cell), just under the bar. Pressed
+// again while the page is still gliding, it steps on from where that glide ends.
+let placeTo = null;
+function stepPlace(dir) {
+  const bar = $("cbar").getBoundingClientRect().bottom, base = placeTo ?? scrollY;
+  const ys = [...feed.querySelectorAll(".divider")].map(d => d.getBoundingClientRect().top + scrollY - bar - 8); // page y that puts each band under the bar
+  const y = dir > 0 ? ys.find(y => y > base + 4) : ys.reverse().find(y => y < base - 4);
+  if (y == null) return;
+  placeTo = Math.max(0, Math.min(y, document.documentElement.scrollHeight - innerHeight));
+  scrollTo({ top: placeTo, behavior: "smooth" });
+}
+addEventListener("scrollend", () => { placeTo = null; });
+for (const [id, dir] of [["lprev", -1], ["lnext", 1]]) $(id).addEventListener("click", e => {
+  e.currentTarget.animate([{ boxShadow: "0 0 0 1.5px var(--fg)" }, { boxShadow: "0 0 0 1.5px transparent" }], 450);
+  stepPlace(dir);
+});
 for (const [id, dir] of [["mprev", -1], ["mnext", 1]]) $(id).addEventListener("click", e => {
   if (!aligned()) return;
   e.currentTarget.animate([{ boxShadow: "0 0 0 1.5px var(--fg)" }, { boxShadow: "0 0 0 1.5px transparent" }], 450); // flash its border

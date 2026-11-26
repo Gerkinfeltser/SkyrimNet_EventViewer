@@ -51,15 +51,17 @@ Opening `index.html` straight from disk also works for the live game, but withou
   - 💭 thoughts: a paler bubble.
   - Spoken lines start with **To *listener*:**, with the listener's name in their own colour.
   - 🗣️ marks background chatter.
+  - 🎮 marks the game's own dialogue, in a dashed outline with no fill: a line you picked in its dialogue menu, or an NPC's recorded reply. SkyrimNet didn't write these, so their 🧾 doesn't look for a matching reply; it lists the model requests made around them (reactions, actions they set off).
 - Narration is in gold italics, with 📖 books and 💤 sleep.
 - Actions get their own line behind their kind's icon. The 🤝 menu in the bar switches each kind (counts beside them), or all at once:
-  🎬 custom actions, 🪙 trades and purchases, 💰 gold and debts, 🎁 items given and taken, 🗝️ looting, 🍖 eating and drinking, 👊 brawls and fights, 🫳 pickpocketing, 🧭 followers (joining, leaving, waiting), 🪑 furniture, and, off at first, ⚠️ failed actions (couldn't find, couldn't reach…) and 📊 relationship checks.
+  🎬 custom actions, 🪙 trades and purchases, 💰 gold and debts, 🎁 items given and taken, 🗝️ looting, 🍖 eating and drinking, 👊 brawls and fights, 🫳 pickpocketing, 🧭 followers (joining, leaving, waiting), 🪑 furniture, 🎯 actions a reply picked, and, off at first, ⚠️ failed actions (couldn't find, couldn't reach…) and 📊 relationship checks.
+- 🎯 An action the model picked in an NPC's reply (`ACTION: drink_alcohol PARAMS: …`), under the line from that reply. SkyrimNet takes that part out of the line it saves, but the prompt logs keep the whole reply, so this needs serve.py or the live game, and only shows while those logs exist. It is what the NPC tried: SkyrimNet drops an action that isn't allowed at that moment, so it may not have happened. Made-up stubs (`speak`, `None`) and the game master's directions are left out.
 - 💤 marks going to sleep and waking up.
 - Your own lines are blue.
 - A separator marks each change of cell. It shows the full location, the game time and ⏱ the real time spent there (gaps over 20 minutes are left out).
 - The chat ends with **● Now** and the game time of the latest line (live), or *End of this playthrough* / *End of this day* in History.
 - 📌 Markers such as *🧠 Hadvar memory created ┄┄┄*, *📔 Camilla Valerius diary written* and *📷 Embershard Mine captured* (and *🧩 IntelEngine · follower recruited* for 🧩 groups) sit after the line each card in the context column belongs to. Click one to bring its card into view.
-- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, each with counts; ⤓ keep scrolling (follow new lines as they arrive).
+- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, 🎮 the game's own dialogue, each with counts; ⤓ keep scrolling (follow new lines as they arrive).
 
 **Context column** (right; 🗂️ next to History shows or hides it)
 

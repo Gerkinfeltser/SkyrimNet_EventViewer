@@ -37,6 +37,7 @@
   body.hide-acts #acts summary, body.hide-marks #marks summary, body.hide-modev #modev summary { opacity:.35; filter:grayscale(1); }
   body.hide-acts #acts .panel label:not(.mlwrap), body.hide-marks #marks .panel label:not(.mlwrap), body.hide-modev #modev .panel label:not(.mlwrap) { opacity:.45; }
   .act-failed, .act-checks { opacity:.75; }
+  .msg .picked { margin:3px 12px 0; font-size:calc(12.5px * var(--fs)); color:var(--muted); font-style:italic; }
   .menu select { margin-left:4px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:calc(12.5px * var(--fs)); }
   .hist { flex:none; font-size:calc(12.5px * var(--fs)); color:var(--muted); white-space:nowrap; }
   .hist a { color:#8fb0d6; }
@@ -78,6 +79,8 @@
   .msg.you .bubble { background:var(--you); border-color:transparent; }
   body.hide-bubbles .bubble { background:none !important; border-color:transparent !important; } /* ☰ Show line bubbles off: bare text (beats the inline hue) */
   .msg.bg { opacity:.6; }
+  /* 🎮 the game's own lines (dialogue menu choices and recorded NPC replies): not written by SkyrimNet */
+  .msg.game .bubble { background:transparent !important; border:1px dashed var(--line) !important; }
   .msg.empty { margin:3px 10px; color:var(--muted); font-size:calc(12.5px * var(--fs)); font-style:italic; }
   body.hide-empty .msg.empty { display:none; }
   /* Thoughts: a paler, greyer bubble in the thinker's hue (set inline), dashed because unspoken. Default = pale player blue. */
@@ -224,7 +227,7 @@
   body.hide-realtime .rt { display:none; }
   .rt { color:#8fb0d6; }
   .rtl { font:calc(11px * var(--fs)) "Segoe UI",sans-serif; font-style:normal; margin-left:8px; }
-  body.hide-thoughts .thought, body.hide-narr .narr, body.hide-acts .act, body.hide-bg .msg.bg, body.hide-dialog .msg:not(.bg) { display:none; }
+  body.hide-thoughts .thought, body.hide-narr .narr, body.hide-acts .act, body.hide-bg .msg.bg, body.hide-game .msg.game, body.hide-dialog .msg:not(.bg):not(.game) { display:none; }
   .grp { border:1.5px solid hsl(var(--h) 55% 68% / .45); background:hsl(var(--h) 55% 68% / .05); border-radius:10px; padding:3px 6px; margin:4px 0; }
   /* line bubbles off: the box takes the line bubbles' fill, and its thoughts the dark */
   body.hide-bubbles .grp { background:hsl(var(--h) 32% 19%); } /* a line bubble's shade */
@@ -259,7 +262,7 @@
     </div>
   </details>
 </header>
-<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><span class="fill"></span><label class="tbtn" title="Keep scrolling: jump to the newest line as it arrives"><input type="checkbox" data-toggle="autoscroll" checked hidden>⤓</label></div>
+<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><label class="tbtn" title="Keep scrolling: jump to the newest line as it arrives"><input type="checkbox" data-toggle="autoscroll" checked hidden>⤓</label></div>
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
 <aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
@@ -388,13 +391,14 @@ const ACT_GROUPS = [
   { key: "theft", icon: "🫳", label: "pickpocketing", types: /^pickpocket$/ },
   { key: "follow", icon: "🧭", label: "followers", types: /^(follower_(joined|left|dismissed|left_voluntarily|stays)|follow_distance|companion_.*)$/ },
   { key: "furniture", icon: "🪑", label: "furniture", types: /^furniture_(used|stopped)$/ },
+  { key: "picked", icon: "🎯", label: "actions a reply picked (tried, maybe not done)", types: /(?!)/ }, // added by markActions, not from events
   { key: "failed", icon: "⚠️", label: "failed actions", types: /_(failed|not_found|unreachable|in_use)$/, off: true },
   { key: "checks", icon: "📊", label: "relationship checks", types: /^(relationship_(assessed|adjusted)|interfollower_assessed)$/, off: true },
 ];
-// A speaker's box goes too when everything in it is hidden: one rule per mix of 💬, 💭 and 🗣️ turned off.
+// A speaker's box goes too when everything in it is hidden: one rule per mix of 💬, 💭, 🗣️ and 🎮 turned off.
 (function groupHideRules() {
-  const kinds = [["dialog", ".msg:not(.bg)"], ["thoughts", ".thought"], ["bg", ".msg.bg"]], rules = [];
-  for (let m = 1; m < 8; m++) {
+  const kinds = [["dialog", ".msg:not(.bg):not(.game)"], ["thoughts", ".thought"], ["bg", ".msg.bg"], ["game", ".msg.game"]], rules = [];
+  for (let m = 1; m < 1 << kinds.length; m++) {
     const off = kinds.filter((_, i) => m & 1 << i);
     rules.push(`body${off.map(k => ".hide-" + k[0]).join("")} .grp:not(:has(> :not(${off.map(k => k[1]).join(", ")}, .ghead, .gap)))`);
   }
@@ -456,15 +460,20 @@ function actText(e) {
   return `Trade with ${who}: ${what}` + (d.net_gold ? ` (${d.net_gold > 0 ? "+" : ""}${d.net_gold} gold)` : "");
 }
 
+// The game's own dialogue, as SkyrimNet records it: dialogue_player is a line picked in the dialogue menu (typed and spoken
+// ones are dialogue_player_text and _stt), dialogue_npc a recorded reply. What SkyrimNet's model writes is plain "dialogue".
+const GAME_LINE = /^dialogue_(player|npc)$/;
 function renderBody(e) {
   const d = e.data || {};
   const type = e.type || "";
 
   if (d.dialogue && type.startsWith("dialogue")) {
     const you = type.startsWith("dialogue_player");
-    const m = el("div", "msg" + (you ? " you" : "") + (type === "dialogue_background" ? " bg" : ""));
+    const game = GAME_LINE.test(type);
+    const m = el("div", "msg" + (you ? " you" : "") + (type === "dialogue_background" ? " bg" : "") + (game ? " game" : ""));
     const speaker = d.speaker || d.player_name || "?", listener = d.listener || d.target; // older events: player_name/target
-    const bubble = el("div", "bubble", type === "dialogue_background" ? "🗣️ " : null); // 🗣️ marks background chatter (replaces its tag)
+    const bubble = el("div", "bubble", type === "dialogue_background" ? "🗣️ " : game ? "🎮 " : null); // 🗣️ background chatter, 🎮 the game's own line
+    if (game) bubble.title = you ? "Picked in the game's dialogue menu" : "The game's own recorded line, not written by SkyrimNet";
     if (listener) { // the listener's name in their colour: the player's blue, or the NPC's name colour
       const to = el("span", "to", "To "), nm = el("span", "nm", listener);
       nm.style.color = players.has(listener) ? PLAYER_COLOR : nameColor(listener);
@@ -987,6 +996,38 @@ async function openCard(x) {
   }
   x.popup(!x.noPrompt);
 }
+function countActs() {
+  $("nact").textContent = feed.querySelectorAll(".act").length;
+  for (const n of document.querySelectorAll("#actpanel .n")) n.textContent = feed.querySelectorAll(".act-" + n.dataset.act).length;
+}
+// 🎯 The action a reply picked: SkyrimNet strips the reply's "ACTION: name PARAMS: {...}" line before saving the dialogue,
+// but the prompt log keeps the whole reply. Shown under the line from that reply, as what the NPC tried: SkyrimNet may
+// have dropped it (not allowed then). Skipped: the game master's directions (Start/ContinueConversation), "None", template
+// echoes and made-up one-word stubs small models write (speak, walk, nod). Only where the prompt logs still exist.
+// ponytail: lines that arrive live get theirs when the log is fetched again (a 🧾 opened, or the next memories refresh).
+const ACTION_LINE = /^[ \t]*ACTION:[ \t]*([A-Za-z]+(?:_[A-Za-z]+)*)[ \t]*(?:PARAMS:[ \t]*(\{.*\}))?[ \t]*$/m;
+const NOT_AN_ACTION = /^(None|CategoryName|[a-z]+)$/;
+async function markActions() {
+  const log = requestLog(-1), reqs = await log.list;
+  if (!reqs || (reqLog && log !== reqLog)) return;
+  const lines = rows.filter(r => /^dialogue/.test(r.e.type || "") && !/^dialogue_player/.test(r.e.type) && !GAME_LINE.test(r.e.type) && r.e.localTime);
+  for (const r of reqs) {
+    if (/^gamemaster/.test(r.use_case || "")) continue;
+    const m = ACTION_LINE.exec(String(r.response_payload || "").replace(/\\n/g, "\n").replace(/\\"/g, '"')); // JSON-escaped replies too
+    if (!m || NOT_AN_ACTION.test(m[1])) continue;
+    const t = +r.response_timestamp_unix, near = lines.filter(l => Math.abs(l.e.localTime * 1000 - t) < 30000 && !l.node.querySelector(".picked"));
+    const line = near.filter(l => { const n = needleOf(eventText(l.e)); return n.length > 3 && r.hay.includes(n); })
+      .sort((a, b) => Math.abs(a.e.localTime * 1000 - t) - Math.abs(b.e.localTime * 1000 - t))[0];
+    if (!line) continue;
+    let params = {};
+    try { params = JSON.parse(m[2] || "{}"); } catch {}
+    const what = Object.entries(params).filter(([, v]) => v !== "" && v != null).map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join(", ");
+    const n = el("div", "act act-picked picked", `🎯 tried ${m[1]}` + (what ? ` (${what.length > 90 ? what.slice(0, 89) + "…" : what})` : ""));
+    n.title = "Picked in the model's reply. SkyrimNet may not have carried it out (it drops actions that aren't allowed at that moment).";
+    line.node.append(n);
+  }
+  countActs();
+}
 async function markInputs() {
   const log = requestLog(-1), reqs = await log.list; // whatever log there is
   if (reqLog && log !== reqLog) return; // a newer fetch will mark them
@@ -1025,7 +1066,8 @@ async function promptNodes(text, t, x) { // x: the card or line (for a plot memo
   const before = reqLog, log = requestLog(t), reqs = await log.list;
   if (log !== before) markInputs(); // a fresh log: cards may have gained or lost their prompt
   if (!reqs) return [el("div", "note", noPrompt(reqs, t, x))];
-  const off = r => +r.response_timestamp_unix - t, text_ = promptHits(reqs, text, t), hits = text_.length || !x ? text_ : planHits(reqs, x, t);
+  // 🎮 the game's own lines: no model wrote them, so match nothing; the reactions and actions that followed are in the list below
+  const off = r => +r.response_timestamp_unix - t, text_ = x?.game ? [] : promptHits(reqs, text, t), hits = text_.length || !x || x.game ? text_ : planHits(reqs, x, t);
   const plan = hits.length && !text_.length; // a plot memory: the plan it was filled in from
   const out = [];
   out.hit = hits[0]; // the request shown first (the closest match), for lines that came from the same reply
@@ -1034,10 +1076,11 @@ async function promptNodes(text, t, x) { // x: the card or line (for a plot memo
     hits.slice(0, plan ? 1 : 3).forEach((r, k) => out.push(requestBlock(r, k === 0,
       plan ? `plan, ${(off(r) / 1000).toFixed(1)} s` : hits.length > 1 ? `text match, ${(off(r) / 1000).toFixed(1)} s` : "")));
   } else {
-    const why = noPrompt(reqs, t, x), near = reqs.filter(r => Math.abs(+r.response_timestamp_unix - t) < 20000);
+    const why = x?.game ? "The game's own dialogue: no model wrote it. Model calls it set off (reactions, actions) are among the requests around it."
+      : noPrompt(reqs, t, x), near = reqs.filter(r => Math.abs(+r.response_timestamp_unix - t) < 20000);
     out.push(el("div", "note", why));
-    if (why.startsWith("No request's")) {
-      out.push(el("div", "note", "Requests around that moment:"));
+    if (why.startsWith("No request's") || x?.game) {
+      out.push(el("div", "note", near.length ? "Requests around that moment:" : "No requests within 20 s of it."));
       near.sort((a, b) => Math.abs(+a.response_timestamp_unix - t) - Math.abs(+b.response_timestamp_unix - t))
           .slice(0, 6).forEach(r => out.push(requestBlock(r, false, `${((+r.response_timestamp_unix - t) / 1000).toFixed(1)} s`)));
     }
@@ -1067,7 +1110,7 @@ function openPrompt(i) {
     box.replaceChildren(...js.map(clone));
     for (const j of js) rows[j].node.classList.add("sel");
   };
-  showShot({ content: eventText(e), time: e.localTime, lines }, who, [box], true, () => {
+  showShot({ content: eventText(e), time: e.localTime, lines, game: GAME_LINE.test(e.type || "") }, who, [box], true, () => {
     const ev = el("details");
     ev.append(el("summary", null, "event JSON"), pre(JSON.stringify(e, null, 2)));
     return ev;
@@ -1241,6 +1284,7 @@ async function loadMemories(g) {
   mems = mems.filter(m => diaryText(m.content) === m.content || !head(m.content) || !written.has(head(m.content)));
   renderSide();
   markInputs();
+  markActions();
 }
 
 // Clicking a card shows where it belongs in the chat: its 📌 marker (or, with none, its line) lights up, as a marker's
@@ -1559,12 +1603,12 @@ function ingest(events) {
   endMark.replaceChildren(label);
   if (rows.length) feed.append(endMark); // moved back to the end after new lines
   renderScrubber();
-  $("ndialog").textContent = feed.querySelectorAll(".msg:not(.bg)").length;
+  $("ndialog").textContent = feed.querySelectorAll(".msg:not(.bg):not(.game)").length;
+  $("ngame").textContent = feed.querySelectorAll(".msg.game").length;
   $("nbg").textContent = feed.querySelectorAll(".msg.bg").length;
   $("nthought").textContent = feed.querySelectorAll(".thought").length;
   $("nnarr").textContent = feed.querySelectorAll(".narr").length;
-  $("nact").textContent = feed.querySelectorAll(".act").length;
-  for (const n of document.querySelectorAll("#actpanel .n")) n.textContent = feed.querySelectorAll(".act-" + n.dataset.act).length;
+  countActs();
   if (first || !document.body.classList.contains("hide-autoscroll")) scrollTo(0, document.body.scrollHeight); // ⤓ button
   updatePosition();
   return true;

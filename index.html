@@ -148,8 +148,11 @@
   #shot[open].withprompt { width:94vw; max-width:94vw; display:flex; gap:16px; }
   #shot.withprompt .ppane { display:flex; flex-direction:column; flex:1 1 55%; min-width:0; max-height:calc(94vh - 30px); font-size:calc(13px * var(--fs)); }
   #dbody { overflow:auto; flex:1; min-height:0; padding-right:4px; }
+  /* the popup's wheel stays in the popup: the chat behind it doesn't scroll (the gutter keeps the chat from shifting) */
+  html { scrollbar-gutter:stable; }
+  html:has(#shot[open]) { overflow:hidden; }
+  #dbody, #shot .pmain, .menu .panel { overscroll-behavior:contain; }
   .ppane .pbar { display:flex; align-items:center; gap:10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
-  .ppane .pbar .src { margin-left:auto; }
   #shot.withprompt .pmain { flex:1 1 45%; min-width:0; max-height:calc(94vh - 30px); overflow:auto; }
   #shot[open].withprompt.stacked { flex-direction:column; gap:10px; width:min(1300px, 94vw); height:94vh; }
   #shot.withprompt.stacked .pmain { flex:0 0 auto; max-height:40vh; }
@@ -227,6 +230,14 @@
   .side .note { color:var(--muted); margin:6px 0; }
   .ppane .toc { flex:1; min-width:0; }
   .ppane .toc select { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 4px; font:calc(12.5px * var(--fs)) Consolas,"Cascadia Mono",monospace; }
+  /* 🏷️ the prompt's sections: pick which to show; the button is lit while some are picked */
+  .ppane .menu summary { font-size:calc(14px * var(--fs)); }
+  .ppane .menu.on summary { color:var(--fg); background:rgb(143 176 214 / .22); box-shadow:inset 0 0 0 1px #8fb0d6; }
+  .ppane .menu .panel { max-height:60vh; overflow:auto; }
+  .ppane .menu .panel label { flex:none; max-width:40em; overflow:hidden; text-overflow:ellipsis; } /* flex:none: a long list scrolls instead of squashing its rows */ /* the full heading is in its tooltip */
+  /* * the cached part of the prompt: what the request marked for prompt caching (cache_control), up to its last mark */
+  .ppane .cached { box-shadow:inset 3px 0 0 #6fae7a; }
+  .ppane .cachenote { color:#8fc79a; }
   .ppane .src { color:var(--muted); font-size:calc(12px * var(--fs)); cursor:pointer; user-select:none; white-space:nowrap; }
   .ppane .md { background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:6px 12px; font-size:calc(13.5px * var(--fs)); line-height:1.5; overflow-wrap:anywhere; }
   /* consecutive messages from one role: one box, a dashed line between messages */
@@ -299,7 +310,7 @@
 <symbol id="i-arrow-up-to-line" viewBox="0 0 24 24"><path d="M5 3h14"/><path d="m18 13-6-6-6 6"/><path d="M12 7v14"/></symbol>
 <symbol id="i-arrow-down-to-line" viewBox="0 0 24 24"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></symbol>
 <symbol id="i-radio" viewBox="0 0 24 24"><path d="M16.247 7.761a6 6 0 0 1 0 8.478"/><path d="M19.075 4.933a10 10 0 0 1 0 14.134"/><path d="M4.925 19.067a10 10 0 0 1 0-14.134"/><path d="M7.753 16.239a6 6 0 0 1 0-8.478"/><circle cx="12" cy="12" r="2"/></symbol>
-<symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol>
+<symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></symbol><symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol>
 <symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
 <symbol id="i-shopping-bag" viewBox="0 0 24 24"><path d="M16 10a4 4 0 0 1-8 0"/><path d="M3.103 6.034h17.794"/><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/></symbol>
 <symbol id="i-skull" viewBox="0 0 24 24"><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M15 22a1 1 0 0 0 1-1v-1a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20v1a1 1 0 0 0 1 1z"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="12" r="1"/></symbol>
@@ -337,7 +348,7 @@
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
 <aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on) (before the first one: the top of the chat)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on) (after the last one: the end of the chat)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
-<dialog id="shot" title="Esc or a click outside closes"><div class="ppane" id="ppane"><div class="pbar"><div class="toc" id="dtocw" hidden><select id="dtoc" title="Sections of the open prompt: follows your scrolling, pick one to jump"></select></div><label class="src" title="Show the exact prompt text instead of rendered markdown"><input type="checkbox" id="dsrc"> source</label></div><div id="dbody"></div></div></dialog>
+<dialog id="shot" title="Esc or a click outside closes"><div class="ppane" id="ppane"><div class="pbar"><details class="menu pick" id="dsect" hidden><summary title="Sections of the prompt: pick which to show">🏷️ <span class="n" id="nsect">0</span></summary><div class="panel" id="sectpanel"></div></details><label class="src" title="Show the exact prompt text instead of rendered markdown"><input type="checkbox" id="dsrc"> source</label><div class="toc" id="dtocw" hidden><select id="dtoc" title="Sections of the open prompt: follows your scrolling, pick one to jump"></select></div></div><div id="dbody"></div></div></dialog>
 <script>
 // Reads the same feed as the SkyrimNet dashboard's Home page. ?host=… overrides the server.
 const HOST = new URLSearchParams(location.search).get("host")
@@ -390,7 +401,7 @@ $("host").textContent = HOST;
 // Toggles, remembered across reloads.
 // Emoji → icon in the sprite above. The code keeps writing emoji: iconize() swaps each one it finds in text for an icon,
 // keeping the emoji beside it (hidden) for ☰ Use emoji, on the page at start and on anything added later.
-const EMOJI_ICON = { "🤝": "handshake", "📌": "pin", "🧩": "puzzle", "⏫": "chevrons-up", "⏬": "chevrons-down", "🔄": "refresh-cw", "🎮": "gamepad-2", "🌓": "sun-moon", "🧾": "receipt", "🤏": "minimize-2", "🎨": "palette", "🗂": "panel-right", "💬": "message-circle", "💭": "cloud", "🧠": "brain", "📔": "notebook-pen", "📷": "camera", "🗣": "messages-square", "📖": "book-open", "💤": "bed", "🎬": "clapperboard", "🪙": "shopping-bag", "💰": "coins", "🎁": "gift", "🗝": "key-round", "🍖": "utensils", "👊": "swords", "🫳": "hand", "🧭": "compass", "🪑": "armchair", "🎯": "target", "⚠": "triangle-alert", "📊": "chart-column", "☠": "skull", "📍": "map-pin", "⏱": "timer", "🔝": "arrow-up-to-line", "🔚": "arrow-down-to-line", "📡": "radio" };
+const EMOJI_ICON = { "🤝": "handshake", "📌": "pin", "🧩": "puzzle", "⏫": "chevrons-up", "⏬": "chevrons-down", "🔄": "refresh-cw", "🎮": "gamepad-2", "🌓": "sun-moon", "🧾": "receipt", "🤏": "minimize-2", "🎨": "palette", "🗂": "panel-right", "💬": "message-circle", "💭": "cloud", "🧠": "brain", "📔": "notebook-pen", "📷": "camera", "🗣": "messages-square", "📖": "book-open", "💤": "bed", "🎬": "clapperboard", "🪙": "shopping-bag", "💰": "coins", "🎁": "gift", "🗝": "key-round", "🍖": "utensils", "👊": "swords", "🫳": "hand", "🧭": "compass", "🪑": "armchair", "🎯": "target", "⚠": "triangle-alert", "📊": "chart-column", "☠": "skull", "📍": "map-pin", "⏱": "timer", "🔝": "arrow-up-to-line", "🔚": "arrow-down-to-line", "📡": "radio", "🏷": "tag" };
 const EMOJI_RE = new RegExp(`(?:${Object.keys(EMOJI_ICON).join("|")})\uFE0F?`, "gu");
 const SVG_NS = "http://www.w3.org/2000/svg";
 function icon(e, name = EMOJI_ICON[e.replace("\uFE0F", "")]) { // name: another icon for the same emoji (the prompt's \uD83E\uDDFE)
@@ -996,34 +1007,45 @@ function requestBlock(r, open, why) {
   const det = el("details");
   det.open = open;
   const s = el("summary");
-  const facts = [r.model_name, r.request_tokens && `${r.request_tokens}→${r.response_tokens} tok`, r.duration_ms !== "" && `${r.duration_ms} ms`,
-    new Date(+r.response_timestamp_unix).toLocaleString(), r.source && `from ${r.source}`, why].filter(Boolean);
-  s.append(el("b", null, r.use_case || "dialogue"), " · " + facts.join(" · "), el("span", "eid", r.request_id || ""));
   const body = el("div");
   let payload = null;
   try { payload = JSON.parse(r.request_payload); } catch {}
+  // * Prompt caching caches the prompt up to its last part marked cache_control: every message up to that one is cached.
+  // ponytail: a message is cached or not as a whole (a mark inside a message's parts would cut it in two; SkyrimNet marks whole messages)
+  const ms = payload?.messages || [], lastMark = ms.findLastIndex(m => Array.isArray(m.content) && m.content.some(c => c?.cache_control));
   // Consecutive messages from one role (the event history comes as many short user turns) share one label and box.
   const runs = [];
-  for (const m of payload?.messages || []) {
+  ms.forEach((m, k) => {
     // content is a string or a list of parts ({type:"text", text, cache_control}); show the text, JSON for anything else
     const text = typeof m.content === "string" ? m.content
       : (m.content || []).map(c => c?.type === "text" ? c.text : JSON.stringify(c, null, 2)).join("\n\n");
-    if (runs.at(-1)?.role === m.role) runs.at(-1).texts.push(text);
-    else runs.push({ role: m.role, texts: [text] });
-  }
-  for (const { role, texts } of runs) {
-    body.append(el("div", "role", role + (texts.length > 1 ? ` · ${texts.length} messages` : "")));
-    if (texts.length === 1) { body.append(view(texts[0])); continue; }
+    const msg = { text, cached: k <= lastMark };
+    if (runs.at(-1)?.role === m.role) runs.at(-1).msgs.push(msg);
+    else runs.push({ role: m.role, msgs: [msg] });
+  });
+  const shown = m => { const n = view(m.text); if (m.cached) n.classList.add("cached"); return n; };
+  for (const { role, msgs } of runs) {
+    const cached = msgs.filter(m => m.cached).length;
+    body.append(el("div", "role", role + (msgs.length > 1 ? ` · ${msgs.length} messages` : "") + (!cached ? "" : cached === msgs.length ? " *" : ` · ${cached} cached *`)));
+    if (msgs.length === 1) { body.append(shown(msgs[0])); continue; }
     const box = el("div", "run");
-    box.append(...texts.map(view));
+    box.append(...msgs.map(shown));
     body.append(box);
   }
+  const all = runs.flatMap(r => r.msgs), size = ms => ms.reduce((n, m) => n + m.text.length, 0);
+  const cachePct = lastMark < 0 ? "" : `${Math.round(100 * size(all.filter(m => m.cached)) / Math.max(1, size(all)))}% cached *`;
+  const facts = [r.model_name, r.request_tokens && `${r.request_tokens}→${r.response_tokens} tok`, r.duration_ms !== "" && `${r.duration_ms} ms`,
+    new Date(+r.response_timestamp_unix).toLocaleString(), r.source && `from ${r.source}`, why].filter(Boolean);
+  s.append(el("b", null, r.use_case || "dialogue"), " · " + facts.join(" · "));
+  if (cachePct) { const c = el("span", "cachenote", " · " + cachePct); c.title = "Share of the prompt's text marked for prompt caching (cache_control): the part a provider can reuse from the last request instead of reading it again. Marked green on the left below. The logs don't say whether the cache was actually hit."; s.append(c); }
+  s.append(el("span", "eid", r.request_id || ""));
   const resp = pretty(r.response_payload);
   body.append(el("div", "role", "response"), resp !== r.response_payload ? pre(resp) : view(resp)); // JSON stays a code block
   const raw = el("details");
   raw.append(el("summary", null, "raw request JSON"), pre(payload ? JSON.stringify(payload, null, 2) : r.request_payload));
   body.append(raw);
   det.append(s, body);
+  det.msgs = all; // for the 🏷️ sections (buildTags)
   return det;
 }
 
@@ -1047,12 +1069,12 @@ function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node t
   d.classList.toggle("stacked", !!stacked);
   d.replaceChildren(...stacked ? [main, pane] : [pane, main]);
   dbody.replaceChildren();
-  $("dtocw").hidden = true;
+  $("dtocw").hidden = $("dsect").hidden = true;
   d.classList.remove("withprompt");
   if (x.noPrompt) { fillPrompt = null; return d.showModal(); } // nothing to show beside it: the greyed 🧾's tooltip says why
   const fill = fillPrompt = async () => {
     dbody.replaceChildren(el("div", "note", "Loading request log…"));
-    $("dtocw").hidden = true;
+    $("dtocw").hidden = $("dsect").hidden = true;
     const nodes = await promptNodes(x.content || x.description || "", (x.time || 0) * 1000, x);
     if (fillPrompt !== fill) return; // another popup was opened meanwhile
     if (nodes.hit) x.lines?.(nodes.hit);
@@ -1254,8 +1276,9 @@ $("shot").addEventListener("close", () => { for (const n of document.querySelect
 // It follows your scrolling; picking an entry jumps there.
 let tocTargets = [];
 function buildToc() {
+  buildTags();
   const sel = $("dtoc");
-  tocTargets = [...dbody.querySelectorAll(".role, .md h1, .md h2, .md h3, .md h4, .md h5, .md h6, pre .h")].filter(n => !n.parentElement.closest("details:not([open])"));
+  tocTargets = [...dbody.querySelectorAll(".role, .md h1, .md h2, .md h3, .md h4, .md h5, .md h6, pre .h")].filter(n => !n.parentElement.closest("details:not([open]), [hidden]"));
   sel.replaceChildren(...tocTargets.map((n, k) => {
     let label;
     if (n.classList.contains("role")) label = "▸ " + n.textContent.toUpperCase();
@@ -1275,6 +1298,60 @@ function tocSpy() {
   let k = 0;
   tocTargets.forEach((n, j) => { if (n.getBoundingClientRect().top <= top) k = j; });
   $("dtoc").value = k;
+}
+// 🏷️ Sections: a dropdown above the prompt with one entry per # and ## heading in the expanded requests' messages (* when
+// it's in the cached part). Picking some shows only those sections (a heading down to the next one at its level or above),
+// in prompt order; none picked shows the whole prompt. The NPC's name is left out of an entry ("Olfina's Potentially
+// Relevant Memories" → "Potentially Relevant Memories", "Speech Profile of Sinmir" → "Speech Profile"), so a pick stays on
+// from one line's popup to the next.
+let PICK = new Set(JSON.parse(localStorage["snev.pick"] || "[]"));
+function sections(text) {
+  const lines = String(text).split("\n"), hs = [], bold = [];
+  let fence = false;
+  lines.forEach((l, i) => {
+    if (/^\s*```/.test(l)) fence = !fence;
+    if (fence) return;
+    const m = l.match(/^\s*(#{1,2})\s+(.*\S)/), b = l.match(/^\s*\*\*([^*]+?)[\s:.]*\*\*/);
+    if (m) hs.push({ i, lv: m[1].length, label: m[2] });
+    else if (b) bold.push({ i, lv: 3, label: b[1], bold: true });
+  });
+  const use = hs.length ? hs : bold; // a message with no # headings (OmniSight's) is laid out in lines that start in **bold**
+  return use.map((h, k) => ({ label: h.label, bold: h.bold, text: lines.slice(h.i, use.slice(k + 1).find(n => n.lv <= h.lv)?.i ?? lines.length).join("\n") }));
+}
+function buildTags() {
+  const secs = [...dbody.querySelectorAll(":scope > details")].filter(d => d.open && d.msgs)
+    .flatMap(d => d.msgs.flatMap(m => sections(m.text).map(s => ({ ...s, cached: m.cached }))));
+  // bold lines keep their " - " ("STEP 1 - LOOK BEFORE YOU WRITE"): only # headings name an NPC that way
+  const owner = /^(.+?)(?:'s | - )/, names = new Set(secs.map(s => !s.bold && s.label.match(owner)?.[1]).filter(Boolean));
+  for (const s of secs) {
+    s.key = s.bold ? s.label : s.label.replace(owner, "");
+    for (const n of names) if (s.key.endsWith(" of " + n)) s.key = s.key.slice(0, -n.length - 4);
+  }
+  const keys = [...new Set(secs.map(s => s.key))], picked = keys.filter(k => PICK.has(k)), on = picked.length > 0;
+  const item = (text, checked, title, change, cls) => {
+    const l = el("label", cls), box = el("input");
+    box.type = "checkbox"; box.checked = checked;
+    box.addEventListener("change", () => { change(box.checked); localStorage["snev.pick"] = JSON.stringify([...PICK]); buildToc(); dbody.scrollTop = 0; });
+    l.title = title;
+    l.append(box, " " + text);
+    return l;
+  };
+  $("sectpanel").replaceChildren(item("whole prompt", !on, "Show every section (turns the picked ones off)", () => PICK.clear(), "mlwrap"), ...keys.map(k => {
+    const of = secs.filter(s => s.key === k), cached = of.every(s => s.cached);
+    return item(k + (cached ? " *" : ""), PICK.has(k), [...new Set(of.map(s => s.label))].join("\n") + (cached ? "\n* in the cached part of the prompt" : ""),
+      v => v ? PICK.add(k) : PICK.delete(k));
+  }));
+  if (secs.some(s => s.cached)) $("sectpanel").append(el("div", "none sep", "* cached part of the prompt (green bar)"));
+  $("nsect").textContent = on ? `${picked.length}/${keys.length}` : keys.length;
+  $("dsect").classList.toggle("on", on);
+  $("dsect").hidden = keys.length < 2;
+  dbody.querySelector(":scope > .picked")?.remove();
+  for (const n of dbody.children) n.hidden = on;
+  if (on) {
+    const p = el("div", "picked");
+    p.append(...secs.filter(s => PICK.has(s.key)).map(s => { const n = view(s.text); if (s.cached) n.classList.add("cached"); return n; }));
+    dbody.prepend(p);
+  }
 }
 $("dtoc").addEventListener("change", ev => {
   const n = tocTargets[+ev.target.value];

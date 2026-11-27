@@ -1897,7 +1897,11 @@ async function loadMemories(g) {
     return { ...m, at: at < 0 ? byTime(m.time) : at };
   };
   mems = list.map(m => ({ ...anchor(m), memType: m.kind, kind: "mem" })).sort((a, b) => a.at - b.at || a.time - b.time);
-  diaries = dl.map(m => ({ ...anchor(m), kind: "diary" }));
+  // A diary sits at its "diary written" line when the chat has it (the same text test as placeMarks), not at the last
+  // event it covers: one written about earlier events would sit above diaries written before it.
+  const key = t => String(t || "").trim().slice(0, 80);
+  const writtenAt = new Map(rows.flatMap((r, i) => r.e.type === "diary_entry_created" ? [[key(r.e.data?.entry_contents), i]] : []));
+  diaries = dl.map(m => { const d = anchor(m); return { ...d, at: writtenAt.get(key(m.content)) ?? d.at, kind: "diary" }; });
   // SkyrimNet also stores each diary entry as a memory ("Diary Entry: ## Title…"): with 📔 loaded, keep only the diary card
   const head = t => flat(diaryText(t)).slice(0, 80), written = new Set(diaries.map(d => head(d.content)));
   mems = mems.filter(m => diaryText(m.content) === m.content || !head(m.content) || !written.has(head(m.content)));

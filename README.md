@@ -48,7 +48,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 **Chat column**
 
 - Each turn, an NPC's or yours, is one box outlined in the speaker's colour (yours in the player blue, shifted to the right, with thick sides and a striped backing), its thoughts and lines together. The header shows name, game date and time, and the place within the cell. Inside the box:
-  - 💭 thoughts: a paler bubble.
+  - 💭 thoughts: a paler bubble, a little narrower than spoken lines so the two stand apart.
   - Spoken lines start with **To *listener*:**, with the listener's name in their own colour.
   - 🗣️ marks background chatter.
   - 🎮 marks the game's own dialogue, in a dashed outline with no fill: a line you picked in its dialogue menu, or an NPC's recorded reply. SkyrimNet didn't write these, so their 🧾 doesn't look for a matching reply; it lists the model requests made around them (reactions, actions they set off).

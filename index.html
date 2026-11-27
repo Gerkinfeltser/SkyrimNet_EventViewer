@@ -498,7 +498,7 @@ const gameTimeText = s => shortDates() ? shortGame(s) : s;
 function gameTime(s) {
   if (!s) return "";
   const short = shortGame(s);
-  if (short === s) return s;
+  if (short === s) return el("span", null, s);
   const n = el("span", "gt");
   n.append(el("span", "gl", s), el("span", "gs", short));
   return n;
@@ -763,8 +763,8 @@ function renderScrubber() {
     div.style.left = tlEdge[s.start] * 100 + "%";
     div.style.width = (tlEdge[s.end + 1] - tlEdge[s.start]) * 100 + "%";
     div.style.background = `hsl(${nameHue(s.loc)} 28% 21%)`;
-    div.title = `${s.loc}\n${first.gameTimeStr} → ${clock(lastE)}\n${n} event${n > 1 ? "s" : ""}` +
-      (first.localTime ? `, ${realDur(rows.slice(s.start + 1, s.end + 1).reduce((t, r, k) => t + activeGap((r.e.localTime || 0) - (rows[s.start + k].e.localTime || 0)), 0))} real time` : "");
+    const real = first.localTime ? `, ${realDur(rows.slice(s.start + 1, s.end + 1).reduce((t, r, k) => t + activeGap((r.e.localTime || 0) - (rows[s.start + k].e.localTime || 0)), 0))} real time` : "";
+    div.onmouseenter = () => { div.title = `${s.loc}\n${gameTimeText(first.gameTimeStr)} → ${clock(lastE)}\n${n} event${n > 1 ? "s" : ""}${real}`; }; // written on hover, so it follows ☰ Short game dates
     s.div = div;
     scrub.append(div);
   }
@@ -1330,7 +1330,7 @@ function openPrompt(i) {
   const e = rows[i].e, d = e.data || {}, who = el("div", "who"), name = d.speaker || d.npc_name || d.player_name;
   if (name) { const b = el("b", "nm", name); b.style.color = players.has(name) ? PLAYER_COLOR : nameColor(name); who.append(b); }
   else who.append(badge(e.type));
-  if (e.gameTimeStr) { const g = el("span"); g.append(gameTime(e.gameTimeStr)); who.append(g); }
+  who.append(gameTime(e.gameTimeStr));
   if (hasIds() && e.id != null) who.append(el("span", "tid", "#" + e.id));
   const box = el("div", "plines"), clone = j => { const n = rows[j].node.cloneNode(true); n.classList.remove("sel"); n.querySelectorAll(".recalled, .saw").forEach(x => x.remove()); return n; }; // the popup shows the memories itself
   box.append(clone(i));
@@ -1394,7 +1394,7 @@ function tocSpy() {
 let PICK = new Set(JSON.parse(localStorage["snev.pick"] || "[]"));
 let wholeOnce = false; // "show the whole prompt" under that note: this popup only, the picks stay
 let focusOnce = null; // a section shown alone in this popup only (a 🧠's memories), the picks stay
-const ANY_LEVEL = /Potentially Relevant Memories/i; // listed at any heading level (other NPCs' recalled memories come as ###)
+const ANY_LEVEL = new RegExp(MEM_SEC, "i"); // listed at any heading level (other NPCs' recalled memories come as ###)
 function sections(text) {
   const lines = String(text).split("\n"), hs = [], bold = [];
   let fence = false;
@@ -1644,9 +1644,7 @@ function eventCard(x) {
   card.style.borderColor = `hsl(${h} 30% 30%)`;
   const who = el("div", "who"), src = el("b", null, g?.label || x.kind);
   src.style.color = `hsl(${h} 55% 68%)`;
-  const gtn = el("span");
-  gtn.append(gameTime(e.gameTimeStr));
-  who.append(src, gtn, rtSpan(e.localTime, "rt", "") || "", el("span", "kind", evKind(e.type, g)));
+  who.append(src, gameTime(e.gameTimeStr), rtSpan(e.localTime, "rt", "") || "", el("span", "kind", evKind(e.type, g)));
   card.append(who, colourNames(plainText(e).replace(/\s*\[PE event [^\]]*\]\s*$/, ""))); // drop the political engine's debug suffix
   cardClick(card, x);
   return card;
@@ -1701,9 +1699,7 @@ function omniCard(x) {
   card.style.borderColor = `hsl(${h} 25% 32%)`;
   const who = el("div", "who"), name = el("b", null, "📷 " + (x.name || "?"));
   name.style.color = x.subject === "actor" ? nameColor(x.name) : `hsl(${h} 55% 72%)`;
-  const gtn = el("span");
-  gtn.append(gameTime(x.gameTimeStr));
-  who.append(name, gtn, rtSpan(x.time, "rt", "") || "", el("span", "kind", x.subject || ""), promptBtn(x));
+  who.append(name, gameTime(x.gameTimeStr), rtSpan(x.time, "rt", "") || "", el("span", "kind", x.subject || ""), promptBtn(x));
   card.append(who);
   if (x.image) {
     const a = el("a"), img = el("img");

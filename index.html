@@ -70,6 +70,7 @@
   /* the end of the chat: "Now" when live, the end of a playthrough or day in History */
   .endmark { display:flex; align-items:center; gap:12px; margin:14px 10px 6px;
              color:#d6c48f; font-weight:700; font-size:calc(13px * var(--fs)); letter-spacing:.04em; white-space:nowrap; }
+  .endmark.more { cursor:pointer; } .endmark.more:hover { color:var(--fg); }
   .endmark::before, .endmark::after { content:""; flex:1; border-top:1px solid currentColor; opacity:.45; }
   .endmark .pulse { color:#8fd19e; margin-right:5px; animation:nowpulse 2s ease-in-out infinite; }
   @keyframes nowpulse { 50% { opacity:.3; } }
@@ -183,10 +184,13 @@
   .memcard.future { opacity:.4; }
   .memcard.now { box-shadow:0 0 0 1px var(--fg); }
   .mark.now { color:var(--fg); } .mark.now::after { border-top:2px solid currentColor; opacity:.85; } .mark.now::before { opacity:1; } /* the outlined card's 📌 line */
-  #npc { width:170px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 5px; font-size:calc(12.5px * var(--fs)); }
+  #npc { width:170px; padding-left:24px !important; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 5px; font-size:calc(12.5px * var(--fs)); }
   #npc::-webkit-search-cancel-button { display:none; } /* too small to hit: the × beside it clears */
   #nclear { font-size:1.45em; line-height:1; }
-  body.npcf .npcout { display:none !important; } body:not(.npcf) .npcstep { display:none; } /* 👤 one NPC's lines */
+  body.npcf .npcout { display:none !important; } body:not(.finding) .npcstep { display:none; }
+  .findbar { display:inline-flex; align-items:center; gap:2px; margin:0 6px; position:relative; }
+  .findbar .srch { position:absolute; left:6px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; font-size:calc(12px * var(--fs)); line-height:1; } /* inside the box: clicks go to it */ #nfind { font-size:calc(12px * var(--fs)); color:var(--muted); margin:0 4px; }
+  body.finding:not(.npcf) .hit { box-shadow:0 0 0 2px #d9a93a; border-radius:8px; } /* 🔦 a match */ /* 👤 one NPC's lines */
   /* Day and night: sun height at each event's time of day, added onto the blocks' own colours. */
   #sun { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:plus-lighter; }
   #sun path { fill:url(#sunfill); fill-opacity:var(--sky); }
@@ -335,7 +339,7 @@
 <symbol id="i-notebook-pen" viewBox="0 0 24 24"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></symbol>
 <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/></symbol>
 <symbol id="i-panel-right" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></symbol>
-<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol><symbol id="i-flashlight" viewBox="0 0 24 24"><path d="M18 6c0 2-2 2-2 4v10a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V10c0-2-2-2-2-4V2h12z"/><path d="M6 6h12"/><path d="M12 12v.01"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
 <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"/></symbol>
 <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
 <symbol id="i-arrow-up-to-line" viewBox="0 0 24 24"><path d="M5 3h14"/><path d="m18 13-6-6-6 6"/><path d="M12 7v14"/></symbol>
@@ -357,10 +361,11 @@
   <span class="dot" id="dot" title="server"></span>
   <span class="where" id="where">Waiting for SkyrimNet on <b id="host"></b>…</span>
   <span class="tbtn" id="jtop" title="Top: both columns to the start">🔝</span><span class="tbtn" id="jend" title="End: both columns to the latest line (just a jump: 📡 follow live keeps following)">🔚</span><label class="tbtn" title="Follow live: keep the newest line in view as new lines arrive, while you are at the end (scroll up to read and it waits, dashed, until you come back down). Off: new lines are added below without scrolling"><input type="checkbox" data-toggle="autoscroll" checked hidden>📡</label>
+  <span class="findbar"><span class="srch">🔍</span><input id="npc" type="search" list="npcnames" placeholder="Filter: name or words" title="Only the lines holding this name or these words: in what was said, thought or narrated, or who said it and to whom. Filters the chat and the context column. Pick a name from the list, or type anything"><datalist id="npcnames"></datalist><span class="tbtn npcstep" id="nclear" title="Clear: every line again">×</span><label class="tbtn npcstep" title="Find: keep every line and card, outline the matches, and step through them one by one with the arrows (off: hide what doesn't match)"><input type="checkbox" data-toggle="find" hidden>🔦</label><span class="n npcstep" id="nfind" title="Matching lines, and cards in the context column"></span><span class="tbtn npcstep" id="nprev" title="Previous run of matching lines (a new run starts in a new place or after 5 real minutes without one); with 🔦, the previous match">▲</span><span class="tbtn npcstep" id="nnext" title="Next run of matching lines; with 🔦, the next match">▼</span></span>
   <label class="tbtn" title="Colour names: in the chat and in the context column's cards"><input type="checkbox" data-toggle="names" checked hidden>🎨</label>
   <label class="tbtn" title="Timeline by game time: a long sleep or journey takes room, and gaps of an hour or more are greyed (off: an even share per event)"><input type="checkbox" data-toggle="bytime" hidden>🌓</label>
-  <label class="tbtn" title="Context column: memories, diaries, OmniSight pictures and mod events beside the chat"><input type="checkbox" data-toggle="side" checked hidden>🗂️</label>
   <label class="hist" id="ptwrap" hidden title="Older playthroughs and days come from SkyrimNet's files on disk (needs serve.py)">History <select id="pt"></select></label>
+  <label class="tbtn" title="Context column: memories, diaries, OmniSight pictures and mod events beside the chat"><input type="checkbox" data-toggle="side" checked hidden>🗂️</label>
   <details class="menu" id="menu">
     <summary title="Options">☰</summary>
     <div class="panel">
@@ -378,7 +383,7 @@
     </div>
   </details>
 </header>
-<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><label class="tbtn" title="Show &quot;🧠 recalled N memories&quot; under NPC replies whose prompt had recalled memories: hover one to read them, click it to open the line with only its memories. Only while the prompt logs exist."><input type="checkbox" data-toggle="recalled" checked hidden>🧠 <span class="n" id="nrecalled">0</span></label><label class="tbtn" title="Show &quot;👁️ saw a new scene&quot; under the NPC reply whose prompt first had a new OmniSight scene (What You Currently See Around You): hover one to read it, click it to open the line with only that scene. SkyrimNet keeps no picture of these scenes. Only while the prompt logs exist."><input type="checkbox" data-toggle="saw" checked hidden>👁️ <span class="n" id="nsaw">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label><label><input type="checkbox" data-toggle="mark-save" checked> 💾 saves <span class="n" data-mark="save">0</span></label><label><input type="checkbox" data-toggle="mark-scene" checked> 👁️ scenes <span class="n" data-mark="scene">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><input id="npc" type="search" list="npcnames" placeholder="🔍 Filter: name or words" title="Only the lines holding this name or these words: in what was said, thought or narrated, or who said it and to whom. Pick a name from the list, or type anything"><datalist id="npcnames"></datalist><span class="tbtn npcstep" id="nclear" title="Clear: every line again">×</span><span class="tbtn npcstep" id="nprev" title="Previous run of matching lines (a new run starts in a new place or after 5 real minutes without one)">▲</span><span class="tbtn npcstep" id="nnext" title="Next run of matching lines">▼</span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
+<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><label class="tbtn" title="Show &quot;🧠 recalled N memories&quot; under NPC replies whose prompt had recalled memories: hover one to read them, click it to open the line with only its memories. Only while the prompt logs exist."><input type="checkbox" data-toggle="recalled" checked hidden>🧠 <span class="n" id="nrecalled">0</span></label><label class="tbtn" title="Show &quot;👁️ saw a new scene&quot; under the NPC reply whose prompt first had a new OmniSight scene (What You Currently See Around You): hover one to read it, click it to open the line with only that scene. SkyrimNet keeps no picture of these scenes. Only while the prompt logs exist."><input type="checkbox" data-toggle="saw" checked hidden>👁️ <span class="n" id="nsaw">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label><label><input type="checkbox" data-toggle="mark-save" checked> 💾 saves <span class="n" data-mark="save">0</span></label><label><input type="checkbox" data-toggle="mark-scene" checked> 👁️ scenes <span class="n" data-mark="scene">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
 <aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on) (before the first one: the top of the chat)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on) (after the last one: the end of the chat)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
@@ -404,6 +409,9 @@ const feed = $("feed"), scrub = $("scrub"), cursor = $("cursor"), menu = $("menu
 let rows = [], seen = new Set(), maxId = -1, lastLocation = null, segs = [], mems = [];
 const PLAYER_COLOR = "hsl(212 60% 72%)"; // a lighter version of the player's bubble blue
 const players = new Set(); // player names seen in player lines, so "To <player>" gets the player's blue
+// Long playthroughs: only rows[drawStart .. drawEnd) are drawn (see drawWindow); the rest are undrawn placeholders.
+const WINDOW = 2000, CHUNK = 2000, MAX_DRAWN = 5000;
+let drawStart = 0, drawEnd = Infinity;
 let stay = null; // the current cell's divider: when it started (real time) and its duration span
 let sideEv = [], side = []; // IntelEngine/political events for the right column; side = every card there, in chat order
 let GROUPS = [
@@ -435,7 +443,7 @@ $("host").textContent = HOST;
 // Toggles, remembered across reloads.
 // Emoji → icon in the sprite above. The code keeps writing emoji: iconize() swaps each one it finds in text for an icon,
 // keeping the emoji beside it (hidden) for ☰ Use emoji, on the page at start and on anything added later.
-const EMOJI_ICON = { "🤝": "handshake", "📌": "pin", "🧩": "puzzle", "⏫": "chevrons-up", "⏬": "chevrons-down", "🔄": "refresh-cw", "🎮": "gamepad-2", "🌓": "sun-moon", "🧾": "receipt", "🤏": "minimize-2", "🎨": "palette", "🗂": "panel-right", "💬": "message-circle", "💭": "cloud", "🧠": "brain", "📔": "notebook-pen", "📷": "camera", "🗣": "messages-square", "📖": "book-open", "💤": "bed", "🎬": "clapperboard", "🪙": "shopping-bag", "💰": "coins", "🎁": "gift", "🗝": "key-round", "🍖": "utensils", "👊": "swords", "🫳": "hand", "🧭": "compass", "🪑": "armchair", "🎯": "target", "⚠": "triangle-alert", "📊": "chart-column", "☠": "skull", "📍": "map-pin", "⏱": "timer", "🔝": "arrow-up-to-line", "🔚": "arrow-down-to-line", "📡": "radio", "🏷": "tag", "👁": "eye", "💾": "save" };
+const EMOJI_ICON = { "🔍": "search", "🔦": "flashlight", "🤝": "handshake", "📌": "pin", "🧩": "puzzle", "⏫": "chevrons-up", "⏬": "chevrons-down", "🔄": "refresh-cw", "🎮": "gamepad-2", "🌓": "sun-moon", "🧾": "receipt", "🤏": "minimize-2", "🎨": "palette", "🗂": "panel-right", "💬": "message-circle", "💭": "cloud", "🧠": "brain", "📔": "notebook-pen", "📷": "camera", "🗣": "messages-square", "📖": "book-open", "💤": "bed", "🎬": "clapperboard", "🪙": "shopping-bag", "💰": "coins", "🎁": "gift", "🗝": "key-round", "🍖": "utensils", "👊": "swords", "🫳": "hand", "🧭": "compass", "🪑": "armchair", "🎯": "target", "⚠": "triangle-alert", "📊": "chart-column", "☠": "skull", "📍": "map-pin", "⏱": "timer", "🔝": "arrow-up-to-line", "🔚": "arrow-down-to-line", "📡": "radio", "🏷": "tag", "👁": "eye", "💾": "save" };
 const EMOJI_RE = new RegExp(`(?:${Object.keys(EMOJI_ICON).join("|")})\uFE0F?`, "gu");
 const SVG_NS = "http://www.w3.org/2000/svg";
 function icon(e, name = EMOJI_ICON[e.replace("\uFE0F", "")]) { // name: another icon for the same emoji (the prompt's \uD83E\uDDFE)
@@ -709,8 +717,7 @@ const passed = s => {
   return (h ? part(h, "hour") + (r ? " " + part(r, "minute") : "") : part(m, "minute")) + " passed";
 };
 
-function add(e) {
-  const i = rows.length;
+function add(e, i = rows.length) { // into: the chat, or the lines being drawn above it (more)
   // A divider when the cell changes (or, in the conversation log, the session); finer moves show in each speaker's meta line.
   if (cell(e) !== lastLocation) {
     const div = el("div", "divider");
@@ -736,7 +743,7 @@ function add(e) {
       div.append(head, sub);
     }
     div.lastChild.append(stay.dur);
-    feed.append(div);
+    into.append(div);
     lastLocation = cell(e);
   }
   // Real time spent here so far. Gaps over 20 minutes (game closed, a break) don't count, as with the conversation log's sessions.
@@ -750,7 +757,7 @@ function add(e) {
   const d = e.data || {}, t = e.type || "";
   const who = t === "npc_thoughts" ? d.npc_name : t === "player_thoughts" ? d.player_name || d.speaker
     : d.dialogue && t.startsWith("dialogue") ? d.speaker || d.player_name : "";
-  let box = feed.lastElementChild;
+  let box = into.lastElementChild;
   if (who && !(box?.classList.contains("grp") && box.dataset.who === who)) { // a divider in between also starts a new box
     box = el("div", "grp" + (players.has(who) ? " you" : ""));
     box.dataset.who = who;
@@ -760,13 +767,13 @@ function add(e) {
     name.style.color = you ? PLAYER_COLOR : nameColor(who);
     head.append(name, metaNode(e));
     box.append(head);
-    feed.append(box);
+    into.append(box);
   } else if (who && e.gameTime - box.dataset.t >= GAP_MINUTES * 60) { // gameTime is in game seconds; NaN without it
     box.append(el("div", "gap", passed(e.gameTime - box.dataset.t)));
   }
   if (who) box.dataset.t = e.gameTime;
-  (who ? box : feed).append(node);
-  rows.push({ e, node });
+  (who ? box : into).append(node);
+  rows[i] = { e, node };
 }
 
 // ---- Timeline scrubber ----
@@ -893,14 +900,21 @@ function updatePosition() {
   for (const s of segs) s.div.classList.toggle("on", i >= s.start && i <= s.end);
   const w = $("where");
   w.replaceChildren(el("b", null, place(e)), " · ", gameTime(e.gameTimeStr));
-  // Cards: dim the ones whose 📌 marker (or line) is still below the chat on screen; keep the newest at or above
-  // the top line in view. 🔄️ places cards beside their lines already, so nothing is dimmed there.
-  const bottom = $("scrub").getBoundingClientRect().top, ahead = side.map(m => { // read every position, then restyle
+  // Cards: dim the ones whose 📌 marker (or line) is still below the chat on screen; outline the one whose marker is
+  // nearest the middle of the chat, and keep it in view. 🔄️ places cards beside their lines already, so nothing is
+  // dimmed or outlined there.
+  const bottom = $("scrub").getBoundingClientRect().top, mid = ($("cbar").getBoundingClientRect().bottom + bottom) / 2;
+  // Read every position first, then restyle: a read after a class change lays out the whole page again, per card.
+  const shown = side.map(m => !!m.node.offsetParent), ys = aligned() ? [] : side.map(m => {
     const n = m.mark?.offsetParent ? m.mark : rows[m.at]?.node;
-    return !aligned() && !!n && n.getBoundingClientRect().top > bottom;
+    return n?.offsetParent ? n.getBoundingClientRect().top : null;
   });
-  let now = null;
-  side.forEach((m, k) => { m.node.classList.toggle("future", ahead[k]); m.node.classList.remove("now"); m.mark?.classList.remove("now"); if (m.at <= i && m.node.offsetParent) now = m; });
+  let now = null, best = Infinity;
+  side.forEach((m, k) => { if (ys[k] != null && shown[k] && Math.abs(ys[k] - mid) < best) { best = Math.abs(ys[k] - mid); now = m; } });
+  side.forEach((m, k) => {
+    m.node.classList.toggle("future", ys[k] != null && ys[k] > bottom);
+    if (m !== now) { m.node.classList.remove("now"); m.mark?.classList.remove("now"); }
+  });
   const mb = $("mbody");
   if (aligned()) { // 🔄️ beside their lines
     if (sizes() !== alignKey) alignSide();
@@ -936,13 +950,17 @@ $("mbody").addEventListener("scroll", () => {
   });
 }, { passive: true });
 
-function jump(ev) {
+function jump(ev, final = true) {
   if (!rows.length) return;
   const r = scrub.getBoundingClientRect();
   const x = (ev.clientX - r.left) / r.width;
   let lo = 0, hi = rows.length - 1; // the last event whose slot starts at or before x
   while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (tlEdge[mid] <= x) lo = mid; else hi = mid - 1; }
   const i = lo;
+  if (!rows[i].node.isConnected) { // not drawn: draw a window around it (only on release, as that takes a moment)
+    if (!final) return;
+    drawWindow(i - WINDOW / 2, i + WINDOW / 2, -1);
+  }
   let j = i; // skip lines hidden by the filters
   while (j < rows.length && !rows[j].node.offsetParent) j++;
   if (j === rows.length) for (j = i; j > 0 && !rows[j].node.offsetParent; j--);
@@ -975,14 +993,15 @@ addEventListener("resize", markFollow);
 // 📡 switched on: go to the end, where following starts
 document.querySelector("[data-toggle=autoscroll]").addEventListener("change", ev => { if (ev.target.checked) scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }); });
 document.querySelector("[data-toggle=bytime]").addEventListener("change", () => { renderScrubber(); updatePosition(); });
-scrub.addEventListener("pointerdown", ev => { scrub.setPointerCapture(ev.pointerId); jump(ev); });
-scrub.addEventListener("pointermove", ev => { if (ev.buttons) jump(ev); });
+scrub.addEventListener("pointerdown", ev => { scrub.setPointerCapture(ev.pointerId); jump(ev, false); });
+scrub.addEventListener("pointermove", ev => { if (ev.buttons) jump(ev, false); });
+scrub.addEventListener("pointerup", ev => jump(ev, true)); // an undrawn stretch is drawn once you let go
 
 let ticking = false;
 addEventListener("scroll", () => {
   if (ticking) return;
   ticking = true;
-  requestAnimationFrame(() => { ticking = false; updatePosition(); });
+  requestAnimationFrame(() => { ticking = false; edgeLoad(); updatePosition(); });
 }, { passive: true });
 
 // ---- Prompts (shown in the popup) ----
@@ -1218,10 +1237,16 @@ function requestLog(t) {
 }
 // The requests whose reply contains `text`, closest to time t (ms) first. Matches the first real line (a memory's markdown title).
 const needleOf = text => flat(stripTags(diaryText(text).split("\n").find(l => l.trim().length > 15) || text)).slice(0, 60);
+const hitCache = new WeakMap(); // request log -> needle -> the replies holding it (cards are judged again on every redraw)
 function promptHits(reqs, text, t) {
   const needle = needleOf(text);
+  if (needle.length <= 3) return []; // short lines ("Done.") can match several
+  let byNeedle = hitCache.get(reqs);
+  if (!byNeedle) hitCache.set(reqs, byNeedle = new Map());
+  let hits = byNeedle.get(needle);
+  if (!hits) byNeedle.set(needle, hits = reqs.filter(r => r.hay.includes(needle)));
   const off = r => Math.abs(+r.response_timestamp_unix - t);
-  return needle.length > 3 ? reqs.filter(r => r.hay.includes(needle)).sort((a, b) => off(a) - off(b)) : []; // short lines ("Done.") can match several
+  return [...hits].sort((a, b) => off(a) - off(b));
 }
 // A Narrative Engine plot memory ("X asked me to … so I set off to do it") is filled in by the mod from its director's JSON
 // plan, so its sentence is in no reply. Its prompt is that plan's request: a narrative_engine_* reply from just before the
@@ -1454,7 +1479,7 @@ function promptSections(r) {
 async function markInputs() {
   const log = requestLog(-1), reqs = await log.list; // whatever log there is
   if (reqLog && log !== reqLog) return; // a newer fetch will mark them
-  for (const x of [...mems, ...diaries, ...omni, ...sideEv, ...scenes]) {
+  for (const x of side) { // the drawn cards (an undrawn one is judged when opened)
     const b = x.node?.querySelector(".picon"), t = (x.time || 0) * 1000;
     if (!b || t >= log.at) continue;
     const hits = reqs ? cardHits(reqs, x, t) : [];
@@ -1704,6 +1729,8 @@ function stepPlace(dir, nodes = feed.querySelectorAll(".divider:not(.npcout)")) 
 addEventListener("scrollend", () => { placeTo = null; });
 // 🔝 🔚 in the top bar: both columns to the start or the end (the column follows by itself with 🔄️ line up on)
 for (const [id, dir] of [["jtop", -1], ["jend", 1]]) $(id).addEventListener("click", () => {
+  if (dir < 0 && drawStart > 0) drawWindow(0, WINDOW, -1); // the start of a long playthrough
+  if (dir > 0 && drawEnd !== Infinity) drawWindow(rows.length - WINDOW, Infinity, -1);
   toEdge(dir, scrollY, () => {});
   const mb = $("mbody");
   if (!aligned()) mb.scrollTo({ top: dir > 0 ? mb.scrollHeight : 0, behavior: "smooth" });
@@ -1712,24 +1739,35 @@ for (const [id, dir] of [["lprev", -1], ["lnext", 1], ["nprev", -1], ["nnext", 1
   e.currentTarget.animate([{ boxShadow: "0 0 0 1.5px var(--fg)" }, { boxShadow: "0 0 0 1.5px transparent" }], 450);
   stepPlace(dir, id[0] === "n" ? npcStarts : undefined);
 });
-// 🔍 in the chat's bar: only the lines holding a name or words (in the text, or who says it and to whom), and the
-// places, speaker boxes and 📌 markers that still hold one. ▲ ▼ step between runs of them: a new run starts in a new
-// place or after 5 real minutes without one.
+// 🔍 in the top bar: only the lines holding a name or words (in the text, or who says it and to whom), the context
+// column's cards holding them, and the places, speaker boxes and 📌 markers that still hold one. ▲ ▼ step between
+// runs of them: a new run starts in a new place or after 5 real minutes without one. With 🔦 find nothing is hidden:
+// the matches are outlined and ▲ ▼ step through the lines one by one.
 let npcStarts = [];
 function npcFilter() {
-  const name = $("npc").value.trim(), on = !!name;
-  document.body.classList.toggle("npcf", on);
+  const name = $("npc").value.trim(), on = !!name, find = document.querySelector("[data-toggle=find]").checked;
+  document.body.classList.toggle("npcf", on && !find); // hiding what doesn't match
+  document.body.classList.toggle("finding", on);
   const re = new RegExp("\\b" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
   npcStarts = [];
-  let last = null;
+  let last = null, lines = 0, cards = 0;
   for (const r of rows) {
     const d = r.e.data || {};
     const ok = !on || re.test([eventText(r.e), d.speaker, d.npc_name, d.player_name, d.target].join(" | "));
     r.node.classList.toggle("npcout", !ok);
+    r.node.classList.toggle("hit", on && ok);
     if (!on || !ok) continue;
-    if (!last || r.e.localTime - last.e.localTime > 300 || cell(r.e) !== cell(last.e)) npcStarts.push(r.node.closest(".grp") ?? r.node);
+    lines++;
+    if (r.node.isConnected && (find || !last || r.e.localTime - last.e.localTime > 300 || cell(r.e) !== cell(last.e))) npcStarts.push(find ? r.node : r.node.closest(".grp") ?? r.node);
     last = r;
   }
+  for (const x of side) {
+    const ok = !on || re.test(x.node.textContent);
+    x.node.classList.toggle("npcout", !ok);
+    x.node.classList.toggle("hit", on && ok);
+  }
+  cards = side.filter(x => x.node.classList.contains("hit") && x.node.offsetParent).length; // not the kinds switched off
+  $("nfind").textContent = `${lines} · ${cards}`;
   for (const m of feed.querySelectorAll(".mark")) m.classList.toggle("npcout", on && !re.test(m.textContent));
   for (const g of feed.querySelectorAll(".grp")) g.classList.toggle("npcout", on && !g.querySelector("[data-i]:not(.npcout)"));
   let band = null, kept = false; // a place band stays while a line after it does
@@ -1741,6 +1779,7 @@ function npcFilter() {
   updatePosition();
 }
 $("npc").addEventListener("input", npcFilter);
+document.querySelector("[data-toggle=find]").addEventListener("change", npcFilter);
 $("nclear").addEventListener("click", () => { $("npc").value = ""; npcFilter(); });
 $("npc").addEventListener("focus", () => { // names offered: everyone who spoke, thought or was spoken to
   const names = new Set();
@@ -2144,7 +2183,7 @@ function renderSide() {
   for (const x of diaries) x.node = diaryCard(x);
   for (const x of saves) x.node = saveCard(x);
   for (const x of scenes) x.node = sceneCard(x);
-  side = [...mems, ...diaries, ...omni, ...scenes, ...saves, ...sideEv].sort((a, b) => a.at - b.at); // stable: memories, diaries, screenshots, scenes, saves, then events at the same line
+  side = [...mems, ...diaries, ...omni, ...scenes, ...saves, ...sideEv].filter(x => x.at >= drawStart && x.at < drawEnd).sort((a, b) => a.at - b.at); // stable: memories, diaries, screenshots, scenes, saves, then events at the same line
   mb.append(...side.map(x => x.node));
   placeMarks();
   if (!side.length) mb.append(el("div", "note", LOCAL ? "No memories or events yet. Background knowledge entries aren't shown." : "Memories are read by serve.py: open http://localhost:8791/"));
@@ -2168,15 +2207,113 @@ $("shot").addEventListener("click", ev => { if (ev.target === ev.currentTarget |
 // ---- Polling ----
 function reset() {
   feed.replaceChildren();
-  rows = []; seen = new Set(); maxId = -1; lastLocation = null; mems = []; sideEv = []; side = []; omni = []; diaries = []; saves = []; scenes = []; liveScenes = [];
+  rows = []; seen = new Set(); maxId = -1; lastLocation = null; drawStart = 0; drawEnd = Infinity; mems = []; sideEv = []; side = []; omni = []; diaries = []; saves = []; scenes = []; liveScenes = [];
   $("mbody").replaceChildren(el("div", "note", LOCAL ? "No memories yet." : "Memories are read by serve.py: open http://localhost:8791/"));
   layout();
+}
+
+// ---- Long playthroughs: a window of drawn lines ----
+// Only rows[drawStart .. drawEnd) are drawn: the latest WINDOW lines at first. The others stay in rows as undrawn
+// placeholders, so every index (cards' at, the timeline, data-i) stays the same and the timeline spans everything.
+// Scrolling near either edge of the drawn lines draws CHUNK more that way (letting go of the far side past MAX_DRAWN);
+// a click on an undrawn stretch of the timeline, or 🔝 🔚, draws a window there. Each redraw builds the window anew,
+// keeping the line you were reading where it was on screen.
+function countLines() {
+  $("ndialog").textContent = feed.querySelectorAll(".msg:not(.bg):not(.game)").length;
+  $("ngame").textContent = feed.querySelectorAll(".msg.game").length;
+  $("nbg").textContent = feed.querySelectorAll(".msg.bg").length;
+  $("nthought").textContent = feed.querySelectorAll(".thought").length;
+  $("nnarr").textContent = feed.querySelectorAll(".narr").length;
+  countActs();
+}
+function moreMark(dir, n) {
+  const m = el("div", "endmark more", `${dir < 0 ? "▲" : "▼"} ${n.toLocaleString()} ${dir < 0 ? "earlier" : "later"} line${n > 1 ? "s" : ""}: scroll on, or click here, to show ${Math.min(n, CHUNK).toLocaleString()} more`);
+  m.addEventListener("click", () => more(dir));
+  return m;
+}
+function drawWindow(start, end, keep = topIndex()) {
+  start = Math.max(0, Math.round(start));
+  end = end >= rows.length ? Infinity : Math.round(end);
+  const ref = rows[keep]?.node, off = ref?.isConnected ? ref.getBoundingClientRect().top : null, all = rows;
+  drawStart = start; drawEnd = end;
+  rows = []; lastLocation = null;
+  feed.replaceChildren();
+  if (start > 0) feed.append(moreMark(-1, start));
+  all.forEach((r, i) => i < start || i >= end ? rows.push({ e: r.e, node: el("div") }) : add(r.e, i));
+  feed.append(end === Infinity ? endMark : moreMark(1, rows.length - end));
+  countLines();
+  if ($("npc").value.trim()) npcFilter();
+  if (off != null && rows[keep].node.isConnected) scrollBy(0, rows[keep].node.getBoundingClientRect().top - off);
+  loadMemories(gen); // the cards, 📌 markers and notes under replies for the lines now drawn
+  updatePosition();
+}
+// Draw CHUNK more lines above or below the drawn ones, leaving those as they are (only the new ones are laid out),
+// then let go of the far side past MAX_DRAWN. A place band split by the seam is drawn once; a speaker's box may split.
+let into = feed;
+const topOf = node => node.parentElement === feed ? node : node.closest("#feed > *"); // its speaker's box, or itself
+function undraw(from, to) { for (let i = from; i < to; i++) rows[i] = { e: rows[i].e, node: el("div") }; }
+function more(dir) {
+  const keep = topIndex(), ref = rows[keep]?.node, off = ref?.isConnected ? ref.getBoundingClientRect().top : null;
+  if (dir < 0 && drawStart > 0) {
+    const s = Math.max(0, drawStart - CHUNK), tmp = el("div"), saved = [lastLocation, stay];
+    into = tmp; lastLocation = null;
+    for (let i = s; i < drawStart; i++) add(rows[i].e, i);
+    into = feed;
+    const seam = feed.querySelector(".divider");
+    if (seam && lastLocation === cell(rows[drawStart].e)) seam.remove(); // the same place on both sides: one band
+    [lastLocation, stay] = saved;
+    const top = feed.firstElementChild; // the "earlier lines" mark
+    top.after(...tmp.children);
+    if (s > 0) top.replaceWith(moreMark(-1, s)); else top.remove();
+    drawStart = s;
+    const end = drawEnd === Infinity ? rows.length : drawEnd;
+    if (end - drawStart > MAX_DRAWN) { // let go of the bottom
+      const cut = topOf(rows[drawStart + MAX_DRAWN].node), first = +(cut.dataset.i ?? cut.querySelector("[data-i]")?.dataset.i);
+      const band = cut.previousElementSibling?.classList.contains("divider") ? cut.previousElementSibling : cut;
+      while (feed.lastElementChild && feed.lastElementChild !== band) feed.lastElementChild.remove();
+      band.remove();
+      undraw(first, end);
+      drawEnd = first;
+      feed.append(moreMark(1, rows.length - first));
+    }
+  } else if (dir > 0 && drawEnd !== Infinity) {
+    const e = Math.min(rows.length, drawEnd + CHUNK);
+    feed.lastElementChild.remove(); // the "later lines" mark
+    lastLocation = cell(rows[drawEnd - 1].e);
+    stay = { last: rows[drawEnd - 1].e.localTime, total: 0, dur: el("span") };
+    for (let i = drawEnd; i < e; i++) add(rows[i].e, i);
+    drawEnd = e >= rows.length ? Infinity : e;
+    feed.append(drawEnd === Infinity ? endMark : moreMark(1, rows.length - e));
+    if ((drawEnd === Infinity ? rows.length : drawEnd) - drawStart > MAX_DRAWN) { // let go of the top
+      const cut = topOf(rows[(drawEnd === Infinity ? rows.length : drawEnd) - MAX_DRAWN].node);
+      const first = +(cut.dataset.i ?? cut.querySelector("[data-i]")?.dataset.i);
+      while (feed.firstElementChild !== cut) feed.firstElementChild.remove();
+      undraw(drawStart, first);
+      drawStart = first;
+      feed.prepend(moreMark(-1, first));
+    }
+  } else return;
+  countLines();
+  if ($("npc").value.trim()) npcFilter();
+  if (off != null && rows[keep].node.isConnected) scrollBy(0, rows[keep].node.getBoundingClientRect().top - off);
+  loadMemories(gen); // the cards, 📌 markers and notes under replies for the lines now drawn
+  updatePosition();
+}
+function edgeLoad() { // within a screen of the first or last drawn line: draw more that way
+  if (!rows.length) return;
+  if (drawStart > 0 && scrollY < innerHeight) more(-1);
+  else if (drawEnd !== Infinity && scrollY + 2 * innerHeight > document.documentElement.scrollHeight) more(1);
 }
 
 function ingest(events) {
   const fresh = events.filter(e => !seen.has(e.id)).sort((a, b) => a.id - b.id);
   if (!fresh.length) return false;
   const first = maxId < 0;
+  if (first) { // a long playthrough: draw only its latest WINDOW lines (more as you scroll back)
+    const n = fresh.filter(e => !hide.some(r => r.test(eventText(e))) && !sideKind(e.type || "")).length;
+    drawStart = Math.max(0, n - WINDOW);
+    if (drawStart) feed.append(moreMark(-1, drawStart));
+  }
   // 📡 follows only while you're at the end: scrolled up to read, you stay put until you come back down (or press 🔚)
   const atEnd = atEndNow();
   for (const e of fresh) if (/^(dialogue_player|player_thoughts$)/.test(e.type || "")) // before rendering, so earlier lines know too
@@ -2188,7 +2325,8 @@ function ingest(events) {
     const kind = sideKind(e.type || "");
     if (kind) { sideEv.push({ e, kind, at: Math.max(0, rows.length - 1) }); continue; } // placed after the line before it
     if (e.type === "persistent_generic" && rows.length && unwrap(eventText(rows.at(-1).e)) === unwrap(eventText(e))) continue; // repeats the narration just shown
-    add(e);
+    if (rows.length < drawStart || rows.length >= drawEnd) rows.push({ e, node: el("div") }); // not drawn (see drawWindow)
+    else add(e);
   }
   const last = rows.at(-1)?.e;
   endMark.className = "endmark" + (archive ? "" : " live");
@@ -2196,15 +2334,10 @@ function ingest(events) {
   label.append(gameTime(last?.gameTimeStr));
   if (!archive) label.prepend(el("span", "pulse", "●")); // live
   endMark.replaceChildren(label);
-  if (rows.length) feed.append(endMark); // moved back to the end after new lines
+  if (rows.length && drawEnd === Infinity) feed.append(endMark); // moved back to the end after new lines
   renderScrubber();
-  $("ndialog").textContent = feed.querySelectorAll(".msg:not(.bg):not(.game)").length;
-  $("ngame").textContent = feed.querySelectorAll(".msg.game").length;
-  $("nbg").textContent = feed.querySelectorAll(".msg.bg").length;
-  $("nthought").textContent = feed.querySelectorAll(".thought").length;
-  $("nnarr").textContent = feed.querySelectorAll(".narr").length;
-  countActs();
-  if ($("npc").value.trim()) npcFilter(); // 👤: the new lines too
+  countLines();
+  if ($("npc").value.trim()) npcFilter(); // 🔍: the new lines too
   if (first || (atEnd && !document.body.classList.contains("hide-autoscroll"))) scrollTo(0, document.body.scrollHeight); // 📡 follow live
   updatePosition();
   markFollow();

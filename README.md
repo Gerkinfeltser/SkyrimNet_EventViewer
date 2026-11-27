@@ -2,16 +2,20 @@
 
 A cleaner page for reading what SkyrimNet's NPCs say, think and remember.
 
+## TL;DR
+
+- **Chat** (left): every line NPCs said and thought, one box per turn in the speaker's colour, with narration, actions and arrivals in each new place. Under replies: 🎯 the action the model picked, 🧠 the memories it recalled, 👁️ a new scene it saw.
+- **Context column** (right): memories, diaries, OmniSight pictures, 👁️ scenes, 💾 saves and other mods' events (IntelEngine, PoliticalEngine, any mod's event type), each with a 📌 marker after its chat line. 🔄️ lines each card up beside its line; otherwise the column follows what you read, and scrolling it brings the chat along.
+- **Prompts:** click any line, or a card's 🧾, to see the LLM request and reply that wrote it: every message as markdown, 🏷️ a section picker, the cached part marked, in a resizable popup. Mod-written memories and events link to the mod's own request (Narrative Engine plans, IntelEngine story requests).
+- **History:** the live game, any older playthrough, or any day of the conversation log, for every SkyrimNet install it finds (MO2 instances included).
+- **🔍 Filter and 🔦 find:** by NPC name or any words, in both columns, with ▲ ▼ to step through the matches.
+- **Timeline:** the whole playthrough by place, with the sun's day and night; click to jump.
+- **Long playthroughs:** opens with the latest 2,000 lines drawn and draws more as you scroll back, so a 15,000-line playthrough opens in about 2 seconds.
+- **Read-only, nothing to install** but Python: one small helper (`serve.py`, standard library only) and one HTML page. Nothing writes to the game, SkyrimNet or its files.
+
 ![The page with 🔄️ on: the end of a playthrough in Whiterun, with Adrianne Avenicci's turn, the player's own turn shifted right with thick blue sides, and beside the chat Dagny the Crude's memory and an OmniSight picture of the Whiterun plains](media/context-column.jpg)
 
 ![A line of Dreanna's clicked: the popup shows her thought and line from the same reply at the top, and below them the dialogue request that produced them, starting with her character profile](media/prompt-panel.jpg)
-
-- **Left column:** the conversation, one box per turn (NPC or yours) in the speaker's colour.
-- **Right column:** memories, diaries, OmniSight screenshots and other mods' events (IntelEngine, PoliticalEngine…), in step with the conversation.
-- **History:** the live game, any older playthrough, or any day of the conversation log.
-- **Prompts:** click a line, or 🧾 on a card in the right column, to see the LLM prompt that produced it.
-
-It only reads: nothing here writes to the game, SkyrimNet or its files.
 
 ## Getting it
 
@@ -38,7 +42,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 
 ## The page
 
-**Top bar:** where you are (follows your scrolling), 🔝 🔚 both columns to the start or the end, 📡 follow live (keep the newest line in view as new lines arrive, while you're at the end: scroll up to read and it waits, its button dashed and faded, until you're back at the end or press 🔚; switching it on goes to the end; off: new lines are added below without scrolling), 🎨 coloured names, 🌓 timeline by game time (space the timeline by game time instead of an even share per event, so a sleep or a long journey takes room; off at first), 🗂️ the context column, the **History** picker, and **☰**.
+**Top bar:** where you are (follows your scrolling), 🔝 🔚 both columns to the start or the end, 📡 follow live (keep the newest line in view as new lines arrive, while you're at the end: scroll up to read and it waits, its button dashed and faded, until you're back at the end or press 🔚; switching it on goes to the end; off: new lines are added below without scrolling), the 🔍 filter (below), 🎨 coloured names, 🌓 timeline by game time (space the timeline by game time instead of an even share per event, so a sleep or a long journey takes room; off at first), the **History** picker, 🗂️ the context column, and **☰**.
 
 - Modlist (in ☰, shown when there is more than one): every SkyrimNet folder the helper finds when it starts (restart it after adding one): the folders listed under `skyrimnet:` in `config.yaml`, then every MO2 instance's overwrite folder (a `ModOrganizer.ini` up to two folders deep on any local drive, or a global instance in `%LOCALAPPDATA%\ModOrganizer`), then the game's own `Data` folder (Vortex, manual installs), then any `<drive>:\Modlists\*\overwrite` folder. Each is named after its MO2 instance, mod or game folder; folders that share a name all get their parent folder added, such as *ADT (Modlists)*. ● marks the one being played, or played last: the page starts there, and *Live* always reads it. Picking another modlist opens its newest playthrough. The address keeps the modlist and view (`#ml=…&view=…`), so a refresh or a bookmark opens them again.
 
@@ -63,10 +67,11 @@ Opening `index.html` straight from disk also works for the live game, but withou
 - A band with faint › chevrons in its own colour across its right two thirds, edged like your turns (thick sides), in the colour of the cell's block in the timeline, marks each change of cell: "📍 Arrived at **Whiterun** from Drunken Huntsman" (where you came from greyed, so a door and a jump across the map, such as `coc` or fast travel, read differently), with the rest of the location beside it, and under it the game date and time and *Here for* (the real time from the first line there to the last, gaps over 20 minutes left out; shown once it reaches a minute).
 - The chat ends with **● Now** and the game time of the latest line (live), or *End of this playthrough* / *End of this day* in History.
 - 📌 Markers such as *🧠 Hadvar memory created ┄┄┄*, *📔 Camilla Valerius diary written* and *📷 Embershard Mine captured* (and *🧩 IntelEngine · follower recruited* for 🧩 groups) sit after the line each card in the context column belongs to. Click one to bring its card into view.
-- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, 🧠 recalled-memories and 👁️ new-scene notes, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, 💾 saves, 👁️ scenes, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, 🎮 the game's own dialogue, each with counts; 🔍 filter (below); ⏫ ⏬ previous and next place (scroll to where you arrived in a cell; ⏫ before the first one goes to the top of the chat, ⏬ after the last one to its end).
-- **🔍 Filter:** type a name or any words and the chat shows only the lines holding them: in what was said, thought or narrated, or as who said it and to whom ("Hadvar" keeps his lines, lines to him and "Thongar whispered to Widulf about Hadvar…"; "dragon" keeps every line about dragons). The list offers everyone who spoke or was spoken to. Places, speaker boxes and 📌 markers with no match are hidden too. ▲ ▼ beside it step to the previous or next run of matches (a new run starts in a new place or after 5 real minutes without one), and × before them clears it. The context column isn't filtered.
+- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, 🧠 recalled-memories and 👁️ new-scene notes, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, 💾 saves, 👁️ scenes, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, 🎮 the game's own dialogue, each with counts; ⏫ ⏬ previous and next place (scroll to where you arrived in a cell; ⏫ before the first one goes to the top of the chat, ⏬ after the last one to its end).
+- **🔍 Filter** (top bar): type a name or any words and the chat shows only the lines holding them: in what was said, thought or narrated, or as who said it and to whom ("Hadvar" keeps his lines, lines to him and "Thongar whispered to Widulf about Hadvar…"; "dragon" keeps every line about dragons). The context column keeps only the cards holding them. The list offers everyone who spoke or was spoken to. Places, speaker boxes and 📌 markers with no match are hidden too. Beside it: × to clear it, the number of matching lines · cards, and ▲ ▼ to the previous or next run of matches (a new run starts in a new place or after 5 real minutes without one).
+- **🔦 Find** (beside the filter while it holds something, off at first): nothing is hidden; matching lines and cards are outlined in amber, and ▲ ▼ step through the matching lines one by one.
 
-**Context column** (right; 🗂️ next to History shows or hides it)
+**Context column** (right; 🗂️ next to ☰ shows or hides it)
 
 | Toggle | Cards |
 |---|---|
@@ -74,14 +79,14 @@ Opening `index.html` straight from disk also works for the live game, but withou
 | 🧩 | other mods' events, taken out of the chat: a menu of the `config.yaml` column groups (IntelEngine, PoliticalEngine…) plus a group of its own for any event type the page has no line style for (`dragonsense_event` → *dragonsense*; give it a `column:` group to rename or recolour it). Lists only groups with events in this view ("None in this view" when there are none) |
 | 📔 | NPC diary entries, rendered as markdown |
 | 📷 | OmniSight screenshots with their descriptions (click the picture or the description to see both large, middle-click the picture for a new tab) |
-| 👁️ | what OmniSight saw just before NPCs spoke (off by default): each "what's visible right now" description, with the place and game time, from the vision requests in the prompt logs. SkyrimNet saves no picture of these: it keeps only the latest one, in memory. So while the live view is open the page fetches each new one and keeps it in this browser (the newest 400, about 1–2 MB each), and its card shows it; a scene from before, or seen with no page open, says it has no picture. with a *👁️ place seen* 📌 marker in the chat |
+| 👁️ | what OmniSight saw just before NPCs spoke (off by default): each "what's visible right now" description, with the place and game time, from the vision requests in the prompt logs. SkyrimNet saves no picture of these: it keeps only the latest one, in memory. So while the live view is open the page fetches each new one and keeps it in this browser (the newest 400, about 1–2 MB each), and its card shows it; a scene from before, or seen with no page open, says it has no picture. Each has a *👁️ place seen* 📌 marker in the chat |
 | 💾 | saves you made (off by default): the save's name, when it was saved, the character, level, race, play time and location, with a *💾 name saved* marker in the chat where it happened. Read from the save files' headers (with MO2, each profile's own `saves` folder; otherwise `Documents/My Games/Skyrim…/Saves`). The game's autosaves and quicksaves are left out, and a save made from the game's menu shows as *Save 12*. SkyrimNet writes its playthrough id into each save's SKSE cosave (the `.skse` file beside it), so a playthrough lists exactly its own saves, and a conversation-log day lists that day's saves from any of the modlist's playthroughs. Saves made without SkyrimNet don't show, and only saves still on disk can |
 
-- **Following you:** cards whose 📌 marker (or line) is still below the bottom of the chat are dimmed; every card whose marker you can see is lit (not with 🔄️ on, where position shows it). The outlined card is the newest one at or above the chat line under the bar (its 📌 marker's line is drawn solid and bright), and ⤓ keeps it in view, gliding the column to each new one (it jumps when the new one is far away, as after picking another view). It works the other way too: scroll the column yourself and the chat follows, bringing the 📌 marker of the card in the column's middle level with it.
+- **Following you:** cards whose 📌 marker (or line) is still below the bottom of the chat are dimmed; every card whose marker you can see is lit (not with 🔄️ on, where position shows it). The outlined card is the one whose 📌 marker (or line) is nearest the middle of the chat (its marker's line is drawn solid and bright), and ⤓ keeps it in view, gliding the column to each new one (it jumps when the new one is far away, as after picking another view). It works the other way too: scroll the column yourself and the chat follows, bringing the 📌 marker of the card in the column's middle level with it.
 - **🤏 Compact:** each OmniSight picture small with the first four lines of its description beside it, and the start of each diary (an OmniSight picture's popup still has the whole description). Off: whole descriptions and diaries.
 - **🔄️ Line up:** each card sits beside the chat line it belongs to and the column scrolls with the chat (the mouse wheel over the column scrolls the chat). Where cards crowd, the column moves faster than the chat, but never more than 2.5 times as fast: it starts moving before a bunch of markers and catches up after it, so each card there sits a little ahead of or behind its marker instead of flying past. Over the last screen of the chat it runs a little ahead, so the last cards come fully into view as the chat reaches its end. Off: the column scrolls on its own and ⤓ applies.
 - **⏫ ⏬ Previous / next card** (shown only with 🔄️ on): scrolls the chat to the previous or next visible card's 📌 marker, a third of the way down the chat, with the card lined up beside it and outlined for a moment. ⏫ before the first card goes to the top of the chat, ⏬ after the last one to its end. Press again while it glides to step on.
-- Turning a card type off (🧠, 📔, 📷) also hides its 📌 markers in the chat.
+- Turning a card type off (🧠, 📔, 📷, 👁️, 💾, a 🧩 group) also hides its 📌 markers in the chat.
 - **Find a card's line:** clicking a card (its header or footer, for memories, diaries and pictures) lights up its 📌 marker (or its line) and the card. The chat scrolls only if the marker is off screen.
 - **Names:** names inside the cards are coloured, as in the chat (🎨 in the top bar turns both off).
 
@@ -90,7 +95,9 @@ Opening `index.html` straight from disk also works for the live game, but withou
 - One block per stay in a cell, as wide as its share of the events, or with 🌓 timeline by game time, its share of the time. There, an hour or more with nothing happening (sleeping, waiting, fast travel) is greyed out. Hover a block for its time span and real time.
 - A wave over the blocks follows the sun, glowing like the sky at that hour (gold at noon, orange at sunrise and sunset, nothing at night): high at noon, flat at midnight. Spaced by event it bends with how busy each hour was; by game time it is an even wave. The conversation log has only real time, so it has no wave and is spaced by real time.
 - The cursor shows the date and time of what you're reading. Coloured ticks mark memories.
-- Click or drag to jump.
+- Click or drag to jump. It always spans the whole playthrough; letting go over a stretch that isn't drawn yet draws the lines around it (see below).
+
+**Long playthroughs:** only the latest 2,000 lines are drawn when a view opens, so a 15,000-line playthrough opens in about 2 seconds instead of 9. A *▲ N earlier lines* bar sits at the top of the chat: scroll near it (or click it) and the next 2,000 earlier lines are drawn above, while the line you're reading stays where it is. At most 5,000 lines stay drawn: past that, the far end is let go and gets its own *▼ N later lines* bar. 🔝 and 🔚 draw the start or the end of the playthrough. The context column shows the cards for the drawn lines, and the counts in the bars count drawn lines. The 🔍 filter's count covers the whole playthrough, while ▲ ▼ step through the drawn lines (going past the first draws more).
 
 **Prompt popup:** click any line.
 

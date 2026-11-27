@@ -182,6 +182,11 @@
   .memcard .foot { font-size:calc(11.5px * var(--fs)); color:var(--muted); }
   .memcard.future { opacity:.4; }
   .memcard.now { box-shadow:0 0 0 1px var(--fg); }
+  .mark.now { color:var(--fg); } .mark.now::after { border-top:2px solid currentColor; opacity:.85; } .mark.now::before { opacity:1; } /* the outlined card's 📌 line */
+  #npc { width:170px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 5px; font-size:calc(12.5px * var(--fs)); }
+  #npc::-webkit-search-cancel-button { display:none; } /* too small to hit: the × beside it clears */
+  #nclear { font-size:1.45em; line-height:1; }
+  body.npcf .npcout { display:none !important; } body:not(.npcf) .npcstep { display:none; } /* 👤 one NPC's lines */
   /* Day and night: sun height at each event's time of day, added onto the blocks' own colours. */
   #sun { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:plus-lighter; }
   #sun path { fill:url(#sunfill); fill-opacity:var(--sky); }
@@ -373,7 +378,7 @@
     </div>
   </details>
 </header>
-<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><label class="tbtn" title="Show &quot;🧠 recalled N memories&quot; under NPC replies whose prompt had recalled memories: hover one to read them, click it to open the line with only its memories. Only while the prompt logs exist."><input type="checkbox" data-toggle="recalled" checked hidden>🧠 <span class="n" id="nrecalled">0</span></label><label class="tbtn" title="Show &quot;👁️ saw a new scene&quot; under the NPC reply whose prompt first had a new OmniSight scene (What You Currently See Around You): hover one to read it, click it to open the line with only that scene. SkyrimNet keeps no picture of these scenes. Only while the prompt logs exist."><input type="checkbox" data-toggle="saw" checked hidden>👁️ <span class="n" id="nsaw">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label><label><input type="checkbox" data-toggle="mark-save" checked> 💾 saves <span class="n" data-mark="save">0</span></label><label><input type="checkbox" data-toggle="mark-scene" checked> 👁️ scenes <span class="n" data-mark="scene">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
+<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><label class="tbtn" title="Show &quot;🧠 recalled N memories&quot; under NPC replies whose prompt had recalled memories: hover one to read them, click it to open the line with only its memories. Only while the prompt logs exist."><input type="checkbox" data-toggle="recalled" checked hidden>🧠 <span class="n" id="nrecalled">0</span></label><label class="tbtn" title="Show &quot;👁️ saw a new scene&quot; under the NPC reply whose prompt first had a new OmniSight scene (What You Currently See Around You): hover one to read it, click it to open the line with only that scene. SkyrimNet keeps no picture of these scenes. Only while the prompt logs exist."><input type="checkbox" data-toggle="saw" checked hidden>👁️ <span class="n" id="nsaw">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label><label><input type="checkbox" data-toggle="mark-save" checked> 💾 saves <span class="n" data-mark="save">0</span></label><label><input type="checkbox" data-toggle="mark-scene" checked> 👁️ scenes <span class="n" data-mark="scene">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><input id="npc" type="search" list="npcnames" placeholder="🔍 Filter: name or words" title="Only the lines holding this name or these words: in what was said, thought or narrated, or who said it and to whom. Pick a name from the list, or type anything"><datalist id="npcnames"></datalist><span class="tbtn npcstep" id="nclear" title="Clear: every line again">×</span><span class="tbtn npcstep" id="nprev" title="Previous run of matching lines (a new run starts in a new place or after 5 real minutes without one)">▲</span><span class="tbtn npcstep" id="nnext" title="Next run of matching lines">▼</span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
 <aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on) (before the first one: the top of the chat)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on) (after the last one: the end of the chat)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
@@ -895,7 +900,7 @@ function updatePosition() {
     return !aligned() && !!n && n.getBoundingClientRect().top > bottom;
   });
   let now = null;
-  side.forEach((m, k) => { m.node.classList.toggle("future", ahead[k]); m.node.classList.remove("now"); if (m.at <= i && m.node.offsetParent) now = m; });
+  side.forEach((m, k) => { m.node.classList.toggle("future", ahead[k]); m.node.classList.remove("now"); m.mark?.classList.remove("now"); if (m.at <= i && m.node.offsetParent) now = m; });
   const mb = $("mbody");
   if (aligned()) { // 🔄️ beside their lines
     if (sizes() !== alignKey) alignSide();
@@ -904,6 +909,7 @@ function updatePosition() {
   }
   else if (now) {
     now.node.classList.add("now");
+    now.mark?.classList.add("now"); // its 📌 line lit up too
     const top = Math.round(now.node.offsetTop - mb.clientHeight / 2 + now.node.offsetHeight / 2);
     if (top !== colTarget && !$("mem").matches(":hover") && !document.body.classList.contains("hide-memscroll")) {
       // glide to the new current card (a far one, such as after picking another view, is jumped to)
@@ -912,7 +918,23 @@ function updatePosition() {
     }
   }
 }
-$("mem").addEventListener("mouseleave", () => { colTarget = null; updatePosition(); }); // you may have scrolled it: back to the current card
+$("mem").addEventListener("mouseleave", () => { if (colLed) return void (colLed = false); colTarget = null; updatePosition(); }); // you may have scrolled it: back to the current card
+// ⤓ the other way round (🔄️ off): scrolling the column yourself brings the chat along, the 📌 marker (or line) of the card
+// in the column's middle level with that card. The chat then stays put when the pointer leaves the column.
+let colLed = false, colTick = false;
+$("mbody").addEventListener("scroll", () => {
+  if (colTick || aligned() || !$("mem").matches(":hover") || document.body.classList.contains("hide-memscroll")) return;
+  colTick = true;
+  requestAnimationFrame(() => {
+    colTick = false;
+    const mid = $("mbody").getBoundingClientRect().top + $("mbody").clientHeight / 2;
+    const x = side.find(m => m.node.offsetParent && m.node.getBoundingClientRect().bottom >= mid);
+    const n = x && (x.mark?.offsetParent ? x.mark : rows[x.at]?.node);
+    if (!n) return;
+    colLed = true;
+    scrollTo(0, scrollY + n.getBoundingClientRect().top - x.node.getBoundingClientRect().top);
+  });
+}, { passive: true });
 
 function jump(ev) {
   if (!rows.length) return;
@@ -1671,9 +1693,9 @@ function toEdge(dir, base, keep) {
 // ⏫ ⏬ in the chat's bar: scroll to the previous or next place's band (a change of cell), just under the bar. Pressed
 // again while the page is still gliding, it steps on from where that glide ends.
 let placeTo = null;
-function stepPlace(dir) {
+function stepPlace(dir, nodes = feed.querySelectorAll(".divider:not(.npcout)")) {
   const bar = $("cbar").getBoundingClientRect().bottom, base = placeTo ?? scrollY;
-  const ys = [...feed.querySelectorAll(".divider")].map(d => d.getBoundingClientRect().top + scrollY - bar - 8); // page y that puts each band under the bar
+  const ys = [...nodes].map(d => d.getBoundingClientRect().top + scrollY - bar - 8); // page y that puts each band under the bar
   const y = dir > 0 ? ys.find(y => y > base + 4) : ys.reverse().find(y => y < base - 4);
   if (y == null) { toEdge(dir, base, v => placeTo = v); return; } // past the first or last place: the top or end of the chat
   placeTo = Math.max(0, Math.min(y, document.documentElement.scrollHeight - innerHeight));
@@ -1686,9 +1708,44 @@ for (const [id, dir] of [["jtop", -1], ["jend", 1]]) $(id).addEventListener("cli
   const mb = $("mbody");
   if (!aligned()) mb.scrollTo({ top: dir > 0 ? mb.scrollHeight : 0, behavior: "smooth" });
 });
-for (const [id, dir] of [["lprev", -1], ["lnext", 1]]) $(id).addEventListener("click", e => {
+for (const [id, dir] of [["lprev", -1], ["lnext", 1], ["nprev", -1], ["nnext", 1]]) $(id).addEventListener("click", e => {
   e.currentTarget.animate([{ boxShadow: "0 0 0 1.5px var(--fg)" }, { boxShadow: "0 0 0 1.5px transparent" }], 450);
-  stepPlace(dir);
+  stepPlace(dir, id[0] === "n" ? npcStarts : undefined);
+});
+// 🔍 in the chat's bar: only the lines holding a name or words (in the text, or who says it and to whom), and the
+// places, speaker boxes and 📌 markers that still hold one. ▲ ▼ step between runs of them: a new run starts in a new
+// place or after 5 real minutes without one.
+let npcStarts = [];
+function npcFilter() {
+  const name = $("npc").value.trim(), on = !!name;
+  document.body.classList.toggle("npcf", on);
+  const re = new RegExp("\\b" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+  npcStarts = [];
+  let last = null;
+  for (const r of rows) {
+    const d = r.e.data || {};
+    const ok = !on || re.test([eventText(r.e), d.speaker, d.npc_name, d.player_name, d.target].join(" | "));
+    r.node.classList.toggle("npcout", !ok);
+    if (!on || !ok) continue;
+    if (!last || r.e.localTime - last.e.localTime > 300 || cell(r.e) !== cell(last.e)) npcStarts.push(r.node.closest(".grp") ?? r.node);
+    last = r;
+  }
+  for (const m of feed.querySelectorAll(".mark")) m.classList.toggle("npcout", on && !re.test(m.textContent));
+  for (const g of feed.querySelectorAll(".grp")) g.classList.toggle("npcout", on && !g.querySelector("[data-i]:not(.npcout)"));
+  let band = null, kept = false; // a place band stays while a line after it does
+  for (const c of [...feed.children, null]) {
+    if (c && !c.classList.contains("divider")) { kept ||= !c.classList.contains("npcout") && c !== endMark; continue; }
+    band?.classList.toggle("npcout", on && !kept);
+    band = c; kept = false;
+  }
+  updatePosition();
+}
+$("npc").addEventListener("input", npcFilter);
+$("nclear").addEventListener("click", () => { $("npc").value = ""; npcFilter(); });
+$("npc").addEventListener("focus", () => { // names offered: everyone who spoke, thought or was spoken to
+  const names = new Set();
+  for (const { e } of rows) for (const k of ["speaker", "npc_name", "player_name", "target"]) { const n = e.data?.[k]; if (typeof n === "string" && n.length > 1 && n !== "?") names.add(n); }
+  $("npcnames").replaceChildren(...[...names].sort().map(n => Object.assign(el("option"), { value: n })));
 });
 for (const [id, dir] of [["mprev", -1], ["mnext", 1]]) $(id).addEventListener("click", e => {
   if (!aligned()) return;
@@ -1948,6 +2005,7 @@ function placeMarks() {
     n.textContent = feed.querySelectorAll(".mark." + n.dataset.mark).length;
     n.parentElement.hidden = n.textContent === "0";
   }
+  if ($("npc").value.trim()) npcFilter(); // 👤: the new markers too
 }
 
 // A diary entry: what an NPC wrote about a stretch of events, rendered as markdown.
@@ -2146,6 +2204,7 @@ function ingest(events) {
   $("nthought").textContent = feed.querySelectorAll(".thought").length;
   $("nnarr").textContent = feed.querySelectorAll(".narr").length;
   countActs();
+  if ($("npc").value.trim()) npcFilter(); // 👤: the new lines too
   if (first || (atEnd && !document.body.classList.contains("hide-autoscroll"))) scrollTo(0, document.body.scrollHeight); // 📡 follow live
   updatePosition();
   markFollow();

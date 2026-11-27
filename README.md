@@ -136,6 +136,7 @@ IntelEngine's social events ("Fridrika met with Katla", "Domba told Assur a rumo
 - Text size − / +: make all the page's text smaller or larger, 70% to 160%
 - Column width − / +: the context column's share of the window, 25% to 60% (40% at first)
 - Sky wave − / +: how strongly the timeline's day and night wave shows, 0% (hidden) to 100%
+- About: the version, what the page is, whether the helper is serving it (or it was opened from disk, live only), where its data comes from, and links to this README and GitHub
 
 Toggles are remembered by the browser. Every toggle's tooltip ends with its default, such as *(default: off)*.
 

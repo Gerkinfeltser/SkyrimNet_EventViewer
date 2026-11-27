@@ -135,7 +135,12 @@
           background:var(--panel); border-left:1px solid var(--line); box-shadow:-8px 0 24px #0009; }
   .side.open { display:flex; }
   #shot { max-width:min(1400px, 94vw); max-height:94vh; padding:12px 14px; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:10px; }
-  #shot::backdrop { background:rgb(0 0 0 / .75); }
+  #shot::backdrop, #about::backdrop { background:rgb(0 0 0 / .75); }
+  #about { max-width:min(640px, 94vw); padding:12px 16px; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:10px; font-size:calc(13.5px * var(--fs)); line-height:1.5; }
+  #about .who { display:flex; align-items:baseline; margin:0; font-size:calc(15px * var(--fs)); }
+  #about .x { margin-left:auto; cursor:pointer; color:var(--muted); font-size:calc(20px * var(--fs)); line-height:1; padding:0 4px; }
+  #about .ver { margin-left:8px; color:var(--muted); font-size:calc(12px * var(--fs)); }
+  #about a { color:inherit; } #about code { font-size:.92em; color:var(--muted); }
   #shot img { display:block; max-width:100%; max-height:64vh; margin:6px auto; border-radius:6px; cursor:zoom-out; }
   #shot .who { display:flex; gap:10px; align-items:baseline; font-size:calc(13px * var(--fs)); color:var(--muted); }
   #shot .txt { font-size:calc(14.5px * var(--fs)); line-height:1.45; max-width:110ch; margin:8px auto 0; }
@@ -380,6 +385,7 @@
       <div class="step" data-step="fs" title="Text size of the whole page">Text size <button title="Smaller">−</button><span></span><button title="Larger">+</button></div>
       <div class="step" data-step="cw" title="Width of the context column, as a share of the window">Column width <button title="Narrower">−</button><span></span><button title="Wider">+</button></div>
       <div class="step" data-step="sky" title="How strongly the timeline's day and night wave shows (0% hides it)">Sky wave <button title="Fainter">−</button><span></span><button title="Stronger">+</button></div>
+      <label class="sep" id="aboutbtn" title="What this page is, where its data comes from">About</label>
     </div>
   </details>
 </header>
@@ -387,6 +393,13 @@
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
 <aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on) (before the first one: the top of the chat)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on) (after the last one: the end of the chat)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
+<dialog id="about" title="Esc or a click outside closes"><div class="who"><b>SkyrimNet event view</b><span class="ver">version 0.0.1</span><span class="x" title="Close">×</span></div>
+<p>A read-only page for reading what SkyrimNet's NPCs say, think and remember: the chat on the left, their memories, diaries, OmniSight pictures, scenes, saves and other mods' events in the context column, and the LLM prompt behind any line.</p>
+<p id="aboutmode"></p>
+<p>It only reads. Nothing here writes to the game, SkyrimNet, its databases, logs or folders.</p>
+<p>Where things come from, in the SkyrimNet folder: <code>data/SkyrimNet-*.db</code> (one per playthrough), <code>logs/conversation_log*.log</code> (history by day), <code>logs/openrouter_*.log</code> (prompts and replies), <code>screenshots/omnisight/</code>. Saves are read from the game's save folders, headers only.</p>
+<p>Hover any button for what it does. The <a href="https://github.com/Gerkinfeltser/SkyrimNet_EventViewer#readme" target="_blank" rel="noopener">README</a> describes every toggle; the code and issues are on <a href="https://github.com/Gerkinfeltser/SkyrimNet_EventViewer" target="_blank" rel="noopener">GitHub</a>.</p>
+</dialog>
 <dialog id="shot" title="Esc or a click outside closes"><div class="ppane" id="ppane"><div class="pbar"><details class="menu pick" id="dsect" hidden><summary title="Sections of the prompt: pick which to show">🏷️ <span class="n" id="nsect">0</span></summary><div class="panel" id="sectpanel"></div></details><label class="src" title="Show the exact prompt text instead of rendered markdown"><input type="checkbox" id="dsrc"> source</label><div class="toc" id="dtocw" hidden><select id="dtoc" title="Sections of the open prompt: follows your scrolling, pick one to jump"></select></div></div><div id="dbody"></div></div></dialog>
 <script>
 // Reads the same feed as the SkyrimNet dashboard's Home page. ?host=… overrides the server.
@@ -2202,6 +2215,13 @@ function renderSide() {
 }
 $("dsrc").checked = !MD;
 $("dsrc").addEventListener("change", () => { MD = !$("dsrc").checked; localStorage["snev.md"] = MD ? "1" : "0"; if (fillPrompt) { dbody.replaceChildren(); if ($("shot").classList.contains("withprompt")) fillPrompt(); } });
+$("aboutbtn").addEventListener("click", () => {
+  $("menu").open = false;
+  $("aboutmode").textContent = LOCAL ? `Served by serve.py at ${location.host}: live view, history, memories, diaries, OmniSight and older prompts all work.`
+    : `Opened from disk: live only, straight from SkyrimNet's API at ${HOST}. Run serve.py for history, memories and older prompts.`;
+  $("about").showModal();
+});
+$("about").addEventListener("click", ev => { if (ev.target === ev.currentTarget || ev.target.classList.contains("x")) $("about").close(); });
 $("shot").addEventListener("click", ev => { if (ev.target === ev.currentTarget || ev.target.tagName === "IMG") $("shot").close(); }); // outside, or the picture
 
 // ---- Polling ----

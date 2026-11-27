@@ -66,7 +66,7 @@
   .mark::after { content:""; flex:1; border-top:1px dashed currentColor; opacity:.45; }
   .mark::before { content:""; order:9; margin-left:-7px; border-left:6px solid currentColor; border-block:4px solid transparent; opacity:.6; } /* ▸ after the line, pointing at the card's column */
   .mark:hover { color:var(--fg); }
-  body.hide-marks .mark, body.hide-mark-mem .mark.mem, body.hide-mark-diary .mark.diary, body.hide-mark-omni .mark.omni, body.hide-mark-save .mark.save { display:none; }
+  body.hide-marks .mark, body.hide-mark-mem .mark.mem, body.hide-mark-diary .mark.diary, body.hide-mark-omni .mark.omni, body.hide-mark-save .mark.save, body.hide-mark-scene .mark.scene { display:none; }
   /* the end of the chat: "Now" when live, the end of a playthrough or day in History */
   .endmark { display:flex; align-items:center; gap:12px; margin:14px 10px 6px;
              color:#d6c48f; font-weight:700; font-size:calc(13px * var(--fs)); letter-spacing:.04em; white-space:nowrap; }
@@ -150,6 +150,14 @@
   #dbody { overflow:auto; flex:1; min-height:0; padding-right:4px; }
   /* the popup's wheel stays in the popup: the chat behind it doesn't scroll (the gutter keeps the chat from shifting) */
   html { scrollbar-gutter:stable; }
+  /* dark scrollbars everywhere, wide enough to grab (Chromium; Firefox gets the colours) */
+  ::-webkit-scrollbar { width:20px; height:20px; }
+  ::-webkit-scrollbar-corner { background:transparent; }
+  /* a rounded dark lane hugging the handle, sunk in a little; the handle sits 2px inside it */
+  ::-webkit-scrollbar-track { background:#0b0c0f padding-box; border:3px solid transparent; border-radius:10px; box-shadow:inset 0 1px 3px #000c; }
+  ::-webkit-scrollbar-thumb { background:#4a505c padding-box; border:5px solid transparent; border-radius:10px; box-shadow:inset 0 1px 0 #ffffff1f; }
+  ::-webkit-scrollbar-thumb:hover { background-color:#666d7b; }
+  @supports not selector(::-webkit-scrollbar) { * { scrollbar-color:#4a505c #0b0c0f; } }
   html:has(#shot[open]) { overflow:hidden; }
   #dbody, #shot .pmain, .menu .panel { overscroll-behavior:contain; }
   .ppane .pbar { display:flex; align-items:center; gap:10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
@@ -207,6 +215,16 @@
   body.hide-emoji .picon.none::after { content:"✕"; color:var(--muted); font-weight:700; }
   .picon.none::after { content:"❌"; position:absolute; inset:0; display:grid; place-items:center; font-size:calc(9px * var(--fs)); }
   #shot .who .x { align-self:center; }
+  /* ◢ the popup's resize corner (with its prompt shown); .sized: a size you dragged it to, the panes fill it */
+  #shot .grip { position:absolute; right:0; bottom:0; width:16px; height:16px; cursor:nwse-resize; touch-action:none;
+                background:linear-gradient(135deg, transparent 50%, rgb(255 255 255 / .2) 50%); border-bottom-right-radius:9px; }
+  #shot:not(.withprompt) .grip { display:none; }
+  #shot.sized .ppane, #shot.sized:not(.stacked) .pmain { max-height:none; }
+  /* 👁️ what OmniSight saw: its picture when the page kept one, else a note */
+  .memcard.scene .nopic { font-style:italic; margin:3px 0; }
+  body:not(.hide-compact) .memcard.scene .txt { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  body:not(.hide-compact) .memcard.scene img { height:90px; }
+  .memcard.scene .txt { cursor:zoom-in; }
   #mbody.aligned { overflow:hidden; } /* 🔄️ the column follows the page; the wheel scrolls the page */
   /* 🔄️: faint vertical dashed lines through the gaps between cards, so the column reads as one track with the chat */
   #mbody.aligned { --dash:repeating-linear-gradient(to bottom, rgb(255 255 255 / .22) 0 3px, transparent 3px 6px);
@@ -355,7 +373,7 @@
     </div>
   </details>
 </header>
-<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><label class="tbtn" title="Show &quot;🧠 recalled N memories&quot; under NPC replies whose prompt had recalled memories: hover one to read them, click it to open the line with only its memories. Only while the prompt logs exist."><input type="checkbox" data-toggle="recalled" checked hidden>🧠 <span class="n" id="nrecalled">0</span></label><label class="tbtn" title="Show &quot;👁️ saw a new scene&quot; under the NPC reply whose prompt first had a new OmniSight scene (What You Currently See Around You): hover one to read it, click it to open the line with only that scene. SkyrimNet keeps no picture of these scenes. Only while the prompt logs exist."><input type="checkbox" data-toggle="saw" checked hidden>👁️ <span class="n" id="nsaw">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label><label><input type="checkbox" data-toggle="mark-save" checked> 💾 saves <span class="n" data-mark="save">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
+<div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><label class="tbtn" title="Show &quot;🧠 recalled N memories&quot; under NPC replies whose prompt had recalled memories: hover one to read them, click it to open the line with only its memories. Only while the prompt logs exist."><input type="checkbox" data-toggle="recalled" checked hidden>🧠 <span class="n" id="nrecalled">0</span></label><label class="tbtn" title="Show &quot;👁️ saw a new scene&quot; under the NPC reply whose prompt first had a new OmniSight scene (What You Currently See Around You): hover one to read it, click it to open the line with only that scene. SkyrimNet keeps no picture of these scenes. Only while the prompt logs exist."><input type="checkbox" data-toggle="saw" checked hidden>👁️ <span class="n" id="nsaw">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label><label><input type="checkbox" data-toggle="mark-save" checked> 💾 saves <span class="n" data-mark="save">0</span></label><label><input type="checkbox" data-toggle="mark-scene" checked> 👁️ scenes <span class="n" data-mark="scene">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
 <aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on) (before the first one: the top of the chat)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on) (after the last one: the end of the chat)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
@@ -406,7 +424,7 @@ function autoGroup(t) {
 }
 // "follower recruited" for intel_follower_recruited, "event" for dragonsense_event (the group says the rest)
 const evKind = (t, g) => (g?.prefix ? t.slice(g.prefix.length).replace(/^_/, "") || t : t.replace(/^(intel|political)_/, "")).replace(/_/g, " ");
-let omni = [], diaries = [], saves = []; // OmniSight screenshots and diary entries, anchored like memories
+let omni = [], diaries = [], saves = [], scenes = [], liveScenes = []; // OmniSight screenshots and diary entries, anchored like memories
 $("host").textContent = HOST;
 
 // Toggles, remembered across reloads.
@@ -1085,6 +1103,30 @@ function requestBlock(r, open, why) {
 // puts the short text above its prompt (memories); "line" stacks too and drops the 🧾, the prompt being always shown (chat
 // lines). The prompt starts hidden, unless `prompt` asks for it.
 let fillPrompt = null; // fills the open popup's prompt column (again when "source" changes)
+// ◢ The lower-right corner resizes the popup while its prompt shows; the next one opens at that size. Double-click: the usual size.
+let popSize = JSON.parse(localStorage["snev.popsize"] || "null");
+function sizePopup(d = $("shot")) {
+  const on = !!popSize && d.classList.contains("withprompt");
+  d.classList.toggle("sized", on);
+  Object.assign(d.style, on ? { boxSizing: "border-box", width: popSize.w + "px", height: popSize.h + "px", maxWidth: "none", maxHeight: "none" }
+    : { boxSizing: "", width: "", height: "", maxWidth: "", maxHeight: "" });
+}
+const grip = el("div", "grip");
+grip.title = "Drag to resize (the next popup opens at this size). Double-click: the usual size.";
+grip.addEventListener("pointerdown", ev => {
+  ev.preventDefault();
+  const d = $("shot"), r = d.getBoundingClientRect(), x0 = ev.clientX, y0 = ev.clientY;
+  grip.setPointerCapture(ev.pointerId);
+  const move = e => { // the popup stays centred, so it grows by twice the drag to keep its corner under the pointer
+    popSize = { w: Math.round(Math.min(innerWidth - 8, Math.max(420, r.width + 2 * (e.clientX - x0)))),
+                h: Math.round(Math.min(innerHeight - 8, Math.max(240, r.height + 2 * (e.clientY - y0)))) };
+    sizePopup(d);
+  };
+  grip.addEventListener("pointermove", move);
+  grip.addEventListener("pointerup", () => { grip.removeEventListener("pointermove", move); localStorage["snev.popsize"] = JSON.stringify(popSize); }, { once: true });
+});
+grip.addEventListener("dblclick", () => { popSize = null; localStorage.removeItem("snev.popsize"); sizePopup(); });
+grip.addEventListener("click", ev => ev.stopPropagation()); // not the popup's click-outside close
 function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node to add after the prompt (a line's event JSON)
   const stacked = !!layout;
   const d = $("shot"), w = who.cloneNode(true), main = el("div", "pmain"), pane = $("ppane");
@@ -1098,11 +1140,12 @@ function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node t
   main.append(w, ...body);
   if (d.open) d.close();
   d.classList.toggle("stacked", !!stacked);
-  d.replaceChildren(...stacked ? [main, pane] : [pane, main]);
+  d.replaceChildren(...stacked ? [main, pane] : [pane, main], grip);
   dbody.replaceChildren();
   $("dtocw").hidden = $("dsect").hidden = true;
   wholeOnce = false; focusOnce = null; // a new popup follows the picks again
   d.classList.remove("withprompt");
+  sizePopup(d);
   if (x.noPrompt) { fillPrompt = null; return d.showModal(); } // nothing to show beside it: the greyed 🧾's tooltip says why
   const fill = fillPrompt = async () => {
     dbody.replaceChildren(el("div", "note", "Loading request log…"));
@@ -1113,7 +1156,7 @@ function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node t
     dbody.replaceChildren(...nodes, ...(extra ? [extra()] : []));
     buildToc();
   };
-  const show = on => { d.classList.toggle("withprompt", on); if (on && !dbody.childNodes.length) fill(); };
+  const show = on => { d.classList.toggle("withprompt", on); sizePopup(d); if (on && !dbody.childNodes.length) fill(); };
   b.addEventListener("click", () => show(!d.classList.contains("withprompt")));
   d.showModal();
   show(!!prompt);
@@ -1163,13 +1206,25 @@ function promptHits(reqs, text, t) {
 // memory (up to 15 s) that names someone the memory names, closest first.
 const PLOT_TAG = "narrative_engine_plot";
 function planHits(reqs, x, t) {
+  if (x?.e) return intelHits(reqs, x, t);
   if (!(x?.tags || []).includes(PLOT_TAG)) return [];
   const names = [...new Set((x.content || "").match(/\b[A-Z][a-z']{3,}\b/g) || [])].map(n => n.toLowerCase());
   const at = r => +r.response_timestamp_unix;
   return reqs.filter(r => /^narrative_engine/.test(r.use_case || "") && at(r) <= t + 2000 && at(r) >= t - 15000 && names.some(n => r.hay.includes(n)))
     .sort((a, b) => Math.abs(at(a) - t) - Math.abs(at(b) - t));
 }
-// A card's requests: the replies holding its text, or for a plot memory the plan it came from.
+// An IntelEngine event ("Fridrika met with Katla", "X told Y a rumor: …") is written by the mod from its story request's JSON
+// (npc, npc2, a narration, the gossip or two facts), so its sentence is in no reply. Its prompt is the latest intel_story_dm
+// reply before it naming both people: up to 10 minutes before, as the NPCs walk over to each other first.
+const npcOf = (r, k) => new RegExp(`"${k}"\\s*:\\s*"([^"]+)"`).exec(String(r.response_payload || ""))?.[1];
+function intelHits(reqs, x, t) {
+  if (!/^intel_/.test(x.e.type || "")) return [];
+  const text = flat(x.content), at = r => +r.response_timestamp_unix;
+  return reqs.filter(r => r.use_case === "intel_story_dm" && at(r) <= t + 2000 && at(r) >= t - 600000
+      && [npcOf(r, "npc"), npcOf(r, "npc2")].every(n => n && text.includes(flat(n))))
+    .sort((a, b) => at(b) - at(a));
+}
+// A card's requests: the replies holding its text, or for a plot memory (or IntelEngine event) the plan it came from.
 const cardHits = (reqs, x, t) => { const h = promptHits(reqs, x.content || x.description || "", t); return h.length ? h : planHits(reqs, x, t); };
 // Grey the 🧾 of each card with no prompt to show. Only cards older than the last fetch of the log are judged.
 // A card's popup with its prompt shown, or hidden when it has none (looked up first if markInputs hasn't got to it yet).
@@ -1214,13 +1269,16 @@ async function markActions() {
   }
   markContext(reqs);
   countActs();
+  const sc = sceneList(reqs); // 👁️ cards: the vision requests from this view's stretch of time
+  if (sc.length !== scenes.length) { scenes = sc; renderSide(); markInputs(); } // new cards: their 🧾 judged again
 }
 // Notes under an NPC's reply from the prompt that wrote it, once per reply, after its last line (as 🎯):
 // "🧠 recalled 2 memories" when it had recalled memories (a "…Potentially Relevant Memories" section), and
 // "👁️ saw a new scene: …" when its scene (OmniSight's "What You Currently See Around You", written by a vision request whose
-// picture SkyrimNet doesn't keep) differs from the one before it in the chat. Hover a note for the section, click it for the
-// line's popup with only that section. The prompt is the one the popup shows for the line (the closest reply holding its
-// text), looked for only near a request with either section, so a long playthrough stays quick.
+// picture SkyrimNet doesn't keep) differs from the one that NPC's last reply saw. Hover a note for the section; click 🧠 for the
+// line's popup with only its memories, 👁️ for the scene with the vision request that described it (and its picture, when
+// this page kept it). The prompt is the one the popup shows for the line (the closest reply holding its text), looked for
+// only near a request with either section, so a long playthrough stays quick.
 const MEM_SEC = "Potentially Relevant Memories", SCENE_SEC = "What You Currently See Around You";
 function markContext(reqs) {
   const useful = reqs.filter(r => { const p = r.request_payload || ""; return p.includes(MEM_SEC) || p.includes(SCENE_SEC); });
@@ -1234,30 +1292,136 @@ function markContext(reqs) {
     const hit = promptHits(near(reqs, t), eventText(e), t)[0];
     if (hit && useful.includes(hit)) last.set(hit, { row, i });
   });
-  const note = (row, cls, text, title, focus) => {
+  const note = (row, cls, text, title, open) => {
     if (row.node.querySelector("." + cls)) return;
     const b = el("div", cls, text);
     b.title = title;
-    b.addEventListener("click", ev => { ev.stopPropagation(); openPrompt(rows.indexOf(row)); focusOnce = focus; });
+    b.addEventListener("click", ev => { ev.stopPropagation(); open(); });
     row.node.append(b);
   };
-  let scene = null;
+  const scene = new Map(); // NPC → the scene their last reply saw: two NPCs standing apart each see their own
   for (const [hit, { row }] of [...last].sort((x, y) => x[1].i - y[1].i)) { // chat order, for "new scene"
     const secs = promptSections(hit), body = s => s.text.replace(/^\s*#+\s*/, "");
     const mem = secs.filter(s => ANY_LEVEL.test(s.label)).map(body).join("\n\n"), n = (mem.match(/^\s*\d+\.\s/gm) || []).length;
     if (mem) note(row, "recalled", n ? `🧠 recalled ${n} ${n === 1 ? "memory" : "memories"}` : "🧠 recalled memories",
-      "In this reply's prompt (click to open them):\n\n" + clip(mem), MEM_SEC);
+      "In this reply's prompt (click to open them):\n\n" + clip(mem), () => { openPrompt(rows.indexOf(row)); focusOnce = MEM_SEC; });
     const sc = secs.find(s => s.label === SCENE_SEC);
     if (!sc) continue;
-    const what = body(sc).replace(/^What You Currently See Around You\s*/, "").trim();
-    if (what === scene) continue;
-    scene = what;
+    const what = body(sc).replace(/^What You Currently See Around You\s*/, "").replace(/\n[^\n]*\(This describes your immediate surroundings[\s\S]*$/, "").trim();
+    const npc = row.e.data?.speaker || row.e.data?.npc_name || "";
+    if (what === scene.get(npc)) continue;
+    scene.set(npc, what);
     const first = what.replace(/\*\*[^*]+:\*\*/g, " ").replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0];
     note(row, "saw", `👁️ saw a new scene: ${first.length > 90 ? first.slice(0, 89) + "…" : first}`,
-      "What OmniSight described to this reply's prompt, new since the reply before (click to open it):\n\n" + clip(what), SCENE_SEC);
+      "What OmniSight described to this reply's prompt, new since this NPC's last reply (click for the request that described it):\n\n" + clip(what),
+      () => openCard(sceneItem({ kind: "scene", description: what, time: row.e.localTime, gameTimeStr: row.e.gameTimeStr })));
   }
 }
 const clip = t => t.length > 900 ? t.slice(0, 899) + "…" : t;
+
+// 👁️ What OmniSight saw just before NPCs spoke: a vision request describing the screen ("what is currently visible"), whose
+// description goes into their prompts. SkyrimNet keeps no file of these pictures, only the latest one in memory (served at
+// /omnisight?api=image&id=0), so while the live view is open the page fetches each new one and keeps it in this browser
+// (IndexedDB), keyed by its description. A scene from before that, or seen with no page open, has its text only.
+// ponytail: keeps the newest SCENE_KEEP pictures (≈1-2 MB each); a playthrough's older ones go first.
+const SCENE_KEEP = 400, SCENE_ASK = "currently visible in this Skyrim screenshot";
+const sceneKey = d => flat(String(d || "").replace(/\*\*/g, "")).slice(0, 200);
+const SCENE_DB = new Promise(ok => {
+  try {
+    const q = indexedDB.open("snev-scenes", 1);
+    q.onupgradeneeded = () => q.result.createObjectStore("shots").createIndex("time", "time");
+    q.onsuccess = () => ok(q.result);
+    q.onerror = () => ok(null);
+  } catch { ok(null); }
+});
+const shotCache = new Map(); // key → Promise of the kept picture ({ blob, time, description }) or null
+function sceneShot(desc) {
+  const k = sceneKey(desc);
+  if (!shotCache.has(k)) shotCache.set(k, SCENE_DB.then(db => db && new Promise(ok => {
+    const q = db.transaction("shots").objectStore("shots").get(k);
+    q.onsuccess = () => ok(q.result || null);
+    q.onerror = () => ok(null);
+  })));
+  return shotCache.get(k);
+}
+let lastScene = null;
+async function grabScene() { // live only: called after each poll
+  const list = async () => (await (await fetch(`${HOST}/omnisight?api=list&type=scene&limit=1`, { cache: "no-store" })).json()).screenshots?.[0];
+  try {
+    const s = await list();
+    if (!s?.description || s.captureTimestampLocal === lastScene) return;
+    const blob = await (await fetch(`${HOST}/omnisight?api=image&id=0&t=${s.captureTimestampLocal}`, { cache: "no-store" })).blob();
+    if ((await list())?.captureTimestampLocal !== s.captureTimestampLocal) return; // a newer one came in between: next poll
+    lastScene = s.captureTimestampLocal;
+    const db = await SCENE_DB;
+    if (!db || !blob.size || !blob.type.startsWith("image/")) return;
+    const k = sceneKey(s.description), rec = { blob, time: s.captureTimestampLocal, description: s.description };
+    const tx = db.transaction("shots", "readwrite"), st = tx.objectStore("shots");
+    st.put(rec, k);
+    st.count().onsuccess = ev => { // the oldest go once there are too many
+      let extra = ev.target.result - SCENE_KEEP;
+      if (extra > 0) st.index("time").openCursor().onsuccess = e => { const c = e.target.result; if (c && extra-- > 0) { c.delete(); c.continue(); } };
+    };
+    shotCache.set(k, Promise.resolve(rec));
+    if (!scenes.some(x => sceneKey(x.description) === k)) {
+      liveScenes.push({ kind: "scene", description: s.description, time: s.captureTimestampLocal, name: s.locationName || "", at: Math.max(0, rows.length - 1) });
+      scenes = [...scenes, liveScenes.at(-1)];
+      renderSide();
+      markInputs();
+    }
+  } catch {} // SkyrimNet not answering, or an older one without this call
+}
+// The vision requests in the log, as scene cards (plus the ones caught live and not in the log yet).
+function sceneList(reqs) {
+  const byTime = t => { let at = 0; for (let i = 0; i < rows.length && (rows[i].e.localTime || 0) <= t; i++) at = i; return at; };
+  const out = [], seen = new Set();
+  for (const r of reqs) {
+    if (r.use_case !== "vision" || !(r.request_payload || "").includes(SCENE_ASK) || !r.response_payload) continue;
+    const k = sceneKey(r.response_payload), ask = promptSections(r).map(s => s.text).join("\n");
+    if (seen.has(k)) continue;
+    seen.add(k);
+    const time = +r.response_timestamp_unix / 1000, place = /- Location:\s*(?:Scene:\s*)?(.+)/.exec(ask)?.[1] || "", when = /- Time:\s*(.+)/.exec(ask)?.[1] || "";
+    out.push({ kind: "scene", description: r.response_payload.trim(), time, name: place.trim(), gameTimeStr: when.trim(), at: byTime(time) });
+  }
+  if (!rows.length) return [];
+  const first = rows[0].e.localTime || 0, end = (rows.at(-1).e.localTime || 0) + 120; // this view's stretch of time
+  return [...out.filter(x => x.time >= first - 60 && x.time <= end), ...liveScenes.filter(x => !seen.has(sceneKey(x.description)))].sort((a, b) => a.time - b.time);
+}
+const sceneText = d => String(d || "").replace(/\*\*/g, "");
+function scenePicture(x) { // the kept picture once looked up, or a note saying there is none
+  const n = el("div", "foot nopic");
+  sceneShot(x.description).then(s => {
+    if (!s) return n.append("No picture: SkyrimNet doesn't keep these, and this page wasn't open live to keep it.");
+    const img = el("img");
+    img.src = URL.createObjectURL(s.blob);
+    img.onload = () => URL.revokeObjectURL(img.src);
+    img.alt = x.name || "what OmniSight saw";
+    n.replaceWith(img);
+  });
+  return n;
+}
+function sceneWho(x) {
+  const who = el("div", "who"), name = el("b", null, "👁️ " + (x.name || "Scene"));
+  name.style.color = "hsl(190 55% 70%)";
+  who.append(name, gameTime(x.gameTimeStr), rtSpan(x.time, "rt", "") || "", el("span", "kind", "scene"), promptBtn(x));
+  return who;
+}
+// The popup: the picture (when kept) and the description, with the vision request that wrote it beside them.
+function sceneItem(x) {
+  x.popup = prompt => showShot(x, sceneWho(x), [scenePicture(x), md(x.description)], prompt);
+  return x;
+}
+function sceneCard(x) {
+  const card = el("div", "memcard scene"), text = colourNames(sceneText(x.description));
+  sceneItem(x);
+  card.style.background = "hsl(190 18% 17%)";
+  card.style.borderColor = "hsl(190 25% 30%)";
+  text.title = "Click to read it whole, with the request that described it";
+  text.addEventListener("click", ev => { if (getSelection().toString()) return; ev.stopPropagation(); openCard(x); });
+  card.append(sceneWho(x), scenePicture(x), text);
+  cardClick(card, x);
+  return card;
+}
 // A request's # sections (parsed once per request)
 function promptSections(r) {
   if (r.secs) return r.secs;
@@ -1268,7 +1432,7 @@ function promptSections(r) {
 async function markInputs() {
   const log = requestLog(-1), reqs = await log.list; // whatever log there is
   if (reqLog && log !== reqLog) return; // a newer fetch will mark them
-  for (const x of [...mems, ...diaries, ...omni]) {
+  for (const x of [...mems, ...diaries, ...omni, ...sideEv, ...scenes]) {
     const b = x.node?.querySelector(".picon"), t = (x.time || 0) * 1000;
     if (!b || t >= log.at) continue;
     const hits = reqs ? cardHits(reqs, x, t) : [];
@@ -1276,6 +1440,7 @@ async function markInputs() {
     b.classList.toggle("none", !!x.noPrompt);
     b.title = x.noPrompt ? "No prompt: " + x.noPrompt
       : (x.tags || []).includes(PLOT_TAG) && !promptHits(reqs, x.content, t).length ? "Show the Narrative Engine plan this was written from, beside the card"
+      : x.e && !promptHits(reqs, x.content, t).length ? "Show the IntelEngine story request this was written from, beside the card"
       : "Show the prompt that wrote this, beside the card";
   }
 }
@@ -1285,8 +1450,6 @@ async function markInputs() {
 function noPrompt(reqs, t, x) {
   if (!reqs) return "Couldn't reach a request log.";
   const tags = x?.tags || [];
-  if (x?.kind === "mem" && !(x.events || []).length && !tags.includes(PLOT_TAG))
-    return "Written by a mod's code, not by a model: no reply holds it and it is tied to no chat event" + (tags.length ? ` (tags: ${tags.slice(0, 4).join(", ")}).` : ".");
   const oldest = reqs.reduce((a, r) => Math.min(a, +r.request_timestamp_unix), Infinity);
   if (!reqs.some(r => Math.abs(+r.response_timestamp_unix - t) < 20000) && LOCAL && reqs.length && t >= oldest) // a gap: a stray older log survived
     return "The prompt logs on disk have nothing from around this time (SkyrimNet deletes old ones).";
@@ -1294,7 +1457,12 @@ function noPrompt(reqs, t, x) {
     ? "This is older than the oldest prompt log on disk (SkyrimNet deletes old ones)"
     : "This is older than SkyrimNet's request log, which only keeps requests since the game was launched. Run serve.py to search the prompt log files too") +
     (reqs.length ? ` (oldest: ${new Date(oldest).toLocaleString()}).` : ".");
+  if (x?.kind === "mem" && !(x.events || []).length && !tags.includes(PLOT_TAG))
+    return "Written by a mod's code, not by a model: no reply holds it and it is tied to no chat event" + (tags.length ? ` (tags: ${tags.slice(0, 4).join(", ")}).` : ".");
   if (tags.includes(PLOT_TAG)) return "No Narrative Engine plan naming the same people was found in the 15 s before it.";
+  if (x?.e) return /^intel_/.test(x.e.type || "")
+    ? "Written by IntelEngine's code: no reply holds it, and no IntelEngine story request in the 10 minutes before it names both its people."
+    : "Written by a mod's code, not by a model: no reply holds its text.";
   return "No request's reply contains this text (typed player lines and some GM lines have none).";
 }
 
@@ -1310,9 +1478,10 @@ async function promptNodes(text, t, x) { // x: the card or line (for a plot memo
   out.hit = hits[0]; // the request shown first (the closest match), for lines that came from the same reply
   out.reqs = reqs;
   if (hits.length) {
-    if (plan) out.push(el("div", "note", "This memory was filled in by Narrative Engine from the plan below, so its sentence is in no reply."));
+    if (plan) out.push(el("div", "note", x.e ? "IntelEngine wrote this from the story request below (it names both people), so its sentence is in no reply."
+      : "This memory was filled in by Narrative Engine from the plan below, so its sentence is in no reply."));
     hits.slice(0, plan ? 1 : 3).forEach((r, k) => out.push(requestBlock(r, k === 0,
-      plan ? `plan, ${(off(r) / 1000).toFixed(1)} s` : hits.length > 1 ? `text match, ${(off(r) / 1000).toFixed(1)} s` : "")));
+      plan ? `${x.e ? "story request" : "plan"}, ${(off(r) / 1000).toFixed(1)} s` : hits.length > 1 ? `text match, ${(off(r) / 1000).toFixed(1)} s` : "")));
   } else {
     const why = x?.game ? "The game's own dialogue: no model wrote it. Model calls it set off (reactions, actions) are among the requests around it."
       : noPrompt(reqs, t, x), near = reqs.filter(r => Math.abs(+r.response_timestamp_unix - t) < 20000);
@@ -1646,8 +1815,14 @@ function eventCard(x) {
   card.style.borderColor = `hsl(${h} 30% 30%)`;
   const who = el("div", "who"), src = el("b", null, g?.label || x.kind);
   src.style.color = `hsl(${h} 55% 68%)`;
-  who.append(src, gameTime(e.gameTimeStr), rtSpan(e.localTime, "rt", "") || "", el("span", "kind", evKind(e.type, g)));
-  card.append(who, colourNames(plainText(e).replace(/\s*\[PE event [^\]]*\]\s*$/, ""))); // drop the political engine's debug suffix
+  x.content = plainText(e).replace(/\s*\[PE event [^\]]*\]\s*$/, ""); // drop the political engine's debug suffix
+  x.time = e.localTime;
+  who.append(src, gameTime(e.gameTimeStr), rtSpan(e.localTime, "rt", "") || "", el("span", "kind", evKind(e.type, g)), promptBtn(x));
+  const text = colourNames(x.content);
+  text.title = "Click to open it with the prompt that wrote it";
+  text.addEventListener("click", ev => { if (getSelection().toString()) return; ev.stopPropagation(); openCard(x); }); // as a memory's text; the header still flashes its line
+  card.append(who, text);
+  x.popup = prompt => showShot(x, who, [colourNames(x.content)], prompt, null, "stack"); // short: above its prompt
   cardClick(card, x);
   return card;
 }
@@ -1757,11 +1932,11 @@ function placeMarks() {
       m = el("div", "mark sm ev " + kind, "🧩 ");
       m.append(src, " · " + evKind(x.e.type, g), rtSpan(x.e.localTime, "rt rtl", "") || "");
     } else {
-      const who = kind === "omni" || kind === "save" ? x.name : x.actor;
-      m = el("div", "mark sm " + kind, { mem: "🧠 ", diary: "📔 ", omni: "📷 ", save: "💾 " }[kind]);
+      const who = kind === "omni" || kind === "save" || kind === "scene" ? x.name || (kind === "scene" ? "Scene" : "") : x.actor;
+      m = el("div", "mark sm " + kind, { mem: "🧠 ", diary: "📔 ", omni: "📷 ", save: "💾 ", scene: "👁️ " }[kind]);
       const nm = el("span", "nm", who || "?");
-      nm.style.color = kind === "save" || kind === "omni" && x.subject !== "actor" ? "" : players.has(who) ? PLAYER_COLOR : nameColor(who);
-      m.append(nm, { mem: " memory created", diary: " diary written", omni: " captured", save: " saved" }[kind], rtSpan(x.time, "rt rtl", "") || "");
+      nm.style.color = kind === "save" || kind === "scene" || kind === "omni" && x.subject !== "actor" ? "" : players.has(who) ? PLAYER_COLOR : nameColor(who);
+      m.append(nm, { mem: " memory created", diary: " diary written", omni: " captured", save: " saved", scene: " seen" }[kind], rtSpan(x.time, "rt rtl", "") || "");
     }
     m.addEventListener("click", ev => { ev.stopPropagation(); flashCard(x); }); // not the prompt popup
     (after.get(top) || top).after(m);
@@ -1834,6 +2009,7 @@ function buildColumnToggles() {
   if (SHOW_MEM) add("mem", "🧠", "Show memories", false);
   if (SHOW_DIARY) add("diary", "📔", "Show diary entries", false);
   if (SHOW_OMNI) add("omni", "📷", "Show OmniSight screenshots", false);
+  if (SHOW_OMNI) add("scene", "👁️", "Show what OmniSight saw just before NPCs spoke (its \"what's visible right now\" descriptions), with the picture when this page kept it: SkyrimNet keeps none of these, so only ones seen while the live view was open have one", false, false);
   add("save", "💾", "Show the saves you made, with a 📌 marker where each was saved (the game's autosaves and quicksaves are left out). Read from the save files: with MO2, each profile's own saves folder", false, false);
   const menu = el("details", "menu pick"), sum = el("summary"), panel = el("div", "panel"), all = el("label", "mlwrap"), box = el("input");
   menu.id = "modev";
@@ -1909,7 +2085,8 @@ function renderSide() {
   for (const x of omni) x.node = omniCard(x);
   for (const x of diaries) x.node = diaryCard(x);
   for (const x of saves) x.node = saveCard(x);
-  side = [...mems, ...diaries, ...omni, ...saves, ...sideEv].sort((a, b) => a.at - b.at); // stable: memories, diaries, screenshots, saves, then events at the same line
+  for (const x of scenes) x.node = sceneCard(x);
+  side = [...mems, ...diaries, ...omni, ...scenes, ...saves, ...sideEv].sort((a, b) => a.at - b.at); // stable: memories, diaries, screenshots, scenes, saves, then events at the same line
   mb.append(...side.map(x => x.node));
   placeMarks();
   if (!side.length) mb.append(el("div", "note", LOCAL ? "No memories or events yet. Background knowledge entries aren't shown." : "Memories are read by serve.py: open http://localhost:8791/"));
@@ -1933,7 +2110,7 @@ $("shot").addEventListener("click", ev => { if (ev.target === ev.currentTarget |
 // ---- Polling ----
 function reset() {
   feed.replaceChildren();
-  rows = []; seen = new Set(); maxId = -1; lastLocation = null; mems = []; sideEv = []; side = []; omni = []; diaries = []; saves = [];
+  rows = []; seen = new Set(); maxId = -1; lastLocation = null; mems = []; sideEv = []; side = []; omni = []; diaries = []; saves = []; scenes = []; liveScenes = [];
   $("mbody").replaceChildren(el("div", "note", LOCAL ? "No memories yet." : "Memories are read by serve.py: open http://localhost:8791/"));
   layout();
 }
@@ -2002,6 +2179,7 @@ async function poll(g) {
     // ponytail: misses a switch to a save whose newest id is higher; compare first-event ids if that bites.
     if (events.length && maxId >= 0 && Math.max(...events.map(e => e.id)) < maxId) return start();
     if (ingest(events)) loadMemories(g);
+    grabScene(); // 👁️ keep SkyrimNet's newest scene picture, which it keeps nowhere
     $("dot").className = "dot ok";
     $("dot").title = "live";
   } catch {

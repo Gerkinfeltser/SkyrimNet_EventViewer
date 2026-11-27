@@ -28,6 +28,8 @@ from urllib.request import urlopen
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 8791
 SN_API = "http://127.0.0.1:8080"  # SkyrimNet's own server, reached through /sn by pages opened from other devices
+# the read-only calls the page makes there, (path, api): the feed, the request log, and OmniSight's current scene and its picture
+SN_CALLS = {("/events", "list"), ("/logs", "requests"), ("/", "recent-events"), ("/omnisight", "list"), ("/omnisight", "image")}
 
 
 def no_cache(path):
@@ -582,15 +584,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         q = parse_qs(u.query)
         if u.path.startswith("/sn/"):  # SkyrimNet's read-only calls the page makes, for a page on another device
             path, api = u.path[3:], q.get("api", [""])[0]
-            if not LAN or (path, api) not in (("/events", "list"), ("/logs", "requests"), ("/", "recent-events")):
+            if not LAN or (path, api) not in SN_CALLS:
                 return self.send_error(404)
             try:
                 with urlopen(SN_API + path + "?" + u.query, timeout=10) as r:
-                    body = r.read()
+                    body, kind = r.read(), r.headers.get("Content-Type", "")
             except OSError:
                 return self.send_error(502, "SkyrimNet isn't answering (game closed?)")
             self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Type", "image/png" if kind.startswith("image/png") else "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             return self.wfile.write(body)
@@ -704,6 +706,7 @@ if __name__ == "__main__":
         shots = [x for q in p[:40] for x in omnisight(SN, q["db"])]
         assert all(not x["image"] or SHOT_NAME.match(x["image"]) for x in shots)
         assert not SHOT_NAME.match("../x.png") and not SHOT_NAME.match("a/b.png")
+        assert {a for _, a in SN_CALLS} <= {"list", "requests", "recent-events", "image"}  # /sn passes on read-only calls only
         assert config_list("a: 1\nskyrimnet:\n  # x\n  - 'D:\\MO2\\it''s'\n  - E:/x\nb: 2\n", "skyrimnet") == ["D:\\MO2\\it's", "E:/x"]
         assert config_list("skyrimnet: []\n", "skyrimnet") == []
         assert config_list("skyrimnet:\n  - 'E:\\x'  # main\n  - \"F:/y\" # b\n  - G:/z  # c\n", "skyrimnet") == ["E:\\x", "F:/y", "G:/z"]

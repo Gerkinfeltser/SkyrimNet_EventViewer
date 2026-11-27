@@ -9,7 +9,7 @@ A cleaner page for reading what SkyrimNet's NPCs say, think and remember.
 - **Left column:** the conversation, one box per turn (NPC or yours) in the speaker's colour.
 - **Right column:** memories, diaries, OmniSight screenshots and other mods' events (IntelEngine, PoliticalEngine…), in step with the conversation.
 - **History:** the live game, any older playthrough, or any day of the conversation log.
-- **Prompts:** click a line, or 🧾 on a memory, diary or OmniSight card, to see the LLM prompt that produced it.
+- **Prompts:** click a line, or 🧾 on a card in the right column, to see the LLM prompt that produced it.
 
 It only reads: nothing here writes to the game, SkyrimNet or its files.
 
@@ -57,13 +57,13 @@ Opening `index.html` straight from disk also works for the live game, but withou
   🎬 custom actions, 🪙 trades and purchases, 💰 gold and debts, 🎁 items given and taken, 🗝️ looting, 🍖 consumed (food, drink, potions: "Jenassa consumed Ale"), 👊 brawls and fights, 🫳 pickpocketing, 🧭 followers (joining, leaving, waiting), 🪑 furniture, 🎯 actions a reply picked, and, off at first, ⚠️ failed actions (couldn't find, couldn't reach…) and 📊 relationship checks.
 - 🎯 An action the model picked in an NPC's reply (`ACTION: drink_alcohol PARAMS: …`), under the line from that reply. SkyrimNet takes that part out of the line it saves, but the prompt logs keep the whole reply, so this needs serve.py or the live game, and only shows while those logs exist. It is what the NPC tried: SkyrimNet drops an action that isn't allowed at that moment, so it may not have happened. Made-up stubs (`speak`, `None`) and the game master's directions are left out.
 - 🧠 *recalled 2 memories* under an NPC's reply (once for its thought and line, after the last, like 🎯) when the prompt that wrote it had recalled memories. Hover it to read them; click it to open the line with only its memories (your 🏷️ picks stay as they were). Like 🎯, only while the prompt logs exist.
-- 👁️ *saw a new scene: The interior space is…* under the reply whose prompt first had a new OmniSight scene (*What You Currently See Around You*, written by a vision request each time OmniSight looks again, so the same room reworded counts as new). Hover it for the whole scene and who was in view; click it to open the line with only that section. SkyrimNet keeps no picture of these scenes (the log drops the image, and the OmniSight pictures in the context column are separate captures), so there's none to show. Only while the prompt logs exist.
+- 👁️ *saw a new scene: The interior space is…* under the reply whose prompt had a new OmniSight scene for that NPC (*What You Currently See Around You*, written by a vision request each time OmniSight looks again, so the same room reworded counts as new). Each NPC is compared with their own last reply, so two NPCs standing apart don't set it off on every line. Hover it for the whole scene and who was in view; click it to open the scene with the vision request that described it (its instructions, the people in view, and the reply), and its picture when the page kept one (see 👁️ in the context column). Only while the prompt logs exist.
 - 💤 marks going to sleep and waking up.
 - Your own lines are blue.
 - A band with faint › chevrons in its own colour across its right two thirds, edged like your turns (thick sides), in the colour of the cell's block in the timeline, marks each change of cell: "📍 Arrived at **Whiterun** from Drunken Huntsman" (where you came from greyed, so a door and a jump across the map, such as `coc` or fast travel, read differently), with the rest of the location beside it, and under it the game date and time and *Here for* (the real time from the first line there to the last, gaps over 20 minutes left out; shown once it reaches a minute).
 - The chat ends with **● Now** and the game time of the latest line (live), or *End of this playthrough* / *End of this day* in History.
 - 📌 Markers such as *🧠 Hadvar memory created ┄┄┄*, *📔 Camilla Valerius diary written* and *📷 Embershard Mine captured* (and *🧩 IntelEngine · follower recruited* for 🧩 groups) sit after the line each card in the context column belongs to. Click one to bring its card into view.
-- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, 🧠 recalled-memories and 👁️ new-scene notes, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, 💾 saves, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, 🎮 the game's own dialogue, each with counts; ⏫ ⏬ previous and next place (scroll to where you arrived in a cell; ⏫ before the first one goes to the top of the chat, ⏬ after the last one to its end).
+- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, 🧠 recalled-memories and 👁️ new-scene notes, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, 💾 saves, 👁️ scenes, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, 🎮 the game's own dialogue, each with counts; ⏫ ⏬ previous and next place (scroll to where you arrived in a cell; ⏫ before the first one goes to the top of the chat, ⏬ after the last one to its end).
 
 **Context column** (right; 🗂️ next to History shows or hides it)
 
@@ -73,6 +73,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 | 🧩 | other mods' events, taken out of the chat: a menu of the `config.yaml` column groups (IntelEngine, PoliticalEngine…) plus a group of its own for any event type the page has no line style for (`dragonsense_event` → *dragonsense*; give it a `column:` group to rename or recolour it). Lists only groups with events in this view ("None in this view" when there are none) |
 | 📔 | NPC diary entries, rendered as markdown |
 | 📷 | OmniSight screenshots with their descriptions (click the picture or the description to see both large, middle-click the picture for a new tab) |
+| 👁️ | what OmniSight saw just before NPCs spoke (off by default): each "what's visible right now" description, with the place and game time, from the vision requests in the prompt logs. SkyrimNet saves no picture of these: it keeps only the latest one, in memory. So while the live view is open the page fetches each new one and keeps it in this browser (the newest 400, about 1–2 MB each), and its card shows it; a scene from before, or seen with no page open, says it has no picture. with a *👁️ place seen* 📌 marker in the chat |
 | 💾 | saves you made (off by default): the save's name, when it was saved, the character, level, race, play time and location, with a *💾 name saved* marker in the chat where it happened. Read from the save files' headers (with MO2, each profile's own `saves` folder; otherwise `Documents/My Games/Skyrim…/Saves`). The game's autosaves and quicksaves are left out, and a save made from the game's menu shows as *Save 12*. SkyrimNet writes its playthrough id into each save's SKSE cosave (the `.skse` file beside it), so a playthrough lists exactly its own saves, and a conversation-log day lists that day's saves from any of the modlist's playthroughs. Saves made without SkyrimNet don't show, and only saves still on disk can |
 
 - **Following you:** cards whose 📌 marker (or line) is still below the bottom of the chat are dimmed; every card whose marker you can see is lit (not with 🔄️ on, where position shows it). The outlined card is the newest one at or above the chat line under the bar, and ⤓ keeps it in view, gliding the column to each new one (it jumps when the new one is far away, as after picking another view).
@@ -99,8 +100,9 @@ Opening `index.html` straight from disk also works for the live game, but withou
 - The dropdown above the prompt lists the messages and headings. It follows your scrolling; pick one to jump there.
 - 🏷️ (before the dropdown) lists the prompt's sections, its `#` and `##` headings: Potentially Relevant Memories, What You Currently See Around You, Background, Speech Profile… A message with no headings, such as OmniSight's, is split at its lines that start in **bold** (STYLE, HARD RULES…). Recalled memories are listed whatever their heading level (other NPCs' come as `###`). Tick some to show only those; *whole prompt* shows everything again. The button is lit and counts them (3/30) while some are picked. Sections leave out the NPC's name, so a pick stays on from one line's popup to the next and on reload, and a prompt that has none of the picked sections says so (pick Potentially Relevant Memories and a line that recalled nothing says that), with a link to show that prompt whole. A picked section missing from the prompt stays in the list, ticked, so you can untick it there.
 - `*` marks the part of the prompt marked for prompt caching (`cache_control`, up to its last mark): a `*` after its role and after its sections in 🏷️ (the list says so at its foot), a green bar on its left, and the request's header says how much of the prompt it is (66% cached \*). That's what the request asked to cache; the logs don't say whether the cache was actually hit.
-- 🧾 (after the kind, in a memory, diary or OmniSight card's top line) opens the card in the same popup, with the prompt that wrote it (found the same way) on the left, beside it. It is boxed in white when there is a prompt to show, and in grey with a ❌ over it when none can be found for that card: hover it for why, and clicking opens the popup without a prompt column. × or Esc closes the popup.
-- In that popup, 🧾 (next to ×) shows or hides the prompt, or, greyed, says why there is none. Clicking a memory's text opens it as a chat line does, with its prompt shown below it. Opening a diary entry or OmniSight picture by clicking its text or picture starts with the prompt hidden.
+- 🧾 (after the kind, in a card's top line) opens the card in the same popup, with the prompt that wrote it (found the same way) on the left, beside it. It is boxed in white when there is a prompt to show, and in grey with a ❌ over it when none can be found for that card: hover it for why, and clicking opens the popup without a prompt column. × or Esc closes the popup.
+- ◢ The popup's lower-right corner (while its prompt shows) resizes it: drag it, and the next popup opens at that size. Double-click it for the usual size.
+- In that popup, 🧾 (next to ×) shows or hides the prompt, or, greyed, says why there is none. Clicking a memory's or another mod's event's text opens it as a chat line does, with its prompt shown below it. Opening a diary entry or OmniSight picture by clicking its text or picture starts with the prompt hidden.
 - Prompts come from SkyrimNet's request log (since the game started) and its prompt log files on disk.
 
 **When there's no prompt to show** (the popup says which case it is):
@@ -111,6 +113,8 @@ Opening `index.html` straight from disk also works for the live game, but withou
 - **A mod wrote the memory, not a model.** A memory tied to no chat event and held by no reply was put there by a mod's code, such as Immersive Diseases' illness memories or PoliticalEngine's letter notes. Its 🧾 is greyed, and the tooltip says so and lists the memory's tags.
 
 Narrative Engine plot memories ("Nenya asked me to keep watch on Narri…", "I sent Helvard to…") are filled in by that mod from its director's plan, so their sentence is in no reply either. Their 🧾 opens that plan instead: the Narrative Engine request answered in the 15 seconds before the memory that names someone the memory names.
+
+IntelEngine's social events ("Fridrika met with Katla", "Domba told Assur a rumor: …") are written by that mod from its story request's answer (the two people, a narration, the gossip), so their 🧾 opens that request: the latest IntelEngine story request in the 10 minutes before the event that names both people (the NPCs walk over to each other first). Other mods' events, such as IntelEngine's task events, are written by the mod's code; their 🧾 is greyed and says so.
 
 **☰ menu:**
 - modlist
@@ -173,6 +177,7 @@ Things SkyrimNet doesn't keep, so the page can't show them:
 - **Spoken audio:** TTS plays from memory and is never saved.
 - **Older prompts:** SkyrimNet keeps only its last few prompt log files (see *When there's no prompt to show*).
 - **Older OmniSight pictures:** OmniSight keeps one picture per subject and replaces it when it retakes it, so an older playthrough can show a newer picture.
+- **Pictures of what was visible (👁️):** SkyrimNet keeps only the latest one, in memory, and the prompt log drops the image. The page keeps the ones it sees while the live view is open.
 
 ## Files
 
@@ -184,4 +189,4 @@ Things SkyrimNet doesn't keep, so the page can't show them:
 | `config.yaml` | LAN access, hide list and right-column groups |
 | `LICENSE` | MIT (the line icons are Lucide's, ISC licence) |
 
-With `lan: yes`, a page opened from another device reaches SkyrimNet through the helper (`/sn/…`, only the three read-only calls the page makes), since SkyrimNet itself answers only on this PC. Anyone who can reach this PC can then read your dialogue, memories and diaries.
+With `lan: yes`, a page opened from another device reaches SkyrimNet through the helper (`/sn/…`, only the read-only calls the page makes: the event feed, the request log, and OmniSight's current scene and its picture), since SkyrimNet itself answers only on this PC. Anyone who can reach this PC can then read your dialogue, memories and diaries.

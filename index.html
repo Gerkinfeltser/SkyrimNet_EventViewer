@@ -893,9 +893,9 @@ function sunWave() {
 // Index of the event at the top of the viewport (what you're reading).
 function topIndex() {
   const y0 = $("cbar").getBoundingClientRect().bottom;
-  const x = feed.getBoundingClientRect().left + 40;
+  const x = feed.getBoundingClientRect().left + 60; // inside your turns too (shifted right by 40px)
   for (let y = y0 + 4; y < y0 + 120; y += 8) {
-    const n = document.elementFromPoint(x, y)?.closest("[data-i]");
+    const h = document.elementFromPoint(x, y), n = h?.closest("[data-i]") || h?.closest(".grp")?.querySelector("[data-i]"); // a box's frame or name: its first line
     if (n) return +n.dataset.i;
   }
   return rows.length - 1;

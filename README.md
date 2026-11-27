@@ -63,7 +63,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 - A band with faint › chevrons in its own colour across its right two thirds, edged like your turns (thick sides), in the colour of the cell's block in the timeline, marks each change of cell: "📍 Arrived at **Whiterun** from Drunken Huntsman" (where you came from greyed, so a door and a jump across the map, such as `coc` or fast travel, read differently), with the rest of the location beside it, and under it the game date and time and *Here for* (the real time from the first line there to the last, gaps over 20 minutes left out; shown once it reaches a minute).
 - The chat ends with **● Now** and the game time of the latest line (live), or *End of this playthrough* / *End of this day* in History.
 - 📌 Markers such as *🧠 Hadvar memory created ┄┄┄*, *📔 Camilla Valerius diary written* and *📷 Embershard Mine captured* (and *🧩 IntelEngine · follower recruited* for 🧩 groups) sit after the line each card in the context column belongs to. Click one to bring its card into view.
-- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, 🧠 recalled-memories and 👁️ new-scene notes, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, 🎮 the game's own dialogue, each with counts; ⏫ ⏬ previous and next place (scroll to where you arrived in a cell; ⏫ before the first one goes to the top of the chat, ⏬ after the last one to its end).
+- Bar: 💬 dialogue, 💭 thoughts and 🧾 narration toggles, 🧠 recalled-memories and 👁️ new-scene notes, the 🤝 actions menu, 📌 markers menu (all, or each kind on its own: 🧠 memories, 📔 diaries, 📷 OmniSight pictures, 💾 saves, each 🧩 group; only kinds the view has are listed), 🗣️ background chatter, 🎮 the game's own dialogue, each with counts; ⏫ ⏬ previous and next place (scroll to where you arrived in a cell; ⏫ before the first one goes to the top of the chat, ⏬ after the last one to its end).
 
 **Context column** (right; 🗂️ next to History shows or hides it)
 
@@ -73,6 +73,7 @@ Opening `index.html` straight from disk also works for the live game, but withou
 | 🧩 | other mods' events, taken out of the chat: a menu of the `config.yaml` column groups (IntelEngine, PoliticalEngine…) plus a group of its own for any event type the page has no line style for (`dragonsense_event` → *dragonsense*; give it a `column:` group to rename or recolour it). Lists only groups with events in this view ("None in this view" when there are none) |
 | 📔 | NPC diary entries, rendered as markdown |
 | 📷 | OmniSight screenshots with their descriptions (click the picture or the description to see both large, middle-click the picture for a new tab) |
+| 💾 | saves you made (off by default): the save's name, when it was saved, the character, level, race, play time and location, with a *💾 name saved* marker in the chat where it happened. Read from the save files' headers (with MO2, each profile's own `saves` folder; otherwise `Documents/My Games/Skyrim…/Saves`). The game's autosaves and quicksaves are left out, and a save made from the game's menu shows as *Save 12*. SkyrimNet writes its playthrough id into each save's SKSE cosave (the `.skse` file beside it), so a playthrough lists exactly its own saves, and a conversation-log day lists that day's saves from any of the modlist's playthroughs. Saves made without SkyrimNet don't show, and only saves still on disk can |
 
 - **Following you:** cards whose 📌 marker (or line) is still below the bottom of the chat are dimmed; every card whose marker you can see is lit (not with 🔄️ on, where position shows it). The outlined card is the newest one at or above the chat line under the bar, and ⤓ keeps it in view, gliding the column to each new one (it jumps when the new one is far away, as after picking another view).
 - **🤏 Compact:** each OmniSight picture small with the first four lines of its description beside it, and the start of each diary (an OmniSight picture's popup still has the whole description). Off: whole descriptions and diaries.
@@ -165,6 +166,7 @@ All paths are inside the picked SkyrimNet folder (for MO2, `overwrite/SKSE/Plugi
 | `logs/conversation_log*.log`, `logs/_archive/` | history by real day |
 | `logs/openrouter_input*.log`, `logs/openrouter_output*.log` | prompts for older lines |
 | `screenshots/omnisight/*.png` | OmniSight pictures |
+| `<MO2 instance>/profiles/*/saves/*.ess`, `Documents/My Games/Skyrim…/Saves/*.ess` (outside the SkyrimNet folder; headers only) | 💾 saves |
 
 Things SkyrimNet doesn't keep, so the page can't show them:
 

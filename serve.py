@@ -9,6 +9,7 @@ Reads, never writes:
   data/SkyrimNet-*.db          one SQLite database per playthrough (the events table)
   logs/openrouter_input*.log   prompts sent to the model (SkyrimNet rotates these, so only the last few files exist)
   logs/openrouter_output*.log  the model's responses, joined to prompts by request id
+  <MO2 instance>/profiles/*/saves/*.ess, Documents/My Games/Skyrim*/Saves/*.ess   the game's saves (their headers only)
 """
 import glob
 import http.server
@@ -18,6 +19,7 @@ import mimetypes
 import os
 import re
 import sqlite3
+import struct
 import sys
 from datetime import datetime
 from urllib.parse import parse_qs, urlparse
@@ -476,6 +478,99 @@ def omnisight(sn, db="", day=""):
     return from_dbs(sn, omnisight_in, db, day)
 
 
+# ---- Saves (*.ess): the ones you made. SkyrimNet logs when a save happens, not its name, so the save files are the record.
+# SkyrimNet writes its playthrough id into each save's SKSE cosave (<save>.skse), which ties a save to its database exactly ----
+AUTO_SAVE = re.compile(r"^(Autosave|Quicksave)\d*_", re.I)  # the game's own saves: left out
+MENU_SAVE = re.compile(r"^Save(\d+)_[0-9A-F]{8}_")  # the name the game gives a save made from its menu: shown as "Save 12"
+
+
+def read_ess(path):
+    """A save's header (TESV_SAVEGAME: Skyrim SE, AE and VR): character, level, location, play time, and when it was saved."""
+    with open(path, "rb") as f:
+        b = f.read(1024)
+    if b[:13] != b"TESV_SAVEGAME":
+        raise ValueError("not a Skyrim save")
+    o = 21  # after the magic, header size and version
+    def u32():
+        nonlocal o
+        o += 4
+        return struct.unpack_from("<I", b, o - 4)[0]
+    def text():
+        nonlocal o
+        n = struct.unpack_from("<H", b, o)[0]
+        o += 2 + n
+        return b[o - n:o].decode("utf-8", "replace")
+    number, player, level, location, played, race = u32(), text(), u32(), text(), text(), text()
+    filetime = struct.unpack_from("<Q", b, o + 10)[0]  # after sex and two experience floats: 100 ns ticks since 1601, UTC
+    name = os.path.basename(path)[:-4]
+    m = MENU_SAVE.match(name)
+    return {"name": f"Save {m[1]}" if m else name, "file": os.path.basename(path), "number": number, "player": player, "level": level,
+            "location": location, "played": played, "race": race, "time": filetime / 1e7 - 11644473600,  # played: hours.minutes.seconds
+            "db": cosave_db(path[:-4] + ".skse")}
+
+
+SN_COSAVE = (0x53504E53, 0x44494E53)  # SkyrimNet's plugin id and its "unique save id" record in an SKSE cosave
+
+
+def cosave_db(path):
+    """The playthrough database a save belongs to, from SkyrimNet's record in its SKSE cosave; "" without one.
+    Other mods' sections are skipped, not read: a cosave can run to megabytes."""
+    try:
+        with open(path, "rb") as f:
+            read = lambda n: struct.unpack("<%dI" % n, f.read(4 * n))
+            for _ in range(read(5)[4]):  # magic and versions, then the plugin count
+                uid, _records, size = read(3)
+                if uid != SN_COSAVE[0]:
+                    f.seek(size, 1)
+                    continue
+                data = f.read(size)
+                o = 0
+                while o + 12 <= len(data):
+                    kind, _ver, n = struct.unpack_from("<3I", data, o)
+                    m = re.search(rb"\d+-\d+", data[o + 12:o + 12 + n]) if kind == SN_COSAVE[1] else None
+                    if m:
+                        return f"SkyrimNet-{m[0].decode()}.db"
+                    o += 12 + n
+                return ""
+    except (OSError, struct.error):
+        pass
+    return ""
+
+
+def save_dirs(sn):
+    """Where the game writes saves: each MO2 profile's own folder (<instance>/overwrite/SKSE/Plugins/SkyrimNet ->
+    <instance>/profiles/*/saves), and Documents/My Games/Skyrim…/Saves for profiles without local saves and other installs."""
+    parts = os.path.normpath(sn).split(os.sep)
+    mo2 = len(parts) > 4 and parts[-4].lower() == "overwrite"
+    # ponytail: misses a custom profiles_directory and a Documents folder moved by OneDrive; read ModOrganizer.ini / the shell folder if that bites
+    return (glob.glob(os.path.join(os.sep.join(parts[:-4]), "profiles", "*", "saves")) if mo2 else []) +         glob.glob(os.path.join(os.path.expanduser("~"), "Documents", "My Games", "Skyrim*", "Saves"))
+
+
+def all_saves(sn):
+    out = []
+    for d in save_dirs(sn):
+        for p in glob.glob(os.path.join(d, "*.ess")):
+            if AUTO_SAVE.match(os.path.basename(p)):
+                continue
+            try:
+                out.append(cached(p, read_ess))
+            except (OSError, ValueError, struct.error):
+                pass  # unreadable or cut short
+    return sorted(out, key=lambda s: s["time"])
+
+
+def saves(sn, db="", day=""):
+    """The saves you made in a playthrough, or on a real day in any of this folder's playthroughs. A save SkyrimNet
+    didn't tag (made without it, or before it was installed) belongs to none, so it never shows."""
+    if day:
+        if not re.fullmatch(r"\d{4}-\d\d-\d\d", day):
+            raise ValueError("bad day")
+        start = datetime.strptime(day, "%Y-%m-%d").timestamp()
+        return [s for s in all_saves(sn) if start <= s["time"] < start + 86400 and s["db"] and os.path.isfile(os.path.join(sn, "data", s["db"]))]
+    db = os.path.basename(from_dbs(sn, lambda p: p, db))  # from_dbs checks the name and resolves "live"
+    return [s for s in all_saves(sn) if s["db"] == db]
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         super().__init__(*a, directory=HERE, **k)  # static files only from this folder
@@ -525,7 +620,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                "/local/conversation": lambda: conversation(sn(), arg("day")),
                "/local/memories": lambda: memories(sn(), arg("db"), arg("day")),
                "/local/omnisight": lambda: omnisight(sn(), arg("db"), arg("day")),
-               "/local/diary": lambda: diary(sn(), arg("db"), arg("day"))}.get(u.path)
+               "/local/diary": lambda: diary(sn(), arg("db"), arg("day")),
+               "/local/saves": lambda: saves(sn(), arg("db"), arg("day"))}.get(u.path)
         if not api:
             return super().do_GET()
         try:
@@ -622,6 +718,30 @@ if __name__ == "__main__":
         assert host_ok("localhost:8791") and host_ok("127.0.0.1:8791") and host_ok("[::1]:8791")
         assert no_cache("/") and no_cache("/config.yaml") and no_cache("/local/events?db=x") and not no_cache("/local/shot?name=a.png")
         assert not host_ok("evil.example:8791") and not host_ok("") and host_ok("192.168.1.5:8791") == LAN
+        assert AUTO_SAVE.match("Autosave2_A5DA4D24_0_44_Solitude_000007_20261127015759_1_1.ess") and AUTO_SAVE.match("Quicksave0_x.ess")
+        assert not AUTO_SAVE.match("omega-c.ess") and not AUTO_SAVE.match("Save1_DB837310_0_42_Whiterun_000001_20261125231926_1_1.ess")
+        assert MENU_SAVE.match("Save12_DB837310_0_42_Whiterun") and not MENU_SAVE.match("Saves-before-boss")
+        try:
+            read_ess(os.path.abspath(__file__))
+            raise AssertionError("a non-save read as a save")
+        except ValueError:
+            pass
+        for bad in ({"db": "../x.db"}, {"day": "../x"}):
+            try:
+                saves(SN, **bad)
+                raise AssertionError(f"saves accepted {bad}")
+            except ValueError:
+                pass
+        sv = all_saves(SN)
+        assert all(x["player"] and 1 <= x["level"] < 1000 and 946684800 < x["time"] < 4102444800 for x in sv), "a save header read wrong"
+        assert all(not AUTO_SAVE.match(x["file"]) for x in sv)
+        tagged = [x for x in sv if x["db"]]
+        assert all(DB_NAME.match(x["db"]) for x in tagged), "a cosave id read wrong"
+        assert sum(os.path.isfile(os.path.join(SN, "data", x["db"])) for x in tagged) > len(tagged) // 2, "most tagged saves match no playthrough"
+        live = saves(SN, "live")
+        assert all(x["db"] == p[0]["db"] for x in live)
+        assert cosave_db(os.path.abspath(__file__)) == ""
+        print(f"saves: {len(sv)} you made in {len(save_dirs(SN))} folders, {len(tagged)} tagged by SkyrimNet, {len(live)} in the newest playthrough")
         print(f"omnisight: {len(shots)} screenshots in the 40 newest playthroughs, {sum(bool(x['image']) for x in shots)} with an image on disk")
         print(f"ok: {len(p)} playthroughs, {len(r)} logged prompts, {sum(1 for x in r if x['response_payload'])} with responses")
         sys.exit(0)

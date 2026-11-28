@@ -1,0 +1,30 @@
+#!/bin/sh
+# Turn on once per clone: git config core.hooksPath .githooks
+staged=$(git diff --cached --name-only)
+fail=0
+
+# The page never builds DOM from HTML strings (CLAUDE.md: el() and DOM nodes only). Reads the staged file.
+if echo "$staged" | grep -qx 'index.html' &&
+   git show :index.html | grep -nE '\.(inner|outer)HTML\b|insertAdjacentHTML' ; then
+  echo "pre-commit: index.html uses innerHTML/outerHTML/insertAdjacentHTML; build nodes with el()" >&2; fail=1
+fi
+
+# SkyrimNet's DBs are opened read-only, through ro().
+if echo "$staged" | grep -qx 'serve.py' &&
+   git show :serve.py | grep -n 'sqlite3\.connect(' | grep -v 'mode=ro' ; then
+  echo "pre-commit: serve.py opens a DB without mode=ro; use ro()" >&2; fail=1
+fi
+
+# A code change gets a CHANGELOG line in the same commit. SNEV_NO_CHANGELOG=1 for a change nobody using the page would notice.
+if echo "$staged" | grep -qxE 'index.html|serve.py' && ! echo "$staged" | grep -qx 'CHANGELOG.md' &&
+   [ "$SNEV_NO_CHANGELOG" != 1 ]; then
+  echo "pre-commit: index.html/serve.py changed without CHANGELOG.md (SNEV_NO_CHANGELOG=1 git commit ... if it's not user-facing)" >&2; fail=1
+fi
+
+# The self-test, against this machine's real SkyrimNet data.
+# ponytail: tests the working tree, not the staged copy; stash unstaged changes first if a partial commit matters
+if echo "$staged" | grep -qxE 'serve.py|config.yaml'; then
+  python serve.py --check >/dev/null || { echo "pre-commit: python serve.py --check failed" >&2; fail=1; }
+fi
+
+exit $fail

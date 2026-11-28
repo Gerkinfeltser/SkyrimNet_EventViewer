@@ -8,6 +8,7 @@ A read-only viewer for SkyrimNet (a Skyrim LLM-NPC mod): chat on the left, memor
 
 - Run: `python serve.py` (Python 3, stdlib only, no install). Serves on http://localhost:8791/. `--no-browser` skips opening a tab. A positional path picks one SkyrimNet folder instead of discovering them all.
 - Self-test: `python serve.py --check`. This is the only test suite. It runs asserts against the **real** SkyrimNet folder on this machine (playthrough DBs, logs, config parsing, path-traversal guards, `host_ok`), so it fails on a machine without SkyrimNet data. Add new parser and guard asserts here.
+- Pre-commit hook `.githooks/pre-commit` (turn on once per clone: `git config core.hooksPath .githooks`): runs `--check` when `serve.py`/`config.yaml` change, and fails on `innerHTML`, a DB opened without `ro()`, or `index.html`/`serve.py` changed without `CHANGELOG.md` (`SNEV_NO_CHANGELOG=1` for a change nobody using the page would notice).
 - `python serve.py --types` lists the event types seen across all playthrough DBs, for writing `config.yaml` `types:` patterns.
 - There is no build, lint or bundler. `index.html` is edited and served as is. Reload the page after a change; restart `serve.py` after editing Python, or after changing `skyrimnet:`/`lan:` in `config.yaml`.
 

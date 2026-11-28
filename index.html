@@ -47,6 +47,8 @@
   .hist a { color:#8fb0d6; }
   .hist.down select { border:1px dashed #d9a93a; color:#e8c46a; } /* Live picked, but no game answering */
   .hist.down select option { color:var(--fg); }
+  .hist.up select { border:1px solid #4a4; color:#8fd18f; } /* Live picked and the game answering: not a history item */
+  .hist.up select option { color:var(--fg); }
   .hist select { margin-left:3px; max-width:340px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:calc(12.5px * var(--fs)); }
   .dot.arch { background:#777; }
 
@@ -2668,6 +2670,7 @@ async function showNewest(g) { // read-only, like History; poll() keeps trying t
 function setLiveDown(down) {
   liveDown = down;
   $("ptwrap")?.classList.toggle("down", down);
+  $("ptwrap")?.classList.toggle("up", !down && !archive && !fallback); // green: the live game, not history
   const w = $("ptwrap");
   if (w) { w.dataset.tip ??= w.title; w.title = fallback ? `No game running: showing ${LIVE_ML}'s newest playthrough (${fallback.player || "?"}, played until ${new Date(fallback.modified * 1000).toLocaleString()}). The live feed comes back by itself when the game starts.` : w.dataset.tip; }
   const o = $("pt")?.querySelector("option[value='']");

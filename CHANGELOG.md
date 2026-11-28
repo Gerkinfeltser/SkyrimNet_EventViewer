@@ -2,6 +2,12 @@
 
 What changed for someone using the page, newest first. The README describes how everything works now; the git log has the detail.
 
+## Unreleased
+
+### 2026-11-28
+
+- 📡 History's box is green while it shows the running game, so it's clear you're not on a history item.
+
 ## v0.1.0 alpha · 2026-11-28
 
 The first tagged version, a pre-release: alpha software, so expect rough edges.

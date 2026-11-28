@@ -67,6 +67,7 @@
   .mark::after { content:""; flex:1; border-top:1px dashed currentColor; opacity:.45; }
   .mark::before { content:""; order:9; margin-left:-7px; border-left:6px solid currentColor; border-block:4px solid transparent; opacity:.6; } /* ▸ after the line, pointing at the card's column */
   .mark:hover { color:var(--fg); }
+  .mark.off:not(.now)::after { flex:0 0 24px; } /* its card isn't level with it: a short stub, not a line to another card (levelMarks()) */
   body.hide-marks .mark, body.hide-mark-mem .mark.mem, body.hide-mark-diary .mark.diary, body.hide-mark-omni .mark.omni, body.hide-mark-save .mark.save, body.hide-mark-scene .mark.scene { display:none; }
   /* the end of the chat: "Now" when live, the end of a playthrough or day in History */
   .endmark { display:flex; align-items:center; gap:12px; margin:14px 10px 6px;
@@ -1001,6 +1002,19 @@ function linkPath(x, fromText = false) { // fromText: start where the marker's t
 function drawLink(d) {
   $("link").classList.toggle("on", !!d);
   if (d) $("link").lastChild.setAttribute("d", d);
+  levelMarks();
+}
+// A 📌 line on screen runs on to the column only while its card is level with it, so it never points at another card.
+// All positions are read first, then the classes written.
+function levelMarks() {
+  const top = $("cbar").getBoundingClientRect().bottom, bottom = $("scrub").getBoundingClientRect().top;
+  const ms = side.filter(x => x.mark?.isConnected), level = ms.map(x => {
+    const a = x.mark.getBoundingClientRect(), y = a.top + a.height / 2;
+    if (!a.height || y < top || y > bottom) return null; // hidden or off screen: left as it is
+    const c = x.node.getBoundingClientRect();
+    return c.height > 0 && y >= c.top && y <= c.bottom;
+  });
+  ms.forEach((x, k) => { if (level[k] != null) x.mark.classList.toggle("off", !level[k]); });
 }
 // A clicked card or 📌 marker: its connector lights up for a moment as they do (flash()), following the scroll meanwhile.
 let flashing = 0;
@@ -2145,7 +2159,7 @@ function placeMarks() {
       nm.style.color = kind === "save" || kind === "scene" || kind === "omni" && x.subject !== "actor" ? "" : players.has(who) ? PLAYER_COLOR : nameColor(who);
       m.append(nm, { mem: " memory created", diary: " diary written", omni: " captured", save: " saved", scene: " viewed" }[kind], rtSpan(x.time, "rt rtl", "") || "");
     }
-    m.addEventListener("click", ev => { ev.stopPropagation(); flashCard(x); }); // not the prompt popup
+    m.addEventListener("click", ev => { ev.stopPropagation(); if (x.node.offsetParent) flashCard(x); else x.popup?.(); }); // its card, or with that hidden, its popup
     (after.get(top) || top).after(m);
     after.set(top, m);
     x.mark = m; // 🔄️ lines the card up with this, not its line inside the speaker's box
@@ -2218,7 +2232,7 @@ function buildColumnToggles() {
     l.append(box, text + " ", n);
     t.append(l);
     wireToggle(box);
-    css.push(`body.hide-${key} .memcard.${key}`, `body.hide-${key} .mark.${key}`); // the card and its 📌 marker
+    css.push(`body.hide-${key} .memcard.${key}`); // the cards only: their 📌 markers have the 📌 menu
   };
   if (SHOW_MEM) add("mem", "🧠", "Show memories", false);
   if (SHOW_DIARY) add("diary", "📔", "Show diary entries", false);
@@ -2258,9 +2272,8 @@ To rename or recolour it, add a column: group in config.yaml.`
   ml.append(mb, ` 🧩 ${g.label} `, mn);
   document.querySelector("#marks .panel").append(ml);
   wireToggle(mb);
-  const st = el("style"), k = g.key; // the cards, and with them their 📌 markers; !important beats layout rules
-  st.textContent = `body.hide-${k} .memcard.${k}, body.hide-modev .memcard.${k}, body.hide-${k} .mark.${k}, body.hide-modev .mark.${k},
-    body.hide-mark-${k} .mark.${k} { display:none !important; }`;
+  const st = el("style"), k = g.key; // the cards (their 📌 markers have the 📌 menu); !important beats layout rules
+  st.textContent = `body.hide-${k} .memcard.${k}, body.hide-modev .memcard.${k}, body.hide-mark-${k} .mark.${k} { display:none !important; }`;
   document.head.append(st);
 }
 

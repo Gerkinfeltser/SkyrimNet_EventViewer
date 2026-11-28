@@ -39,8 +39,19 @@ From a terminal: `python serve.py` (Python 3, standard library only). Options:
 | `python serve.py --no-browser` | Don't open a browser tab |
 | `python serve.py --check` | Self-test against the real folder |
 | `python serve.py --types` | List every event type with counts, for `config.yaml` |
+| `python serve.py --magelight=<mod folder>` | Build the in-game view as a mod, see below |
 
 Opening `index.html` straight from disk also works for the live game, but without history, memories, older prompts or `config.yaml`. The page says so where those would be. `?host=http://…:8080` points it at another SkyrimNet server.
+
+### In game, with Magelight UI
+
+With [Magelight UI](https://github.com/Severause/MagelightUI) (1.9.0 or newer) the page opens over the game on **F7**:
+
+1. Make an empty mod in MO2 (for example *SNEventView-Magelight*) and run `python serve.py --magelight=<MO2>/mods/SNEventView-Magelight`. It writes `Magelight/SNEventView/` there: a manifest and a copy of the page. Nothing else is touched.
+2. Enable the mod in MO2.
+3. Keep serve.py running while you play (`sn-eventview.bat`), and press F7 in game.
+
+Magelight opens its pages from the mod folder and won't let them load `localhost:8791`, so the copy fetches history, memories, pictures and `config.yaml` from serve.py by address instead. Any website could send serve.py the same kind of request, so the copy carries a random key, kept next to serve.py in `magelight.key`, and serve.py lets a page read its answers only with that key. Without serve.py running, the in-game page is live-only and says so in History's box. Run the command again after updating the viewer: it keeps the key.
 
 ## The page
 
@@ -198,7 +209,6 @@ Not built yet:
 
 - **Keep the prompt logs:** serve.py keeps its own compressed copy of each `openrouter_input` log, in this folder, before SkyrimNet deletes it, so older lines keep their prompts.
 - **🧾 for any mod's requests:** a general match from a mod's events to the requests that mod made, like the ones Narrative Engine and IntelEngine already have.
-- **In game with [Magelight UI](https://github.com/Severause/MagelightUI):** a small mod (`Data/Magelight/SNEventView/manifest.json`, a fullscreen panel on a hotkey, `"network": "loopback"`) that opens the page over the game. Opened from the mod's folder, the page is already in its live-only mode, talking to SkyrimNet at `127.0.0.1:8080`. Tested in game (2026-11-28, Magelight 1.9.0): the live-only page works on its hotkey, but a view can't open `http://localhost:8791/` ("a view shows its own HTML files only") and can't read its own `config.yaml` (blocked by the page's content policy), so hide and column rules don't apply. For history and memories, the page would fetch from serve.py by address. Its pages are `file://`, so serve.py would have to accept requests with no real origin; any website can send those too, so it would also need a key only the in-game page can read.
 
 What changed so far: [CHANGELOG.md](CHANGELOG.md).
 
@@ -209,6 +219,7 @@ What changed so far: [CHANGELOG.md](CHANGELOG.md).
 | `index.html` | the page: markup, style and script in one file, built with DOM nodes only (no `innerHTML`) |
 | `serve.py` | the read-only helper: static files plus `/local/*` JSON routes, bound to 127.0.0.1 only (all addresses with `lan: yes`); answers only requests addressed to localhost, or to an IP address with `lan: yes` |
 | `sn-eventview.bat` | double-click launcher |
+| `magelight.key` | made by `--magelight`: the in-game page's key (not in git) |
 | `config.yaml` | LAN access, hide list and right-column groups |
 | `CHANGELOG.md` | what changed, by version and date |
 | `LICENSE` | MIT (the line icons are Lucide's, ISC licence) |

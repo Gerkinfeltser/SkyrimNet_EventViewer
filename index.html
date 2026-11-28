@@ -431,6 +431,11 @@
 // Reads the same feed as the SkyrimNet dashboard's Home page. ?host=… overrides the server.
 const HOST = new URLSearchParams(location.search).get("host")
   || (location.protocol.startsWith("http") && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? location.origin + "/sn" : "http://127.0.0.1:8080");
+// In game (a Magelight view, opened from its mod folder): serve.py --magelight fills in KEY, and the page reads
+// serve.py at 127.0.0.1:8791 with it. local() gives the address of a serve.py file or route, here or there.
+const KEY = "";
+const SERVE = KEY && !location.protocol.startsWith("http") ? "http://127.0.0.1:8791" : "";
+const local = u => SERVE ? `${SERVE}/${u.replace(/^\//, "")}${u.includes("?") ? "&" : "?"}key=${KEY}` : u;
 const POLL_COUNT = 50, POLL_MS = 1500; // recent-events never returns more than 50, so it's only for updates
 
 // The whole current playthrough, in pages of 100 (the most /events?api=list gives at once). Used for the first load.
@@ -1404,7 +1409,7 @@ let reqLog = null;
 function requestLog(t) {
   if (reqLog && reqLog.key === mlq() && t < reqLog.at) return reqLog;
   const sources = [fetch(`${HOST}/logs?api=requests&limit=500`, { cache: "no-store" }).then(r => r.json()).then(d => d.requests || [])];
-  if (LOCAL) sources.push(fetch(`/local/requests?${mlq()}`).then(r => r.json()));
+  if (LOCAL) sources.push(fetch(local(`/local/requests?${mlq()}`)).then(r => r.json()));
   const unesc = s => (s || "").replace(/\\n/g, " ").replace(/\\"/g, '"');
   const list = Promise.allSettled(sources).then(got => {
     if (!got.some(g => g.status === "fulfilled")) return null;
@@ -2047,7 +2052,7 @@ function layout() {
 
 async function loadMemories(g) {
   const q = (!archive ? "db=live" : archive.startsWith("conv:") ? `day=${archive.slice(5)}` : `db=${encodeURIComponent(archive)}`) + "&" + mlq();
-  const get = async (what, on) => { try { return on && LOCAL ? await (await fetch(`/local/${what}?${q}`, { cache: "no-store" })).json() : []; } catch { return []; } };
+  const get = async (what, on) => { try { return on && LOCAL ? await (await fetch(local(`/local/${what}?${q}`), { cache: "no-store" })).json() : []; } catch { return []; } };
   let [list, shots, dl, sv] = await Promise.all([get("memories", SHOW_MEM), get("omnisight", SHOW_OMNI), get("diary", SHOW_DIARY), get("saves", true)]);
   if (g !== gen) return;
   if (!Array.isArray(list) || !rows.length) list = []; // nothing to anchor to yet
@@ -2148,7 +2153,7 @@ function omniCard(x) {
   const h = 280, card = el("div", "memcard omni");
   x.popup = prompt => { // the picture large with the whole description
     const body = [];
-    if (x.image) { const big = el("img"); big.src = `/local/shot?${mlq()}&name=` + encodeURIComponent(x.image); big.alt = x.name || ""; body.push(big); }
+    if (x.image) { const big = el("img"); big.src = local(`/local/shot?${mlq()}&name=` + encodeURIComponent(x.image)); big.alt = x.name || ""; body.push(big); }
     if (x.retaken) body.push(retakenNote(x));
     body.push(colourNames(x.description || ""));
     if (x.location) body.push(el("div", "foot", x.location));
@@ -2167,7 +2172,7 @@ function omniCard(x) {
   card.append(who);
   if (x.image) {
     const a = el("a"), img = el("img");
-    a.href = img.src = `/local/shot?${mlq()}&name=` + encodeURIComponent(x.image);
+    a.href = img.src = local(`/local/shot?${mlq()}&name=` + encodeURIComponent(x.image));
     img.loading = "lazy";
     img.alt = x.name || "";
     a.addEventListener("click", ev => { ev.preventDefault(); popup(ev); }); // middle-click still opens a tab
@@ -2282,7 +2287,7 @@ function saveCard(x) {
   const [hr, min] = String(x.played || "").split(".").map(Number); // hours.minutes.seconds played
   // its screenshot; a save made from the console has a black one, which serve.py doesn't send
   const pic = el("img");
-  pic.src = `/local/savepic?${mlq()}&file=` + encodeURIComponent(x.file);
+  pic.src = local(`/local/savepic?${mlq()}&file=` + encodeURIComponent(x.file));
   pic.loading = "lazy";
   pic.alt = "";
   pic.addEventListener("error", () => pic.remove());
@@ -2454,7 +2459,7 @@ $("dsrc").checked = !MD;
 $("dsrc").addEventListener("change", () => { MD = !$("dsrc").checked; localStorage["snev.md"] = MD ? "1" : "0"; if (fillPrompt) { dbody.replaceChildren(); if ($("shot").classList.contains("withprompt")) fillPrompt(); } });
 $("aboutbtn").addEventListener("click", () => {
   $("menu").open = false;
-  $("aboutmode").textContent = LOCAL ? `Served by serve.py at ${location.host}: live view, history, memories, diaries, OmniSight and older prompts all work.`
+  $("aboutmode").textContent = LOCAL ? `Served by serve.py at ${SERVE ? SERVE.slice(7) : location.host}: live view, history, memories, diaries, OmniSight and older prompts all work.`
     : `Opened from disk: live only, straight from SkyrimNet's API at ${HOST}. Run serve.py for history, memories and older prompts.`;
   $("about").showModal();
 });
@@ -2618,7 +2623,7 @@ async function poll(g) {
   try {
     if (archive) { // a finished playthrough: load once, no polling
       const url = (archive.startsWith("conv:") ? `/local/conversation?day=${archive.slice(5)}` : `/local/events?db=${encodeURIComponent(archive)}`) + "&" + mlq();
-      const events = await (await fetch(url)).json();
+      const events = await (await fetch(local(url))).json();
       if (g !== gen) return;
       ingest(events);
       loadMemories(g);
@@ -2649,8 +2654,9 @@ async function poll(g) {
   timer = setTimeout(() => poll(g), POLL_MS);
 }
 
-// Under serve.py (http://localhost:8791) older playthroughs can be picked from the menu.
-const LOCAL = location.protocol.startsWith("http");
+// Under serve.py (http://localhost:8791, or in game with a KEY while serve.py runs) older playthroughs can be picked from the menu.
+let LOCAL = location.protocol.startsWith("http");
+const MODLISTS = LOCAL || SERVE ? fetch(local("/local/modlists")).then(r => r.json()).then(mls => (LOCAL = true, mls)) : Promise.reject(new Error("opened from disk"));
 // Two kinds of history: the conversation log (every line ever said, by real day; survives loading older saves)
 // and SkyrimNet's per-playthrough databases (with locations and game time, but cut back when an older save is loaded).
 // One modlist at a time: picking one shows its newest playthrough (or Live, for the one being played).
@@ -2660,8 +2666,8 @@ const liveText = () => fallback ? `⚠ No game · newest: ${fallback.player || "
   : liveDown ? `⚠ Live: no game running (${LIVE_ML})` : `Live (current save · ${LIVE_ML})`;
 async function showNewest(g) { // read-only, like History; poll() keeps trying the game and switches back when it answers
   try {
-    const q = "ml=" + encodeURIComponent(LIVE_ML), p = (await (await fetch(`/local/playthroughs?${q}`)).json())[0];
-    const events = p && await (await fetch(`/local/events?db=${encodeURIComponent(p.db)}&${q}`)).json();
+    const q = "ml=" + encodeURIComponent(LIVE_ML), p = (await (await fetch(local(`/local/playthroughs?${q}`))).json())[0];
+    const events = p && await (await fetch(local(`/local/events?db=${encodeURIComponent(p.db)}&${q}`))).json();
     if (g !== gen || !events || maxId >= 0) return;
     fallback = p;
     ingest(events);
@@ -2680,7 +2686,7 @@ function setLiveDown(down) {
 }
 async function fillHistory() {
   const q = "ml=" + encodeURIComponent(ML);
-  const [days, list] = await Promise.all([fetch(`/local/conversation-days?${q}`).then(r => r.json()), fetch(`/local/playthroughs?${q}`).then(r => r.json())]);
+  const [days, list] = await Promise.all([fetch(local(`/local/conversation-days?${q}`)).then(r => r.json()), fetch(local(`/local/playthroughs?${q}`)).then(r => r.json())]);
   const live = el("option", null, liveText());
   live.value = "";
   const conv = el("optgroup"), dbs = el("optgroup");
@@ -2701,7 +2707,7 @@ async function fillHistory() {
   $("pt").replaceChildren(live, dbs, conv); // playthroughs first, the long list of days after
   return list;
 }
-if (LOCAL) fetch("/local/modlists").then(r => r.json()).then(async mls => {
+MODLISTS.then(async mls => {
   for (const m of mls) {
     const o = el("option", null, m.name + (m.live ? " ●" : ""));
     o.value = m.name;
@@ -2717,11 +2723,13 @@ if (LOCAL) fetch("/local/modlists").then(r => r.json()).then(async mls => {
   $("ptwrap").hidden = false;
   const v = saved.get("view") || "";
   if (v && [...$("pt").options].some(o => o.value === v)) { archive = v; $("pt").value = v; start(); }
-}).catch(() => {});
-else { // opened from disk: say where the older playthroughs are instead of hiding the option
-  $("ptwrap").replaceChildren("Older playthroughs: run serve.py, then open ", Object.assign(el("a", null, "localhost:8791"), { href: "http://localhost:8791/" }));
+}).catch(() => {
+  if (LOCAL) return;
+  // opened from disk, or in game with serve.py not running: say where the older playthroughs are instead of hiding the option
+  $("ptwrap").replaceChildren(...SERVE ? ["Older playthroughs: start serve.py, then open this view again"]
+    : ["Older playthroughs: run serve.py, then open ", Object.assign(el("a", null, "localhost:8791"), { href: "http://localhost:8791/" })]);
   $("ptwrap").hidden = false;
-}
+});
 // #pt is absent when opened from disk (replaced by the hint above)
 // The modlist and view live in the address (#ml=…&view=…), so a refresh or a bookmark opens them again.
 function saveView() {
@@ -2768,7 +2776,8 @@ function parseConfig(text) {
 }
 async function loadConfig() {
   let cfg = {};
-  try { cfg = parseConfig(await (await fetch("config.yaml", { cache: "no-store" })).text()); } catch {} // opened from disk: defaults
+  if (SERVE) await MODLISTS.catch(() => {}); // in game: LOCAL once serve.py answers, before start() reads it
+  try { cfg = parseConfig(await (await fetch(local("config.yaml"), { cache: "no-store" })).text()); } catch {} // opened from disk: defaults
   for (const v of Array.isArray(cfg.hide) ? cfg.hide : []) {
     try { hide.push(new RegExp(v, "i")); } catch { console.warn("config.yaml: bad hide pattern", v); }
   }

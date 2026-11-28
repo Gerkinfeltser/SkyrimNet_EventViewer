@@ -12,12 +12,14 @@ Reads, never writes:
   <MO2 instance>/profiles/*/saves/*.ess, Documents/My Games/Skyrim*/Saves/*.ess   the game's saves (their headers only)
 """
 import glob
+import hmac
 import http.server
 import ipaddress
 import json
 import mimetypes
 import os
 import re
+import secrets
 import sqlite3
 import struct
 import sys
@@ -49,6 +51,58 @@ def host_ok(host):
         return LAN
     except ValueError:
         return False
+
+
+# The in-game page (a Magelight view, opened from the mod's folder, so its origin is null) reads this server only with
+# the key serve.py --magelight baked into its copy. Any website can send a null origin too, so the origin alone proves
+# nothing. Websites can't read the key: this server never answers them with an Access-Control-Allow-Origin header.
+KEY_FILE = os.path.join(HERE, "magelight.key")
+
+
+def magelight_key():
+    try:
+        with open(KEY_FILE, encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def allow_origin(key, origin, real):
+    """The Access-Control-Allow-Origin a request gets: none without ?key= (as before), the in-game page's own origin
+    (null, or file:// in some browsers) with the right one. A wrong key, or one while none is installed, is refused."""
+    if not key:
+        return None
+    if not real or not hmac.compare_digest(key.encode(), real.encode()):
+        raise PermissionError("wrong key")
+    return origin if origin == "null" or origin.startswith("file:") else None
+
+
+def install_magelight(mod):
+    """Builds the in-game view as a mod folder for MO2: <mod>/Magelight/SNEventView/, a manifest (F7) and a copy of
+    index.html with the key baked in. Writes only there and the key file next to this script. Run it again after
+    updating the viewer; it keeps the key, so a copy already in game keeps working."""
+    mod = os.path.abspath(mod)
+    if os.path.isdir(mod) and set(os.listdir(mod)) - {"Magelight", "meta.ini"}:  # meta.ini: MO2's own
+        sys.exit(f"{mod} holds other files. Give a new folder in MO2's mods folder, e.g. <MO2>/mods/SNEventView-Magelight")
+    key = magelight_key()
+    if not key:
+        key = secrets.token_urlsafe(24)
+        with open(KEY_FILE, "w", encoding="utf-8") as f:
+            f.write(key)
+    with open(os.path.join(HERE, "index.html"), encoding="utf-8") as f:
+        page = f.read()
+    marker = 'const KEY = "";'
+    assert page.count(marker) == 1, "index.html: no KEY line to fill in"
+    version = (re.search(r"version (\d+\.\d+\.\d+)", page) or [None, "0.0.0"])[1]
+    out = os.path.join(mod, "Magelight", "SNEventView")
+    os.makedirs(os.path.join(out, "views", "viewer"), exist_ok=True)
+    with open(os.path.join(out, "views", "viewer", "index.html"), "w", encoding="utf-8") as f:
+        f.write(page.replace(marker, f'const KEY = "{key}";'))
+    manifest = {"modId": "SNEventView", "name": "SkyrimNet event view", "version": version, "minHost": "1.9.0", "network": "loopback",
+                "views": {"viewer": {"path": "views/viewer/index.html", "layer": "panel", "fullscreen": True, "hotkey": "F7"}}}
+    with open(os.path.join(out, "manifest.json"), "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+    print(f"Magelight view written to {out}\nEnable it in MO2, keep serve.py running while you play, and press F7 in game.")
 
 
 def config_text():
@@ -620,6 +674,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_error(403, "Open this page as http://localhost:8791/ (or by IP address with lan: yes in config.yaml)")
         u = urlparse(self.path)
         q = parse_qs(u.query)
+        try:
+            self.cors = allow_origin(q.get("key", [""])[0], self.headers.get("Origin", ""), magelight_key())
+        except PermissionError:
+            return self.send_error(403, "Wrong key: run python serve.py --magelight=<mod folder> again")
         if u.path.startswith("/sn/"):  # SkyrimNet's read-only calls the page makes, for a page on another device
             path, api = u.path[3:], q.get("api", [""])[0]
             if not LAN or (path, api) not in SN_CALLS:
@@ -688,10 +746,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    cors = None  # set per request by do_GET
+
     def end_headers(self):
         # path is unset for a malformed request line (send_error)
         if no_cache(getattr(self, "path", "")):
             self.send_header("Cache-Control", "no-cache")
+        if self.cors:
+            self.send_header("Access-Control-Allow-Origin", self.cors)
         super().end_headers()
 
     def log_message(self, *a):
@@ -699,6 +761,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    mod = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--magelight=")), None)
+    if mod or "--magelight" in sys.argv:
+        if not mod:
+            sys.exit("Usage: python serve.py --magelight=<mod folder>, a new folder in MO2's mods folder")
+        install_magelight(mod)
+        sys.exit(0)
     assert MODLISTS, "no SkyrimNet folder found: list yours under skyrimnet: in config.yaml, or pass one as an argument"
     SN = folder()
     if "--types" in sys.argv:  # every event type in every playthrough, for config.yaml's "types:" patterns
@@ -774,6 +842,16 @@ if __name__ == "__main__":
         assert host_ok("localhost:8791") and host_ok("127.0.0.1:8791") and host_ok("[::1]:8791")
         assert no_cache("/") and no_cache("/config.yaml") and no_cache("/local/events?db=x") and not no_cache("/local/shot?name=a.png") and not no_cache("/local/savepic?file=a.ess")
         assert not host_ok("evil.example:8791") and not host_ok("") and host_ok("192.168.1.5:8791") == LAN
+        # the in-game page (origin null) may read answers only with the key --magelight baked into it
+        assert allow_origin("", "null", "k3y") is None and allow_origin("", "https://evil.example", "k3y") is None  # no key: as before
+        assert allow_origin("k3y", "null", "k3y") == "null" and allow_origin("k3y", "file://", "k3y") == "file://"
+        assert allow_origin("k3y", "https://evil.example", "k3y") is None  # the key only opens the page's own origin
+        for key, real in (("wrong", "k3y"), ("k3y", ""), ("k3", "k3y")):  # wrong, none installed, a prefix
+            try:
+                allow_origin(key, "null", real)
+                raise AssertionError(f"key {key!r} accepted against {real!r}")
+            except PermissionError:
+                pass
         assert AUTO_SAVE.match("Autosave2_A5DA4D24_0_44_Solitude_000007_20261127015759_1_1.ess") and AUTO_SAVE.match("Quicksave0_x.ess")
         assert not AUTO_SAVE.match("omega-c.ess") and not AUTO_SAVE.match("Save1_DB837310_0_42_Whiterun_000001_20261125231926_1_1.ess")
         assert MENU_SAVE.match("Save12_DB837310_0_42_Whiterun") and not MENU_SAVE.match("Saves-before-boss")

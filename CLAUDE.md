@@ -9,6 +9,7 @@ A read-only viewer for SkyrimNet (a Skyrim LLM-NPC mod): chat on the left, memor
 - Run: `python serve.py` (Python 3, stdlib only, no install). Serves on http://localhost:8791/. `--no-browser` skips opening a tab. A positional path picks one SkyrimNet folder instead of discovering them all.
 - Self-test: `python serve.py --check`. This is the only test suite. It runs asserts against the **real** SkyrimNet folder on this machine (playthrough DBs, logs, config parsing, path-traversal guards, `host_ok`), so it fails on a machine without SkyrimNet data. Add new parser and guard asserts here.
 - Pre-commit hook `.githooks/pre-commit` (turn on once per clone: `git config core.hooksPath .githooks`): runs `--check` when `serve.py`/`config.yaml` change, and fails on `innerHTML`, a DB opened without `ro()`, or `index.html`/`serve.py` changed without `CHANGELOG.md` (`SNEV_NO_CHANGELOG=1` for a change nobody using the page would notice).
+- `python serve.py --magelight=<mod folder>` builds the Magelight in-game mod: a manifest (F7) and a copy of `index.html` with `const KEY` filled in, so the copy reads serve.py at `127.0.0.1:8791` through `local()`.
 - `python serve.py --types` lists the event types seen across all playthrough DBs, for writing `config.yaml` `types:` patterns.
 - There is no build, lint or bundler. `index.html` is edited and served as is. Reload the page after a change; restart `serve.py` after editing Python, or after changing `skyrimnet:`/`lan:` in `config.yaml`.
 
@@ -33,6 +34,6 @@ Two files do everything:
 ## Constraints
 
 - Read-only, always: never write to the game, SkyrimNet's DBs, logs or folders.
-- Security boundary in `serve.py`: binds 127.0.0.1 unless `lan: yes`; `host_ok()` rejects other Host headers (DNS rebinding); `/local/shot` only serves names matching `SHOT_NAME`; `db=`/`ml=` values are validated against known files and names. Keep these when adding routes, and add an assert to `--check`.
+- Security boundary in `serve.py`: binds 127.0.0.1 unless `lan: yes`; `host_ok()` rejects other Host headers (DNS rebinding); `allow_origin()` sends `Access-Control-Allow-Origin` only to a request carrying the `magelight.key` key (the in-game page, origin `null`), and refuses a wrong key; `/local/shot` only serves names matching `SHOT_NAME`; `db=`/`ml=` values are validated against known files and names. Keep these when adding routes, and add an assert to `--check`.
 - No dependencies on either side: stdlib Python, plain browser JS.
 - Commit subjects are short and user-facing, often led by the emoji of the feature they touch (🔄️, 📜, 🤏…). When behaviour changes, update the matching README section and add a line under today's date in `CHANGELOG.md` in the same commit (a `### <date>` under `## Unreleased`, above the newest version; a release renames `Unreleased` to its version, `## v0.1.0 alpha · <date>`). Ideas not built yet go in the README's Backlog section; remove one when it ships.

@@ -440,7 +440,8 @@ def shots_dir(sn):
 
 def omnisight_in(path, start=0, end=1e12):
     """OmniSight's screenshots: one per subject (an actor, a place…), each with an AI description. SkyrimNet replaces
-    a subject's image when it recaptures it, so an older playthrough can show a newer picture of the same subject."""
+    a subject's image when it recaptures it, in any playthrough ("Wilderness" is many places): a picture written over a
+    minute after the record is a later one, so it is left out and its time given as "retaken" instead."""
     try:
         with ro(path) as c:
             rows = c.execute(SHOT_SQL, (start, end)).fetchall()
@@ -449,8 +450,10 @@ def omnisight_in(path, start=0, end=1e12):
     out, shots = [], shots_dir(os.path.dirname(os.path.dirname(path)))  # <SkyrimNet>/data/x.db -> <SkyrimNet>
     for i, kind, name, loc, game, t, desc, files in rows:
         image = next((os.path.basename(f.replace("\\", "/")) for f in _json(files, []) if isinstance(f, str)), "")
+        taken = os.path.getmtime(os.path.join(shots, image)) if image and os.path.isfile(os.path.join(shots, image)) else None
+        later = taken is not None and taken - (t or 0) > 60  # a matching picture is written within a second or two of its record
         out.append({"id": i, "kind": kind, "name": name, "location": loc, "gameTimeStr": game, "time": t, "description": desc,
-                    "image": image if image and os.path.isfile(os.path.join(shots, image)) else "", "db": os.path.basename(path)})
+                    "image": image if taken and not later else "", "retaken": taken if later else None, "db": os.path.basename(path)})
     return out
 
 
@@ -581,16 +584,17 @@ def save_dirs(sn):
 
 
 def all_saves(sn):
-    out = []
+    out = {}
     for d in save_dirs(sn):
         for p in glob.glob(os.path.join(d, "*.ess")):
             if AUTO_SAVE.match(os.path.basename(p)):
                 continue
             try:
-                out.append(cached(p, read_ess))
+                s = cached(p, read_ess)
             except (OSError, ValueError, struct.error):
-                pass  # unreadable or cut short
-    return sorted(out, key=lambda s: s["time"])
+                continue  # unreadable or cut short
+            out.setdefault((s["file"], s["time"]), s)  # one save copied into several MO2 profiles (a copied profile keeps its saves): once
+    return sorted(out.values(), key=lambda s: s["time"])
 
 
 def saves(sn, db="", day=""):
@@ -751,6 +755,7 @@ if __name__ == "__main__":
         print(f"diary: {len(dl)} entries in the 40 newest playthroughs")
         shots = [x for q in p[:40] for x in omnisight(SN, q["db"])]
         assert all(not x["image"] or SHOT_NAME.match(x["image"]) for x in shots)
+        assert all(not (x["image"] and x["retaken"]) for x in shots), "a retaken picture shown as the record's own"
         assert not SHOT_NAME.match("../x.png") and not SHOT_NAME.match("a/b.png")
         assert {a for _, a in SN_CALLS} <= {"list", "requests", "recent-events", "image"}  # /sn passes on read-only calls only
         assert config_list("a: 1\nskyrimnet:\n  # x\n  - 'D:\\MO2\\it''s'\n  - E:/x\nb: 2\n", "skyrimnet") == ["D:\\MO2\\it's", "E:/x"]
@@ -784,6 +789,7 @@ if __name__ == "__main__":
         sv = all_saves(SN)
         assert all(x["player"] and 1 <= x["level"] < 1000 and 946684800 < x["time"] < 4102444800 for x in sv), "a save header read wrong"
         assert all(not AUTO_SAVE.match(x["file"]) for x in sv)
+        assert len({(x["file"], x["time"]) for x in sv}) == len(sv), "a save listed twice (copied profiles)"
         tagged = [x for x in sv if x["db"]]
         assert all(DB_NAME.match(x["db"]) for x in tagged), "a cosave id read wrong"
         assert sum(os.path.isfile(os.path.join(SN, "data", x["db"])) for x in tagged) > len(tagged) // 2, "most tagged saves match no playthrough"
@@ -794,7 +800,7 @@ if __name__ == "__main__":
         pics = [save_pic(save_file(SN, x["file"])) for x in sv[-10:]]
         assert all(x is None or x[1:4] == b"PNG" for x in pics) and (not sv or any(pics)), "save pictures read wrong"
         print(f"saves: {len(sv)} you made in {len(save_dirs(SN))} folders, {len(tagged)} tagged by SkyrimNet, {len(live)} in the newest playthrough")
-        print(f"omnisight: {len(shots)} screenshots in the 40 newest playthroughs, {sum(bool(x['image']) for x in shots)} with an image on disk")
+        print(f"omnisight: {len(shots)} screenshots in the 40 newest playthroughs, {sum(bool(x['image']) for x in shots)} with their own image on disk, {sum(bool(x['retaken']) for x in shots)} retaken later")
         print(f"ok: {len(p)} playthroughs, {len(r)} logged prompts, {sum(1 for x in r if x['response_payload'])} with responses")
         sys.exit(0)
     server = http.server.ThreadingHTTPServer(("0.0.0.0" if LAN else "127.0.0.1", PORT), Handler)  # bind first, so the page is up when the browser asks

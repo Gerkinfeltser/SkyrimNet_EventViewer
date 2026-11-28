@@ -2,6 +2,12 @@
 
 What changed for someone using the page, newest first. The README describes how everything works now; the git log has the detail.
 
+## 2026-11-28
+
+- 💾 A save copied into several MO2 profiles shows once, not once per profile.
+- 📷 A card whose picture OmniSight took again later (in any playthrough) no longer shows that later picture; it says when it was retaken.
+- 📌 Connectors to cards above their markers (at the end of a playthrough, say) no longer run on top of each other: they nest, the lanes use the whole gap up to the cards and close up when many need room, and the faint ones show over the column's edge.
+
 ## 2026-11-27
 
 - ⏪ The undone-play fold and its marker get a grey line icon like the rest.

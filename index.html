@@ -197,7 +197,7 @@
   /* the outlined card's 📌 line, carried on to its card's title line (linkPath) */
   #link { position:fixed; inset:0; width:100%; height:100%; z-index:4; pointer-events:none; color:var(--fg); opacity:.75; display:none; }
   #link > path { fill:none; stroke:currentColor; stroke-width:1; stroke-dasharray:3 3; }
-  #links { position:fixed; inset:0; width:100%; height:100%; z-index:3; pointer-events:none; color:var(--muted); } /* every other card's connector, faint */
+  #links { position:fixed; inset:0; width:100%; height:100%; z-index:4; /* over the column too: lanes reach its edge, up to the cards */ pointer-events:none; color:var(--muted); } /* every other card's connector, faint */
   #links > path { fill:none; stroke:currentColor; stroke-width:1; stroke-dasharray:3 3; opacity:.6; }
   #linkflash { position:fixed; inset:0; width:100%; height:100%; z-index:4; pointer-events:none; opacity:0; color:var(--fg); }
   #linkflash path { fill:none; stroke:var(--fg); stroke-width:2; }
@@ -253,7 +253,7 @@
   #shot:not(.withprompt) .grip { display:none; }
   #shot.sized .ppane, #shot.sized:not(.stacked) .pmain { max-height:none; }
   /* 👁️ what OmniSight saw: its picture when the page kept one, else a note */
-  .memcard.scene .nopic { font-style:italic; margin:3px 0; }
+  .memcard .nopic { font-style:italic; margin:3px 0; }
   .memcard.scene .txt { cursor:zoom-in; }
   #mbody.aligned { overflow:hidden; } /* 🔄️ the column follows the page; the wheel scrolls the page */
   /* 🔄️: faint vertical dashed lines through the gaps between cards, so the column reads as one track with the chat */
@@ -1008,9 +1008,11 @@ function linkPath(x) {
   if (e.level) return `M${e.x0},${e.y0}H${e.cardLeft}`;
   return `M${e.x0},${e.y0}H${x.lane ?? e.colLeft - LINK_TURN}V${e.y1}` + (e.away ? "" : `H${e.cardLeft}`);
 }
-// Lanes: x positions in the gutter, 7px apart. In the markers' order (the cards' order too), each connector takes the
-// first lane from the column outwards whose segments cross none placed so far (else the one crossing fewest).
-// ponytail: greedy, can miss a crossing-free layout another order would find; fine for the dozen or so on screen.
+// Lanes: x positions in the gutter, 7px apart. Each connector in turn takes the first lane from the column outwards whose
+// segments clash with none placed so far, else the one clashing least; running along another counts worse than a crossing.
+// Connectors going down nest with the topmost outside, those going up with the bottom one outside, so the downward ones go
+// first in the markers' order, then the upward ones from the bottom (and the plain order and its reverse are tried too).
+// ponytail: greedy per order, can miss a better layout; fine for the dozen or so on screen.
 function routeLinks() {
   const list = [];
   for (const x of side) {
@@ -1019,27 +1021,43 @@ function routeLinks() {
     if (e && (!e.away || x === linkCard)) list.push([x, e]);
   }
   if (!list.length) return list;
-  const right = list[0][1].colLeft - 14, left = feed.getBoundingClientRect().right - 8, lanes = []; // the gap between the boxes (the player's reach the padding, 14px) and the column
-  for (let lx = right; lx >= left || !lanes.length; lx -= 7) lanes.push(lx);
+  // the gap between the boxes (the player's reach the feed's padding, 14px) and the cards; lanes close up from 7px to 3px
+  // apart when more connectors need one than fit
+  const right = Math.min(...list.map(([, e]) => e.cardLeft)) - 12, left = feed.getBoundingClientRect().right - 12, lanes = [];
+  const step = Math.max(3, Math.min(7, (right - left) / Math.max(1, list.filter(([, e]) => !e.level).length - 1)));
+  for (let lx = right; lx >= left - .5 || !lanes.length; lx -= step) lanes.push(lx);
   // segments: ["h", y, x1, x2] or ["v", x, y1, y2]
   const segs = (e, lx) => e.level ? [["h", e.y0, e.x0, e.cardLeft]]
     : [["h", e.y0, e.x0, lx], ["v", lx, e.y0, e.y1], ...(e.away ? [] : [["h", e.y1, lx, e.cardLeft]])];
   const inside = (v, a, b) => v > Math.min(a, b) + 1 && v < Math.max(a, b) - 1;
   const overlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2)) - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 1;
   const clash = (s, t) => s[0] === t[0]
-    ? Math.abs(s[1] - t[1]) < 3 && overlap(s[2], s[3], t[2], t[3]) // running along each other
-    : s[0] === "h" ? inside(t[1], s[2], s[3]) && inside(s[1], t[2], t[3]) : inside(s[1], t[2], t[3]) && inside(t[1], s[2], s[3]);
-  const placed = [];
-  for (const [x, e] of list) {
-    let best = null, fewest = Infinity;
-    for (const lx of e.level ? [null] : lanes) {
-      const n = segs(e, lx).reduce((k, s) => k + placed.filter(t => clash(s, t)).length, 0);
-      if (n < fewest) { fewest = n; best = lx; }
-      if (!n) break;
+    ? (Math.abs(s[1] - t[1]) < 3 && overlap(s[2], s[3], t[2], t[3]) ? 4 : 0) // running along each other: can't tell them apart
+    : +(s[0] === "h" ? inside(t[1], s[2], s[3]) && inside(s[1], t[2], t[3]) : inside(s[1], t[2], t[3]) && inside(t[1], s[2], s[3]));
+  const route = order => {
+    const placed = [], pick = new Map();
+    let total = 0;
+    for (const [x, e] of order) {
+      let best = null, fewest = Infinity;
+      for (const lx of e.level ? [null] : lanes) {
+        const n = segs(e, lx).reduce((k, s) => k + placed.reduce((j, t) => j + clash(s, t), 0), 0);
+        if (n < fewest) { fewest = n; best = lx; }
+        if (!n) break;
+      }
+      pick.set(x, best);
+      total += fewest;
+      placed.push(...segs(e, best));
     }
-    x.lane = best;
-    placed.push(...segs(e, best));
+    return { pick, total };
+  };
+  const up = list.filter(([, e]) => e.y1 < e.y0);
+  let best = null;
+  for (const order of [[...list.filter(([, e]) => e.y1 >= e.y0), ...up.reverse()], list, [...list].reverse()]) {
+    const r = route(order);
+    if (!best || r.total < best.total) best = r;
+    if (!best.total) break;
   }
+  for (const [x] of list) x.lane = best.pick.get(x);
   return list;
 }
 function drawLink() {
@@ -2117,12 +2135,15 @@ function colourNames(text, tag = "div") {
   return out;
 }
 
+// OmniSight keeps one picture per name across all playthroughs, so a later one (serve.py's "retaken") isn't this record's.
+const retakenNote = x => el("div", "foot nopic", `No picture: OmniSight took ${x.name || "this"} again on ${new Date(x.retaken * 1000).toLocaleDateString()} and keeps only the newest.`);
 // OmniSight: a screenshot SkyrimNet took of someone or somewhere, with its AI description. Click the picture for full size.
 function omniCard(x) {
   const h = 280, card = el("div", "memcard omni");
   x.popup = prompt => { // the picture large with the whole description
     const body = [];
     if (x.image) { const big = el("img"); big.src = `/local/shot?${mlq()}&name=` + encodeURIComponent(x.image); big.alt = x.name || ""; body.push(big); }
+    else if (x.retaken) body.push(retakenNote(x));
     body.push(colourNames(x.description || ""));
     if (x.location) body.push(el("div", "foot", x.location));
     showShot(x, who, body, prompt);
@@ -2146,7 +2167,7 @@ function omniCard(x) {
     a.addEventListener("click", ev => { ev.preventDefault(); popup(ev); }); // middle-click still opens a tab
     a.append(img);
     card.append(a);
-  }
+  } else if (x.retaken) card.append(retakenNote(x));
   const text = colourNames(x.description || "");
   text.title = "Click to read the whole description";
   text.addEventListener("click", popup);

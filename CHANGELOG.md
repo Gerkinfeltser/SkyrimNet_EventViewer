@@ -2,7 +2,11 @@
 
 What changed for someone using the page, newest first. The README describes how everything works now; the git log has the detail.
 
-## 2026-11-28
+## v0.1.0 alpha · 2026-11-28
+
+The first tagged version, a pre-release: alpha software, so expect rough edges.
+
+### 2026-11-28
 
 - 📌 Cards and markers on the same chat line (such as everything after a day's last line) go in the order they happened, not grouped by kind.
 - 📡 Live with no game running shows the newest playthrough (*⚠ No game · newest: …*) and switches to the live feed by itself when the game starts.
@@ -10,7 +14,7 @@ What changed for someone using the page, newest first. The README describes how 
 - 📷 A card whose picture OmniSight took again later (in any playthrough) no longer shows that later picture; it says when it was retaken. A person or an item keeps the newer picture, labelled with its date.
 - 📌 Connectors to cards above their markers (at the end of a playthrough, say) no longer run on top of each other: they nest, the lanes use the whole gap up to the cards and close up when many need room, and the faint ones show over the column's edge.
 
-## 2026-11-27
+### 2026-11-27
 
 - ⏪ The undone-play fold and its marker get a grey line icon like the rest.
 - 📒 This changelog, and a Backlog section in the README.
@@ -32,7 +36,7 @@ What changed for someone using the page, newest first. The README describes how 
 - 💾 Saves you made, in the context column.
 - 📅 Minimap hover follows the short game dates.
 
-## 2026-11-26
+### 2026-11-26
 
 - 💭 Thought bubbles a little narrower than spoken lines.
 - 🧠 🏞️ Recalled memories and new scenes noted under replies; short dates.
@@ -41,7 +45,7 @@ What changed for someone using the page, newest first. The README describes how 
 - 📍 Location changes stand out with › chevrons in their colour, ⏫ ⏬ step between them; your turns get faint stripes; 🍖 "consumed".
 - 🎮 Game dialogue marked, 🎯 the action a reply picked.
 
-## 2026-11-25
+### 2026-11-25
 
 - 🌓 Timeline: sky wave, game-time spacing, text size.
 - 🧠 Knowledge packs no longer show as memories.

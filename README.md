@@ -19,8 +19,10 @@ A cleaner page for reading what SkyrimNet's NPCs say, think and remember.
 
 ## Getting it
 
+It's alpha software: it reads SkyrimNet's files and never writes to them, but expect rough edges and things that change between versions.
+
 1. Install [Python 3](https://www.python.org/downloads/). On Windows, tick **Add python.exe to PATH** on the installer's first screen. Nothing else is needed.
-2. On this repository's GitHub page, click **Code → Download ZIP** and unzip it anywhere (it doesn't go in your Skyrim or MO2 folders). Or `git clone` it.
+2. On the [Releases page](https://github.com/Gerkinfeltser/SkyrimNet_EventViewer/releases), download **Source code (zip)** from the newest release and unzip it anywhere (it doesn't go in your Skyrim or MO2 folders). Or `git clone` it: `main` is the newest release, `dev` the work after it (untested).
 3. Play with SkyrimNet at least once, so it has written its data, then follow *Running it* below. The helper finds your SkyrimNet folder by itself; if it doesn't, list the folder under `skyrimnet:` in `config.yaml`.
 
 If double-clicking `sn-eventview.bat` says Python was not found, or opens the Microsoft Store, Python isn't installed or isn't on PATH: install it again with the PATH option ticked, then open a new window.
@@ -207,7 +209,7 @@ What changed so far: [CHANGELOG.md](CHANGELOG.md).
 | `serve.py` | the read-only helper: static files plus `/local/*` JSON routes, bound to 127.0.0.1 only (all addresses with `lan: yes`); answers only requests addressed to localhost, or to an IP address with `lan: yes` |
 | `sn-eventview.bat` | double-click launcher |
 | `config.yaml` | LAN access, hide list and right-column groups |
-| `CHANGELOG.md` | what changed, by date |
+| `CHANGELOG.md` | what changed, by version and date |
 | `LICENSE` | MIT (the line icons are Lucide's, ISC licence) |
 
 With `lan: yes`, a page opened from another device reaches SkyrimNet through the helper (`/sn/…`, only the read-only calls the page makes: the event feed, the request log, and OmniSight's current scene and its picture), since SkyrimNet itself answers only on this PC. Anyone who can reach this PC can then read your dialogue, memories and diaries.

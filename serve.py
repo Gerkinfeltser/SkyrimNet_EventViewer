@@ -125,10 +125,12 @@ def install_magelight(mod):
 
 
 def mo2_mods(sn):
-    """The mods folder of the MO2 instance a SkyrimNet folder belongs to (<instance>/overwrite/SKSE/Plugins/SkyrimNet
-    -> <instance>/mods), or None when it isn't MO2's."""
+    """The mods folder of the MO2 instance a SkyrimNet folder belongs to: its ModOrganizer.ini's mod_directory, or for
+    a folder found without one (<instance>/overwrite/SKSE/Plugins/SkyrimNet) <instance>/mods; None when it isn't MO2's."""
+    known = MO2_MODS.get(os.path.normcase(os.path.normpath(sn)))
+    if known:
+        return known
     parts = os.path.normpath(sn).split(os.sep)
-    # ponytail: misses a custom mod_directory in ModOrganizer.ini; give --magelight=<folder> then
     return os.path.join(os.sep.join(parts[:-4]), "mods") if len(parts) > 4 and parts[-4].lower() == "overwrite" else None
 
 
@@ -168,8 +170,9 @@ def config_list(text, key):
     return out
 
 
-def mo2_overwrite(ini):
-    """An MO2 instance's overwrite folder, from its ModOrganizer.ini (default: <instance>/overwrite)."""
+def mo2_dir(ini, key, default):
+    """A folder of an MO2 instance, from its ModOrganizer.ini: overwrite_directory or mod_directory, else
+    <instance>/<default> (MO2's own defaults: overwrite, mods)."""
     try:
         with open(ini, encoding="utf-8", errors="replace") as f:
             text = f.read()
@@ -184,7 +187,10 @@ def mo2_overwrite(ini):
             v = v[11:-1].replace("\\\\", "\\")
         return v or None
     base = get("base_directory") or os.path.dirname(ini)
-    return os.path.normpath((get("overwrite_directory") or "%BASE_DIR%/overwrite").replace("%BASE_DIR%", base))
+    return os.path.normpath((get(key) or "%BASE_DIR%/" + default).replace("%BASE_DIR%", base))
+
+
+MO2_MODS = {}  # SkyrimNet folder (normcase) -> its MO2 instance's mods folder, filled by find_modlists
 
 
 def game_folders():
@@ -246,7 +252,11 @@ def find_modlists():
                 for p in glob.glob(f"{d}:/*/ModOrganizer.ini") + glob.glob(f"{d}:/*/*/ModOrganizer.ini")]
         inis += glob.glob(os.path.join(os.environ.get("LOCALAPPDATA", ""), "ModOrganizer", "*", "ModOrganizer.ini"))
         found = config_list(config_text(), "skyrimnet")
-        found += [os.path.join(o, "SKSE", "Plugins", "SkyrimNet") for o in map(mo2_overwrite, inis) if o]
+        for ini in inis:
+            o = mo2_dir(ini, "overwrite_directory", "overwrite")
+            if o:
+                found.append(os.path.join(o, "SKSE", "Plugins", "SkyrimNet"))
+                MO2_MODS[os.path.normcase(os.path.normpath(found[-1]))] = mo2_dir(ini, "mod_directory", "mods")
         found += [os.path.join(g, "SKSE", "Plugins", "SkyrimNet") for g in game_folders()]
         found += [p for d in drives for p in glob.glob(f"{d}:/Modlists/*/overwrite/SKSE/Plugins/SkyrimNet")]  # no readable ModOrganizer.ini
     paths, seen = [], set()
@@ -895,6 +905,16 @@ if __name__ == "__main__":
         assert set(mi) == {"built", "hotkey", "ini_hotkey", "ini", "mod"} and (mi["hotkey"] is None) == (mi["mod"] is None)
         print(f"magelight: built {mi['built']}, hotkey {mi['hotkey']} (ini {mi['ini_hotkey']}), mod {mi['mod']}")
         assert ini_values("hotkey = F8  ; mine\n# hotkey=F9\nx=") == {"hotkey": "F8", "x": ""}
+        import tempfile
+        with tempfile.TemporaryDirectory() as t:  # MO2 folders moved in its settings, and left at their defaults
+            ini = os.path.join(t, "ModOrganizer.ini")
+            with open(ini, "w", encoding="utf-8") as f:
+                f.write("[Settings]\nbase_directory=E:/MO2data\nmod_directory=@ByteArray(F:\\\\Mods)\n")
+            assert mo2_dir(ini, "mod_directory", "mods") == os.path.normpath("F:/Mods")
+            assert mo2_dir(ini, "overwrite_directory", "overwrite") == os.path.normpath("E:/MO2data/overwrite")
+            with open(ini, "w", encoding="utf-8") as f:
+                f.write("[Settings]\n")
+            assert mo2_dir(ini, "mod_directory", "mods") == os.path.join(t, "mods")
         assert mo2_mods(r"D:\Steam\Skyrim Special Edition\Data\SKSE\Plugins\SkyrimNet") is None  # not MO2: --magelight needs a folder
         assert host_ok("localhost:8791") and host_ok("127.0.0.1:8791") and host_ok("[::1]:8791")
         assert no_cache("/") and no_cache("/config.yaml") and no_cache("/local/events?db=x") and not no_cache("/local/shot?name=a.png") and not no_cache("/local/savepic?file=a.ess")

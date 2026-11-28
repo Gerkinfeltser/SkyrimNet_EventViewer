@@ -132,6 +132,23 @@ def mo2_mods(sn):
     return os.path.join(os.sep.join(parts[:-4]), "mods") if len(parts) > 4 and parts[-4].lower() == "overwrite" else None
 
 
+def magelight_info():
+    """For ☰: the in-game hotkey the built mod has (the default MO2 place only) and the one magelight.ini asks for."""
+    try:
+        with open(INI_FILE, encoding="utf-8") as f:
+            want = ini_values(f.read()).get("hotkey") or "F7"
+    except OSError:
+        want = None  # never built: no ini yet
+    mods = MODLISTS and mo2_mods(folder())
+    mod = mods and os.path.join(mods, "SNEventView-Magelight")
+    try:
+        with open(os.path.join(mod, "Magelight", "SNEventView", "manifest.json"), encoding="utf-8") as f:
+            has = json.load(f)["views"]["viewer"]["hotkey"]
+    except (OSError, TypeError, ValueError, KeyError):
+        has, mod = None, None
+    return {"built": bool(magelight_key()), "hotkey": has, "ini_hotkey": want, "ini": INI_FILE, "mod": mod}
+
+
 def config_text():
     try:
         with open(os.path.join(HERE, "config.yaml"), encoding="utf-8") as f:
@@ -760,7 +777,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                "/local/memories": lambda: memories(sn(), arg("db"), arg("day")),
                "/local/omnisight": lambda: omnisight(sn(), arg("db"), arg("day")),
                "/local/diary": lambda: diary(sn(), arg("db"), arg("day")),
-               "/local/saves": lambda: saves(sn(), arg("db"), arg("day"))}.get(u.path)
+               "/local/saves": lambda: saves(sn(), arg("db"), arg("day")),
+               "/local/magelight": lambda: magelight_info()}.get(u.path)
         if not api:
             return super().do_GET()
         try:
@@ -873,6 +891,9 @@ if __name__ == "__main__":
         assert folder_name(r"E:\Saves\MyGame\SkyrimNet") == "MyGame"
         assert mo2_mods(r"D:\Modlists\ADT\overwrite\SKSE\Plugins\SkyrimNet") == os.path.normpath(r"D:\Modlists\ADT\mods")
         assert ini_values(INI_DEFAULT) == {"hotkey": "F7"}
+        mi = magelight_info()
+        assert set(mi) == {"built", "hotkey", "ini_hotkey", "ini", "mod"} and (mi["hotkey"] is None) == (mi["mod"] is None)
+        print(f"magelight: built {mi['built']}, hotkey {mi['hotkey']} (ini {mi['ini_hotkey']}), mod {mi['mod']}")
         assert ini_values("hotkey = F8  ; mine\n# hotkey=F9\nx=") == {"hotkey": "F8", "x": ""}
         assert mo2_mods(r"D:\Steam\Skyrim Special Edition\Data\SKSE\Plugins\SkyrimNet") is None  # not MO2: --magelight needs a folder
         assert host_ok("localhost:8791") and host_ok("127.0.0.1:8791") and host_ok("[::1]:8791")

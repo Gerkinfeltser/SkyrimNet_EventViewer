@@ -409,6 +409,7 @@
       <div class="step" data-step="fs" title="Text size of the whole page">Text size <button title="Smaller">−</button><span></span><button title="Larger">+</button></div>
       <div class="step" data-step="cw" title="Width of the context column, as a share of the window">Column width <button title="Narrower">−</button><span></span><button title="Wider">+</button></div>
       <div class="step" data-step="sky" title="How strongly the timeline's day and night wave shows (0% hides it)">Sky wave <button title="Fainter">−</button><span></span><button title="Stronger">+</button></div>
+      <div class="sep" id="mlight" hidden></div>
       <label class="sep" id="aboutbtn" title="What this page is, where its data comes from">About</label>
     </div>
   </details>
@@ -2707,6 +2708,15 @@ async function fillHistory() {
   $("pt").replaceChildren(live, dbs, conv); // playthroughs first, the long list of days after
   return list;
 }
+// ☰ "🎮 In game": the hotkey of the Magelight mod sn-eventview-magelight.bat built, and where to change it
+MODLISTS.then(() => fetch(local("/local/magelight"))).then(r => r.json()).then(m => {
+  const how = `To change it: set hotkey= in ${m.ini}, run sn-eventview-magelight.bat again, then restart the game.`;
+  $("mlight").textContent = !m.built ? "🎮 In game: run sn-eventview-magelight.bat"
+    : `🎮 In game: ${m.hotkey || m.ini_hotkey}` + (m.hotkey && m.ini_hotkey !== m.hotkey ? ` (${m.ini_hotkey} after the next build)` : "");
+  $("mlight").title = !m.built ? "Opens this page over the game with Magelight UI: the .bat makes the mod in MO2, see the README."
+    : `The key that opens this page over the game (Magelight UI).${m.mod ? ` Mod: ${m.mod}.` : ""} ${how}`;
+  $("mlight").hidden = false;
+}).catch(() => {}); // opened from disk, or an older serve.py
 MODLISTS.then(async mls => {
   for (const m of mls) {
     const o = el("option", null, m.name + (m.live ? " ●" : ""));

@@ -189,6 +189,11 @@
   .memcard .foot { font-size:calc(11.5px * var(--fs)); color:var(--muted); }
   .memcard.future { opacity:.4; }
   .memcard.now { box-shadow:0 0 0 1px var(--fg); }
+  /* the outlined card's 📌 line, carried on to its card's title line (linkPath) */
+  #link { position:fixed; inset:0; width:100%; height:100%; z-index:4; pointer-events:none; color:var(--fg); opacity:.85; display:none; }
+  #link > path { fill:none; stroke:currentColor; stroke-width:2; }
+  #link.on { display:block; } body:has(#link.on) .mark.now::before { display:none; }
+  body:has(#link.on) .mark.now { margin-right:calc(28px - var(--markreach, -10px)); } /* its line stops where the connector turns (LINK_TURN) */
   .mark.now { color:var(--fg); } .mark.now::after { border-top:2px solid currentColor; opacity:.85; } .mark.now::before { opacity:1; } /* the outlined card's 📌 line */
   #npc { width:170px; padding-left:24px !important; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 5px; font-size:calc(12.5px * var(--fs)); }
   #npc::-webkit-search-cancel-button { display:none; } /* too small to hit: the × beside it clears */
@@ -393,6 +398,7 @@
 <div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><label class="tbtn" title="Show &quot;🧠 recalled N memories&quot; under NPC replies whose prompt had recalled memories: hover one to read them, click it to open the line with only its memories. Only while the prompt logs exist."><input type="checkbox" data-toggle="recalled" checked hidden>🧠 <span class="n" id="nrecalled">0</span></label><label class="tbtn" title="Show &quot;👁️ saw a new scene&quot; under the NPC reply whose prompt first had a new OmniSight scene (What You Currently See Around You): hover one to read it, click it to open the line with only that scene. SkyrimNet keeps no picture of these scenes. Only while the prompt logs exist."><input type="checkbox" data-toggle="saw" checked hidden>👁️ <span class="n" id="nsaw">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label><label><input type="checkbox" data-toggle="mark-save" checked> 💾 saves <span class="n" data-mark="save">0</span></label><label><input type="checkbox" data-toggle="mark-scene" checked> 👁️ scenes <span class="n" data-mark="scene">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
+<svg id="link" aria-hidden="true"><defs><marker id="linkhead" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L8,4L0,8Z" fill="currentColor"/></marker></defs><path marker-end="url(#linkhead)"/></svg>
 <aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on) (before the first one: the top of the chat)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on) (after the last one: the end of the chat)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
 <dialog id="about" title="Esc or a click outside closes"><div class="who"><b>📜 SkyrimNet event view</b><span class="ver">version 0.0.1</span><span class="x" title="Close">×</span></div>
 <div class="by">by <a href="https://github.com/Gerkinfeltser/SkyrimNet_EventViewer" target="_blank" rel="noopener">Gerkinfeltser</a></div>
@@ -514,7 +520,7 @@ function nameHue(name) {
 }
 const nameColor = name => `hsl(${nameHue(name)} 55% 68%)`;
 
-const stripTags = s => (s || "").replace(/<[^>]+>/g, "").trim();
+const stripTags = s => (s || "").replace(/<[^>]+>/g, "").replace(/^\s*\[[a-z_]+\]\s*/, "").trim(); // also "[item_consumed] " before some live texts
 const clock = e => (e.gameTimeStr || "").split(",")[0];
 const place = e => e.location || "Unknown";
 // "1:27 PM, Sundas, 17th of Last Seed, 4E 201 · (Whiterun, near the Door to Warmaiden's)": hold and Outdoors dropped.
@@ -904,7 +910,7 @@ function topIndex() {
 // Where ⤓ last scrolled the column (it scrolls again only when that changes, so a glide isn't restarted every frame).
 let colTarget = null;
 function updatePosition() {
-  if (!rows.length) return;
+  if (!rows.length) return drawLink(null);
   const atEnd = innerHeight + scrollY >= document.body.scrollHeight - 40; // following live: show the newest
   const i = atEnd ? rows.length - 1 : topIndex(), e = rows[i].e;
   cursor.style.display = "block";
@@ -917,17 +923,18 @@ function updatePosition() {
   w.replaceChildren(el("b", null, place(e)), " · ", gameTime(e.gameTimeStr));
   // Cards: dim the ones whose 📌 marker (or line) is still below the chat on screen; outline the one whose marker is
   // nearest the middle of the chat, and keep it in view. 🔄️ places cards beside their lines already, so nothing is
-  // dimmed or outlined there.
+  // dimmed or outlined there; that card only gets its bright 📌 line and connector, as cards drift from their lines.
   const bottom = $("scrub").getBoundingClientRect().top, mid = ($("cbar").getBoundingClientRect().bottom + bottom) / 2;
   // Read every position first, then restyle: a read after a class change lays out the whole page again, per card.
-  const shown = side.map(m => !!m.node.offsetParent), ys = aligned() ? [] : side.map(m => {
+  const shown = side.map(m => !!m.node.offsetParent), ys = side.map(m => {
     const n = m.mark?.offsetParent ? m.mark : rows[m.at]?.node;
     return n?.offsetParent ? n.getBoundingClientRect().top : null;
   });
   let now = null, best = Infinity;
   side.forEach((m, k) => { if (ys[k] != null && shown[k] && Math.abs(ys[k] - mid) < best) { best = Math.abs(ys[k] - mid); now = m; } });
+  let link = aligned() ? null : linkPath(now);
   side.forEach((m, k) => {
-    m.node.classList.toggle("future", ys[k] != null && ys[k] > bottom);
+    m.node.classList.toggle("future", !aligned() && ys[k] != null && ys[k] > bottom);
     if (m !== now) { m.node.classList.remove("now"); m.mark?.classList.remove("now"); }
   });
   const mb = $("mbody");
@@ -935,6 +942,8 @@ function updatePosition() {
     if (sizes() !== alignKey) alignSide();
     const toEnd = document.documentElement.scrollHeight - innerHeight - scrollY; // page scroll left
     mb.scrollTop = alignScroll(mb) + alignShort * Math.min(1, Math.max(0, 1 - toEnd / innerHeight));
+    now?.mark?.classList.add("now");
+    link = linkPath(now); // after the column has moved: one layout
   }
   else if (now) {
     now.node.classList.add("now");
@@ -946,7 +955,32 @@ function updatePosition() {
       mb.scrollTo({ top, behavior: Math.abs(top - mb.scrollTop) > 3 * mb.clientHeight ? "instant" : "smooth" });
     }
   }
+  drawLink(link);
 }
+// The outlined card's connector: from its 📌 line, turning LINK_TURN px before the column, straight on
+// to the card's title line. Only reads layout; drawLink() writes it. None when the marker or the card is off screen.
+let linkCard = null; const LINK_TURN = 28; // px before the column: the .mark.now margin in the CSS too
+function linkPath(x) {
+  linkCard = x;
+  const a = x && (x.mark?.offsetParent ? x.mark : rows[x.at]?.node), t = x?.node.querySelector(".who");
+  if (!a?.matches(".mark") || !t?.offsetParent) return null;
+  const top = $("cbar").getBoundingClientRect().bottom, bottom = $("scrub").getBoundingClientRect().top;
+  const ar = a.getBoundingClientRect(), tr = t.getBoundingClientRect(), col = $("mem").getBoundingClientRect(), card = x.node.getBoundingClientRect();
+  const y0 = ar.top + ar.height / 2, y1 = tr.top + tr.height / 2;
+  if (y0 < top || y0 > bottom || y1 < top || y1 > bottom) return null;
+  const xm = col.left - LINK_TURN; // turns in the chat's gutter, then runs straight into the card
+  return `M${xm},${y0}V${y1}H${card.left - 1}`;
+}
+function drawLink(d) {
+  $("link").classList.toggle("on", !!d);
+  if (d) $("link").lastChild.setAttribute("d", d);
+}
+let linkTick = false;
+$("mbody").addEventListener("scroll", () => { // the column gliding to the card: the connector follows
+  if (linkTick || aligned()) return;
+  linkTick = true;
+  requestAnimationFrame(() => { linkTick = false; drawLink(linkPath(linkCard)); });
+}, { passive: true });
 $("mem").addEventListener("mouseleave", () => { if (colLed) return void (colLed = false); colTarget = null; updatePosition(); }); // you may have scrolled it: back to the current card
 // ⤓ the other way round (🔄️ off): scrolling the column yourself brings the chat along, the 📌 marker (or line) of the card
 // in the column's middle level with that card. The chat then stays put when the pointer leaves the column.
@@ -2334,6 +2368,8 @@ function edgeLoad() { // within a screen of the first or last drawn line: draw m
 function ingest(events) {
   const fresh = events.filter(e => !seen.has(e.id)).sort((a, b) => a.id - b.id);
   if (!fresh.length) return false;
+  // Some events carry their data as plain text ("Jenassa ate Ale", item_consumed): the page reads data as an object
+  for (const e of fresh) if (e.data != null && typeof e.data !== "object") e.data = { raw: String(e.data) };
   const first = maxId < 0;
   if (first) { // a long playthrough: draw only its latest WINDOW lines (more as you scroll back)
     const n = fresh.filter(e => !hide.some(r => r.test(eventText(e))) && !sideKind(e.type || "")).length;

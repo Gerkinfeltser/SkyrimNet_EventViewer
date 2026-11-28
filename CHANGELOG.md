@@ -4,6 +4,7 @@ What changed for someone using the page, newest first. The README describes how 
 
 ## 2026-11-27
 
+- ⏪ The undone-play fold and its marker get a grey line icon like the rest.
 - 📒 This changelog, and a Backlog section in the README.
 - 👁️ Tested in a live game: a new view's picture is kept while the live view is open, and still shows after a reload.
 - 📌 Every card on screen gets its own connector, in a lane of its own so none cross (circuit style); the outlined card's is bright.

@@ -198,6 +198,7 @@ Not built yet:
 
 - **Keep the prompt logs:** serve.py keeps its own compressed copy of each `openrouter_input` log, in this folder, before SkyrimNet deletes it, so older lines keep their prompts.
 - **🧾 for any mod's requests:** a general match from a mod's events to the requests that mod made, like the ones Narrative Engine and IntelEngine already have.
+- **In game with [Magelight UI](https://github.com/Severause/MagelightUI):** a small mod (`Data/Magelight/SNEventView/manifest.json`, a fullscreen panel on a hotkey, `"network": "loopback"`) that opens the page over the game. Opened from the mod's folder, the page is already in its live-only mode, talking to SkyrimNet at `127.0.0.1:8080`. First try whether the view can open `http://localhost:8791/` instead, which would bring history, memories and the rest with no other change. If not, the page fetches from serve.py by address, and serve.py allows only Magelight's origin. Still to check in game: Ultralight's support for `:has()`, `<dialog>` and `backdrop-filter`.
 
 What changed so far: [CHANGELOG.md](CHANGELOG.md).
 

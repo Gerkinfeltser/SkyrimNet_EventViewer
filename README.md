@@ -39,7 +39,7 @@ From a terminal: `python serve.py` (Python 3, standard library only). Options:
 | `python serve.py --no-browser` | Don't open a browser tab |
 | `python serve.py --check` | Self-test against the real folder |
 | `python serve.py --types` | List every event type with counts, for `config.yaml` |
-| `python serve.py --magelight=<mod folder>` | Build the in-game view as a mod, see below |
+| `python serve.py --magelight[=<mod folder>]` | Build the in-game view as a mod, see below |
 
 Opening `index.html` straight from disk also works for the live game, but without history, memories, older prompts or `config.yaml`. The page says so where those would be. `?host=http://…:8080` points it at another SkyrimNet server.
 
@@ -47,11 +47,11 @@ Opening `index.html` straight from disk also works for the live game, but withou
 
 With [Magelight UI](https://github.com/Severause/MagelightUI) (1.9.0 or newer) the page opens over the game on **F7**:
 
-1. Make an empty mod in MO2 (for example *SNEventView-Magelight*) and run `python serve.py --magelight=<MO2>/mods/SNEventView-Magelight`. It writes `Magelight/SNEventView/` there: a manifest and a copy of the page. Nothing else is touched.
-2. Enable the mod in MO2.
+1. Double-click `sn-eventview-magelight.bat`. It makes the mod *SNEventView-Magelight* in the mods folder of the MO2 install whose SkyrimNet you played last: `Magelight/SNEventView/`, a manifest and a copy of the page. Nothing else is touched.
+2. In MO2, press F5 to refresh and tick *SNEventView-Magelight*.
 3. Keep serve.py running while you play (`sn-eventview.bat`), and press F7 in game.
 
-Magelight opens its pages from the mod folder and won't let them load `localhost:8791`, so the copy fetches history, memories, pictures and `config.yaml` from serve.py by address instead. Any website could send serve.py the same kind of request, so the copy carries a random key, kept next to serve.py in `magelight.key`, and serve.py lets a page read its answers only with that key. Without serve.py running, the in-game page is live-only and says so in History's box. Run the command again after updating the viewer: it keeps the key.
+Magelight opens its pages from the mod folder and won't let them load `localhost:8791`, so the copy fetches history, memories, pictures and `config.yaml` from serve.py by address instead. Any website could send serve.py the same kind of request, so the copy carries a random key, kept next to serve.py in `magelight.key`, and serve.py lets a page read its answers only with that key. Without serve.py running, the in-game page is live-only and says so in History's box. Run it again after updating the viewer: it keeps the key. Not using MO2, or MO2 keeps its mods elsewhere? Give the folder: `python serve.py --magelight=<new mod folder>`.
 
 ## The page
 
@@ -219,6 +219,7 @@ What changed so far: [CHANGELOG.md](CHANGELOG.md).
 | `index.html` | the page: markup, style and script in one file, built with DOM nodes only (no `innerHTML`) |
 | `serve.py` | the read-only helper: static files plus `/local/*` JSON routes, bound to 127.0.0.1 only (all addresses with `lan: yes`); answers only requests addressed to localhost, or to an IP address with `lan: yes` |
 | `sn-eventview.bat` | double-click launcher |
+| `sn-eventview-magelight.bat` | double-click: builds the in-game Magelight mod |
 | `magelight.key` | made by `--magelight`: the in-game page's key (not in git) |
 | `config.yaml` | LAN access, hide list and right-column groups |
 | `CHANGELOG.md` | what changed, by version and date |

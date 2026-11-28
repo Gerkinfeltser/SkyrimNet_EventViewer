@@ -105,6 +105,14 @@ def install_magelight(mod):
     print(f"Magelight view written to {out}\nEnable it in MO2, keep serve.py running while you play, and press F7 in game.")
 
 
+def mo2_mods(sn):
+    """The mods folder of the MO2 instance a SkyrimNet folder belongs to (<instance>/overwrite/SKSE/Plugins/SkyrimNet
+    -> <instance>/mods), or None when it isn't MO2's."""
+    parts = os.path.normpath(sn).split(os.sep)
+    # ponytail: misses a custom mod_directory in ModOrganizer.ini; give --magelight=<folder> then
+    return os.path.join(os.sep.join(parts[:-4]), "mods") if len(parts) > 4 and parts[-4].lower() == "overwrite" else None
+
+
 def config_text():
     try:
         with open(os.path.join(HERE, "config.yaml"), encoding="utf-8") as f:
@@ -763,9 +771,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     mod = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--magelight=")), None)
     if mod or "--magelight" in sys.argv:
+        mods = not mod and MODLISTS and mo2_mods(folder())  # no folder given: the MO2 install played last
+        if mods and os.path.isdir(mods):
+            mod = os.path.join(mods, "SNEventView-Magelight")
         if not mod:
-            sys.exit("Usage: python serve.py --magelight=<mod folder>, a new folder in MO2's mods folder")
+            sys.exit("No MO2 install found for the SkyrimNet played last. Give the mod folder: python serve.py --magelight=<folder>")
         install_magelight(mod)
+        if mods:
+            print("In MO2: press F5 (refresh), then tick SNEventView-Magelight in the left pane.")
         sys.exit(0)
     assert MODLISTS, "no SkyrimNet folder found: list yours under skyrimnet: in config.yaml, or pass one as an argument"
     SN = folder()
@@ -839,6 +852,8 @@ if __name__ == "__main__":
         assert folder_name(r"E:\MO2\mods\SN data\SKSE\Plugins\SkyrimNet") == "SN data"
         assert folder_name(r"D:\Steam\Skyrim Special Edition\Data\SKSE\Plugins\SkyrimNet") == "Skyrim Special Edition"
         assert folder_name(r"E:\Saves\MyGame\SkyrimNet") == "MyGame"
+        assert mo2_mods(r"D:\Modlists\ADT\overwrite\SKSE\Plugins\SkyrimNet") == os.path.normpath(r"D:\Modlists\ADT\mods")
+        assert mo2_mods(r"D:\Steam\Skyrim Special Edition\Data\SKSE\Plugins\SkyrimNet") is None  # not MO2: --magelight needs a folder
         assert host_ok("localhost:8791") and host_ok("127.0.0.1:8791") and host_ok("[::1]:8791")
         assert no_cache("/") and no_cache("/config.yaml") and no_cache("/local/events?db=x") and not no_cache("/local/shot?name=a.png") and not no_cache("/local/savepic?file=a.ess")
         assert not host_ok("evil.example:8791") and not host_ok("") and host_ok("192.168.1.5:8791") == LAN

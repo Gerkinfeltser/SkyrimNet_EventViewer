@@ -9,7 +9,7 @@ What changed for someone using the page, newest first. The README describes how 
 - 📡 History's box is green while it shows the running game, so it's clear you're not on a history item.
 - 🧾 The popup's resize corner also works where a browser has no pointer events (in game through Magelight).
 - 🎮 In game with Magelight UI: `python serve.py --magelight=<mod folder>` builds a mod that opens the page on F7, with history, memories, pictures and `config.yaml` from serve.py.
-- 🎮 `sn-eventview-magelight.bat`: double-click to make that mod in MO2's mods folder (read from MO2's settings, so a moved one too), no path to type.
+- 🎮 `sn-eventview-magelight.bat`: double-click to make that mod in MO2's mods folder (read from MO2's settings, so a moved one too), no path to type. Without MO2 it makes a zip for Vortex or a manual install.
 - 🎮 The in-game hotkey is yours to pick in `magelight.ini`, which updates leave alone. ☰ shows it, and how to change it.
 
 ## v0.1.0 alpha · 2026-11-28

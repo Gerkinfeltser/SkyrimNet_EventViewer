@@ -57,6 +57,7 @@ def host_ok(host):
 # the key serve.py --magelight baked into its copy. Any website can send a null origin too, so the origin alone proves
 # nothing. Websites can't read the key: this server never answers them with an Access-Control-Allow-Origin header.
 KEY_FILE = os.path.join(HERE, "magelight.key")
+LOOSE_MOD = os.path.join(HERE, "magelight-mod")  # where --magelight builds without MO2 (then zipped for Vortex)
 INI_FILE = os.path.join(HERE, "magelight.ini")  # your in-game view's settings: not in the download, so updates keep it
 INI_DEFAULT = """; Your in-game view's settings. Not part of the download, so updating the viewer keeps them.
 ; After a change: run sn-eventview-magelight.bat again, then restart the game (Magelight reads its mods once, at start).
@@ -120,7 +121,7 @@ def install_magelight(mod):
                 "views": {"viewer": {"path": "views/viewer/index.html", "layer": "panel", "fullscreen": True, "hotkey": hotkey}}}
     with open(os.path.join(out, "manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
-    print(f"Magelight view written to {out}\nEnable it in MO2, keep serve.py running while you play, and press {hotkey} in game."
+    print(f"Magelight view written to {out}\nOnce it's enabled, keep serve.py running while you play and press {hotkey} in game."
           f"\nChange the hotkey in {INI_FILE}, then run this again.")
 
 
@@ -142,12 +143,16 @@ def magelight_info():
     except OSError:
         want = None  # never built: no ini yet
     mods = MODLISTS and mo2_mods(folder())
-    mod = mods and os.path.join(mods, "SNEventView-Magelight")
-    try:
-        with open(os.path.join(mod, "Magelight", "SNEventView", "manifest.json"), encoding="utf-8") as f:
-            has = json.load(f)["views"]["viewer"]["hotkey"]
-    except (OSError, TypeError, ValueError, KeyError):
-        has, mod = None, None
+    has = None
+    for mod in ([os.path.join(mods, "SNEventView-Magelight")] if mods else []) + [LOOSE_MOD]:
+        try:
+            with open(os.path.join(mod, "Magelight", "SNEventView", "manifest.json"), encoding="utf-8") as f:
+                has = json.load(f)["views"]["viewer"]["hotkey"]
+            break
+        except (OSError, ValueError, KeyError):
+            pass
+    if not has:
+        mod = None
     return {"built": bool(magelight_key()), "hotkey": has, "ini_hotkey": want, "ini": INI_FILE, "mod": mod}
 
 
@@ -819,13 +824,20 @@ if __name__ == "__main__":
     mod = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--magelight=")), None)
     if mod or "--magelight" in sys.argv:
         mods = not mod and MODLISTS and mo2_mods(folder())  # no folder given: the MO2 install played last
-        if mods and os.path.isdir(mods):
+        mo2 = bool(mods and os.path.isdir(mods))
+        if mo2:
             mod = os.path.join(mods, "SNEventView-Magelight")
-        if not mod:
-            sys.exit("No MO2 install found for the SkyrimNet played last. Give the mod folder: python serve.py --magelight=<folder>")
-        install_magelight(mod)
-        if mods:
+        loose = not mod  # no MO2: build next to the viewer, plus a zip to install with Vortex or by hand
+        install_magelight(mod or LOOSE_MOD)
+        if mo2:
             print("In MO2: press F5 (refresh), then tick SNEventView-Magelight in the left pane.")
+        elif loose:
+            import shutil
+            z = shutil.make_archive(os.path.join(HERE, "SNEventView-Magelight"), "zip", LOOSE_MOD)
+            print(f"No MO2 found, so it's packed as {z}. Install it one of two ways:\n"
+                  f"  Vortex: drag the zip onto the Mods page, then enable and deploy it.\n"
+                  f"  By hand: copy the Magelight folder from {LOOSE_MOD} into Skyrim's Data folder.\n"
+                  "Do this again after updating the viewer.")
         sys.exit(0)
     assert MODLISTS, "no SkyrimNet folder found: list yours under skyrimnet: in config.yaml, or pass one as an argument"
     SN = folder()

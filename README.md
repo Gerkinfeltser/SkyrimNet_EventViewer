@@ -13,9 +13,9 @@ A cleaner page for reading what SkyrimNet's NPCs say, think and remember.
 - **Long playthroughs:** opens with the latest 2,000 lines drawn and draws more as you scroll back, so a 15,000-line playthrough opens in about 2 seconds.
 - **Read-only, nothing to install** but Python: one small helper (`serve.py`, standard library only) and one HTML page. Nothing writes to the game, SkyrimNet or its files.
 
-![The page with 🔄️ on: the end of a playthrough in Whiterun, with Adrianne Avenicci's turn, the player's own turn shifted right with thick blue sides, and beside the chat Dagny the Crude's memory and an OmniSight picture of the Whiterun plains](media/context-column.jpg)
+![The page with 🔄️ on, at the Bannered Mare: the player's own turns striped in blue beside Fridda's and Jenassa's replies, 📌 markers with dashed connectors to their cards, a ⏪ card folding 10 cards from play a loaded save took back, and two 👁️ views of the tavern, the second with the picture the page kept while the live view was open](media/context-column.jpg)
 
-![A line of Dreanna's clicked: the popup shows her thought and line from the same reply at the top, and below them the dialogue request that produced them, starting with her character profile](media/prompt-panel.jpg)
+![Jenassa's line clicked: the popup shows her thought and line from the same reply at the top, and below them the dialogue request that produced them (model, time, 62% cached), starting with her character profile; 🏷️ lists the prompt's 32 sections](media/prompt-panel.jpg)
 
 ## Getting it
 

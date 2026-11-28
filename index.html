@@ -65,11 +65,12 @@
             background:var(--panel); border-bottom:1px solid var(--line); }
   .colbar .fill { flex:1; }
   /* 📌 where a memory, diary entry or OmniSight picture was made; its card is in the context column */
-  .mark { display:flex; align-items:center; gap:7px; margin:3px calc(-1 * var(--markreach, -10px)) 3px 10px; font-size:calc(12px * var(--fs)); color:var(--muted); cursor:pointer; white-space:nowrap; }
+  .mark { display:flex; align-items:center; gap:7px; margin:3px 40px 3px 10px; /* ends in line with the NPCs' boxes (.grp margin) */ font-size:calc(12px * var(--fs)); color:var(--muted); cursor:pointer; white-space:nowrap; }
   .mark::after { content:""; flex:1; border-top:1px dashed currentColor; opacity:.45; }
   .mark::before { content:""; order:9; margin-left:-7px; border-left:6px solid currentColor; border-block:4px solid transparent; opacity:.6; } /* ▸ after the line, pointing at the card's column */
   .mark:hover { color:var(--fg); }
-  .mark.off:not(.now)::after { flex:0 0 24px; } /* its card isn't level with it: a short stub, not a line to another card (levelMarks()) */
+  .mark.nocard::before, .mark.linked::before { display:none; } /* its card hidden in the column, or a connector carrying on: no ▸ */
+  .mark.linked::after { visibility:hidden; } /* the connector draws the whole line, from the text on: one dash pattern, no seam */
   body.hide-marks .mark, body.hide-mark-mem .mark.mem, body.hide-mark-diary .mark.diary, body.hide-mark-omni .mark.omni, body.hide-mark-save .mark.save, body.hide-mark-scene .mark.scene { display:none; }
   /* the end of the chat: "Now" when live, the end of a playthrough or day in History */
   .endmark { display:flex; align-items:center; gap:12px; margin:14px 10px 6px;
@@ -196,10 +197,11 @@
   /* the outlined card's 📌 line, carried on to its card's title line (linkPath) */
   #link { position:fixed; inset:0; width:100%; height:100%; z-index:4; pointer-events:none; color:var(--fg); opacity:.75; display:none; }
   #link > path { fill:none; stroke:currentColor; stroke-width:1; stroke-dasharray:3 3; }
+  #links { position:fixed; inset:0; width:100%; height:100%; z-index:3; pointer-events:none; color:var(--muted); } /* every other card's connector, faint */
+  #links > path { fill:none; stroke:currentColor; stroke-width:1; stroke-dasharray:3 3; opacity:.6; }
   #linkflash { position:fixed; inset:0; width:100%; height:100%; z-index:4; pointer-events:none; opacity:0; color:var(--fg); }
   #linkflash path { fill:none; stroke:var(--fg); stroke-width:2; }
   #link.on { display:block; } body:has(#link.on) .mark.now::before { display:none; }
-  body:has(#link.on) .mark.now { margin-right:calc(28px - var(--markreach, -10px)); } /* its line stops where the connector turns (LINK_TURN) */
   .mark.now { color:var(--fg); } .mark.now::after { opacity:.6; } .mark.now::before { opacity:.8; } /* the outlined card's 📌 line: dashed like the rest, a little brighter */
   #npc { width:170px; padding-left:24px !important; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 5px; font-size:calc(12.5px * var(--fs)); }
   #npc::-webkit-search-cancel-button { display:none; } /* too small to hit: the × beside it clears */
@@ -215,14 +217,14 @@
   .skip { position:absolute; top:0; bottom:0; z-index:2; background:#16161a99; backdrop-filter:grayscale(1) brightness(.6); }
   .memtick { position:absolute; top:0; width:3px; height:8px; margin-left:-1px; border-radius:0 0 2px 2px; pointer-events:none; }
   /* 🤏 compact: OmniSight descriptions and diaries cut to a few lines */
-  body:not(.hide-compact) .memcard.omni .txt { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  body:not(.hide-compact) .memcard.omni img { height:90px; }
-  /* short view with a picture: picture left, text beside it (as many lines as fit beside the picture) */
-  body:not(.hide-compact) .memcard.omni:has(> a) { display:grid; grid-template-columns:160px 1fr; column-gap:10px; align-items:start; }
-  body:not(.hide-compact) .memcard.omni:has(> a) > .who { grid-column:1 / -1; }
-  body:not(.hide-compact) .memcard.omni:has(> a) > .foot { grid-column:2; }
-  body:not(.hide-compact) .memcard.omni:has(> a) img { margin:3px 0 5px; }
-  body:not(.hide-compact) .memcard.omni:has(> a) .txt { -webkit-line-clamp:4; margin:2px 0 0; }
+  /* 📷 👁️ short view: the picture on the left, the text beside it (no taller than the picture), cut with … */
+  body:not(.hide-compact) .memcard:is(.omni, .scene) { display:flow-root; }
+  body:not(.hide-compact) .memcard.omni > a, body:not(.hide-compact) .memcard.scene > img { float:left; margin:3px 12px 3px 0; }
+  body:not(.hide-compact) .memcard:is(.omni, .scene) img { width:160px; height:90px; } /* 16:9 */
+  body:not(.hide-compact) .memcard.omni > a img { margin:0; }
+  body:not(.hide-compact) .memcard:is(.omni, .scene) .txt { margin:2px 0 0; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+  body:not(.hide-compact) .memcard.omni:has(> a) .txt, body:not(.hide-compact) .memcard.scene:has(> img) .txt { -webkit-line-clamp:4; } /* as tall as the picture */
+  body:not(.hide-compact) .memcard:is(.omni, .scene) > .foot { clear:both; }
   /* 💾 a save's own screenshot: small, on the left */
   body:not(.hide-compact) .memcard.save:has(> img) { display:grid; grid-template-columns:120px 1fr; column-gap:10px; align-items:start; }
   body:not(.hide-compact) .memcard.save:has(> img) > .who { grid-column:1 / -1; }
@@ -252,8 +254,6 @@
   #shot.sized .ppane, #shot.sized:not(.stacked) .pmain { max-height:none; }
   /* 👁️ what OmniSight saw: its picture when the page kept one, else a note */
   .memcard.scene .nopic { font-style:italic; margin:3px 0; }
-  body:not(.hide-compact) .memcard.scene .txt { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-  body:not(.hide-compact) .memcard.scene img { height:90px; }
   .memcard.scene .txt { cursor:zoom-in; }
   #mbody.aligned { overflow:hidden; } /* 🔄️ the column follows the page; the wheel scrolls the page */
   /* 🔄️: faint vertical dashed lines through the gaps between cards, so the column reads as one track with the chat */
@@ -262,7 +262,7 @@
   #mbody.aligned .memcard { margin:0; }
   .memcard.undone { background:hsl(0 0% 15%); border:1px dashed var(--line); color:var(--muted); } /* ⏪ the fold of cards from undone play */
   .memcard.undone b { color:var(--fg); }
-  .memcard img { display:block; width:100%; height:170px; object-fit:cover; border-radius:6px; margin:5px 0 3px; }
+  .memcard img { display:block; width:100%; height:auto; aspect-ratio:16 / 9; max-height:240px; object-fit:cover; /* 16:9, cropped top and bottom in a wide column */ border-radius:6px; margin:5px 0 3px; }
   .ppane details { border:1px solid var(--line); border-radius:6px; margin:8px 0; }
   .ppane summary { cursor:pointer; padding:6px 10px; color:var(--muted); }
   .ppane summary b { color:var(--fg); }
@@ -413,7 +413,7 @@
 <div id="cbar" class="colbar"><label class="tbtn" title="Show dialogue (yours and NPCs')"><input type="checkbox" data-toggle="dialog" checked hidden>💬 <span class="n" id="ndialog">0</span></label><label class="tbtn" title="Show thoughts"><input type="checkbox" data-toggle="thoughts" checked hidden>💭 <span class="n" id="nthought">0</span></label><label class="tbtn" data-ico="file-text" title="Show narration (game master, narration, books, deaths…)"><input type="checkbox" data-toggle="narr" checked hidden>🧾 <span class="n" id="nnarr">0</span></label><label class="tbtn" title="Show &quot;🧠 recalled N memories&quot; under NPC replies whose prompt had recalled memories: hover one to read them, click it to open the line with only its memories. Only while the prompt logs exist."><input type="checkbox" data-toggle="recalled" checked hidden>🧠 <span class="n" id="nrecalled">0</span></label><label class="tbtn" title="Show &quot;🏞️ saw a new scene&quot; under the NPC reply whose prompt first had a new OmniSight scene (What You Currently See Around You): hover one to read it, click it to open the line with only that scene. SkyrimNet keeps no picture of these scenes. Only while the prompt logs exist."><input type="checkbox" data-toggle="saw" checked hidden>🏞️ <span class="n" id="nsaw">0</span></label><details class="menu pick" id="acts"><summary title="Actions: pick which kinds to show">🤝 <span class="n" id="nact">0</span></summary><div class="panel" id="actpanel"><label class="mlwrap"><input type="checkbox" data-toggle="acts" checked> all actions</label></div></details><details class="menu pick" id="marks"><summary title="Markers where a memory was created, a diary written or an OmniSight picture taken (click one for its card): pick which kinds to show">📌 <span class="n" id="nmark">0</span></summary><div class="panel"><label class="mlwrap"><input type="checkbox" data-toggle="marks" checked> all markers</label><label><input type="checkbox" data-toggle="mark-mem" checked> 🧠 memories <span class="n" data-mark="mem">0</span></label><label><input type="checkbox" data-toggle="mark-diary" checked> 📔 diaries <span class="n" data-mark="diary">0</span></label><label><input type="checkbox" data-toggle="mark-omni" checked> 📷 OmniSight pictures <span class="n" data-mark="omni">0</span></label><label><input type="checkbox" data-toggle="mark-save" checked> 💾 saves <span class="n" data-mark="save">0</span></label><label><input type="checkbox" data-toggle="mark-scene" checked> 👁️ views <span class="n" data-mark="scene">0</span></label></div></details><label class="tbtn" title="Show background chatter (NPCs talking among themselves)"><input type="checkbox" data-toggle="bg" checked hidden>🗣️ <span class="n" id="nbg">0</span></label><label class="tbtn" title="Show the game's own dialogue: lines you picked in its dialogue menu and the recorded replies (not written by SkyrimNet)"><input type="checkbox" data-toggle="game" checked hidden>🎮 <span class="n" id="ngame">0</span></label><span class="fill"></span><span class="tbtn" id="lprev" title="Previous place: scroll back to where you arrived in the last cell (before the first one: the top of the chat)">⏫</span><span class="tbtn" id="lnext" title="Next place: scroll on to where you arrived in the next cell (after the last one: the end of the chat)">⏬</span></div>
 <main id="feed"></main>
 <nav id="scrub"><div id="cursor"><span id="curtime"></span></div></nav>
-<svg id="linkflash" aria-hidden="true"><path marker-end="url(#linkhead)"/></svg><svg id="link" aria-hidden="true"><defs><marker id="linkhead" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L8,4L0,8Z" fill="currentColor"/></marker></defs><path marker-end="url(#linkhead)"/></svg>
+<svg id="links" aria-hidden="true"><defs><marker id="linkhead2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L8,4L0,8Z" fill="currentColor" opacity=".6"/></marker></defs></svg><svg id="linkflash" aria-hidden="true"><path marker-end="url(#linkhead)"/></svg><svg id="link" aria-hidden="true"><defs><marker id="linkhead" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L8,4L0,8Z" fill="currentColor"/></marker></defs><path marker-end="url(#linkhead)"/></svg>
 <aside id="mem" class="side"><div class="top"><span class="title" id="mtitle"></span><label class="tbtn" title="Compact: OmniSight pictures small with a few lines beside them, and the start of each diary (off: whole descriptions and diaries)"><input type="checkbox" data-toggle="compact" hidden>🤏</label><span class="tbtn step" id="mprev" title="Previous card: scroll the chat back to its 📌 marker (with 🔄️ line up on) (before the first one: the top of the chat)">⏫</span><span class="tbtn step" id="mnext" title="Next card: scroll the chat on to its 📌 marker (with 🔄️ line up on) (after the last one: the end of the chat)">⏬</span><label class="tbtn" title="Line up: each card beside the chat line it belongs to, scrolling with the chat"><input type="checkbox" data-toggle="align" hidden>🔄️</label><label class="tbtn" title="Keep scrolling: keep the card for what you're reading in view"><input type="checkbox" data-toggle="memscroll" checked hidden>⤓</label><span class="x" id="mclose" title="Hide this column (bring it back with 🗂️ in the top bar)">×</span></div><div class="body" id="mbody"></div></aside>
 <dialog id="about" title="Esc or a click outside closes"><div class="who"><b>📜 SkyrimNet event view</b><span class="ver">version 0.0.1</span><span class="x" title="Close">×</span></div>
 <div class="by">by <a href="https://github.com/Gerkinfeltser/SkyrimNet_EventViewer" target="_blank" rel="noopener">Gerkinfeltser</a></div>
@@ -928,7 +928,7 @@ function topIndex() {
 // Where ⤓ last scrolled the column (it scrolls again only when that changes, so a glide isn't restarted every frame).
 let colTarget = null;
 function updatePosition() {
-  if (!rows.length) return drawLink(null);
+  if (!rows.length) { linkCard = null; return drawLink(); }
   const atEnd = innerHeight + scrollY >= document.body.scrollHeight - 40; // following live: show the newest
   const i = atEnd ? rows.length - 1 : topIndex(), e = rows[i].e;
   cursor.style.display = "block";
@@ -955,7 +955,6 @@ function updatePosition() {
   let now = null, best = Infinity;
   side.forEach((m, k) => { if (ys[k] != null && shown[k] && Math.abs(ys[k] - mid) < best) { best = Math.abs(ys[k] - mid); now = m; } });
   linkCard = now;
-  let link = aligned() ? null : linkPath(now);
   side.forEach((m, k) => {
     m.node.classList.toggle("future", !aligned() && ys[k] != null && ys[k] > bottom);
     if (m !== now) { m.node.classList.remove("now"); m.mark?.classList.remove("now"); }
@@ -965,7 +964,6 @@ function updatePosition() {
     if (sizes() !== alignKey) alignSide();
     mb.scrollTop = alignScroll(mb) + alignShort * Math.min(1, Math.max(0, 1 - toEnd / innerHeight));
     now?.mark?.classList.add("now");
-    link = linkPath(now); // after the column has moved: one layout
   }
   else if (now) {
     now.node.classList.add("now");
@@ -977,48 +975,88 @@ function updatePosition() {
       mb.scrollTo({ top, behavior: Math.abs(top - mb.scrollTop) > 3 * mb.clientHeight ? "instant" : "smooth" });
     }
   }
-  drawLink(link);
+  drawLink(); // after the column has moved: one layout
 }
-// The outlined card's connector: from its 📌 line, turning LINK_TURN px before the column, straight on
-// to the card's title line (or, with the card scrolled off, to the column's top or bottom edge). Only reads layout;
-// drawLink() writes it. None when the marker is off screen.
-let linkCard = null; const LINK_TURN = 28; // px before the column: the .mark.now margin in the CSS too
-function linkPath(x, fromText = false) { // fromText: start where the marker's text ends, its whole dashed line included
+// Connectors, circuit style: each 📌 marker on screen runs on from the chat's edge to its card, turning down or up in a
+// lane of its own in the gutter, chosen so no two cross (routeLinks()); one level with its card goes straight in. The
+// outlined card's is drawn bright, and keeps its turn when its card is scrolled off (then to the column's top or bottom
+// edge). linkEnds()/linkPath() only read layout; drawLink() writes it.
+let linkCard = null; const LINK_TURN = 28; // px before the column: where a connector turns with no lane picked
+function linkEnds(x) {
   const a = x && (x.mark?.offsetParent ? x.mark : rows[x.at]?.node), t = x?.node.querySelector(".who");
-  if (!a?.matches(".mark") || !t?.offsetParent) return null;
+  if (!a?.offsetParent || !t?.offsetParent) return null; // a hidden marker (📌 menu, 👤 filter): from its chat line instead
   const top = $("cbar").getBoundingClientRect().bottom, bottom = $("scrub").getBoundingClientRect().top;
   const ar = a.getBoundingClientRect(), tr = t.getBoundingClientRect(), col = $("mem").getBoundingClientRect(), card = x.node.getBoundingClientRect();
-  // to the title line, or, with that scrolled off, to the nearest part of the card still on screen
-  const y0 = ar.top + ar.height / 2, y1 = Math.min(Math.max(tr.top + tr.height / 2, top + 10, card.top + 10), bottom - 10, card.bottom - 10);
+  const y0 = ar.top + ar.height / 2;
   if (y0 < top || y0 > bottom) return null;
-  const xm = col.left - LINK_TURN; // turns in the chat's gutter, then runs straight into the card
-  let start = `M${xm},${y0}`;
-  if (fromText) {
-    const words = document.createRange(); // the marker's contents: its ::after line is not among them
-    words.selectNodeContents(a);
-    start = `M${Math.min(words.getBoundingClientRect().right + 7, xm)},${y0}H${xm}`;
+  let x0; // where the connector starts: after the marker's text (its own dashed line is hidden), or after a line's box
+  if (a.matches(".mark")) { const words = document.createRange(); words.selectNodeContents(a); x0 = words.getBoundingClientRect().right + 7; } // not its ::after line
+  else {
+    let box = a;
+    while (box.parentElement && box.parentElement !== feed) box = box.parentElement;
+    x0 = box.getBoundingClientRect().right + 4;
   }
-  // the card scrolled off the column: up or down the gutter to the edge, pointing the way to it
-  if (card.bottom < top + 20) return `${start}V${top + 4}`;
-  if (card.top > bottom - 20) return `${start}V${bottom - 4}`;
-  return `${start}V${y1}H${card.left + 4}`;
+  const away = card.bottom < top + 20 ? top + 4 : card.top > bottom - 20 ? bottom - 4 : null; // the card scrolled off the column
+  // to the title line, or, with that scrolled off, to the nearest part of the card still on screen
+  const y1 = away ?? Math.min(Math.max(tr.top + tr.height / 2, top + 10, card.top + 10), bottom - 10, card.bottom - 10);
+  return { y0, y1, x0, away: away != null, level: away == null && y0 >= card.top + 6 && y0 <= card.bottom - 6, cardLeft: card.left + 4, colLeft: col.left };
 }
-function drawLink(d) {
+function linkPath(x) {
+  const e = linkEnds(x);
+  if (!e) return null;
+  if (e.level) return `M${e.x0},${e.y0}H${e.cardLeft}`;
+  return `M${e.x0},${e.y0}H${x.lane ?? e.colLeft - LINK_TURN}V${e.y1}` + (e.away ? "" : `H${e.cardLeft}`);
+}
+// Lanes: x positions in the gutter, 7px apart. In the markers' order (the cards' order too), each connector takes the
+// first lane from the column outwards whose segments cross none placed so far (else the one crossing fewest).
+// ponytail: greedy, can miss a crossing-free layout another order would find; fine for the dozen or so on screen.
+function routeLinks() {
+  const list = [];
+  for (const x of side) {
+    if (x !== linkCard) { const m = x.mark?.getBoundingClientRect(); if (!m?.height || m.bottom < 0 || m.top > innerHeight) continue; } // off screen: cheap skip
+    const e = linkEnds(x);
+    if (e && (!e.away || x === linkCard)) list.push([x, e]);
+  }
+  if (!list.length) return list;
+  const right = list[0][1].colLeft - 14, left = feed.getBoundingClientRect().right - 8, lanes = []; // the gap between the boxes (the player's reach the padding, 14px) and the column
+  for (let lx = right; lx >= left || !lanes.length; lx -= 7) lanes.push(lx);
+  // segments: ["h", y, x1, x2] or ["v", x, y1, y2]
+  const segs = (e, lx) => e.level ? [["h", e.y0, e.x0, e.cardLeft]]
+    : [["h", e.y0, e.x0, lx], ["v", lx, e.y0, e.y1], ...(e.away ? [] : [["h", e.y1, lx, e.cardLeft]])];
+  const inside = (v, a, b) => v > Math.min(a, b) + 1 && v < Math.max(a, b) - 1;
+  const overlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2)) - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 1;
+  const clash = (s, t) => s[0] === t[0]
+    ? Math.abs(s[1] - t[1]) < 3 && overlap(s[2], s[3], t[2], t[3]) // running along each other
+    : s[0] === "h" ? inside(t[1], s[2], s[3]) && inside(s[1], t[2], t[3]) : inside(s[1], t[2], t[3]) && inside(t[1], s[2], s[3]);
+  const placed = [];
+  for (const [x, e] of list) {
+    let best = null, fewest = Infinity;
+    for (const lx of e.level ? [null] : lanes) {
+      const n = segs(e, lx).reduce((k, s) => k + placed.filter(t => clash(s, t)).length, 0);
+      if (n < fewest) { fewest = n; best = lx; }
+      if (!n) break;
+    }
+    x.lane = best;
+    placed.push(...segs(e, best));
+  }
+  return list;
+}
+function drawLink() {
+  for (const x of side) x.lane = null;
+  const list = routeLinks(), d = linkPath(linkCard); // read everything first, then write
+  const dims = list.filter(([x]) => x !== linkCard).map(([x]) => linkPath(x)).filter(Boolean);
+  const nocard = new Set(side.filter(x => x.mark?.offsetParent && !x.node.offsetParent));
   $("link").classList.toggle("on", !!d);
   if (d) $("link").lastChild.setAttribute("d", d);
-  levelMarks();
-}
-// A 📌 line on screen runs on to the column only while its card is level with it, so it never points at another card.
-// All positions are read first, then the classes written.
-function levelMarks() {
-  const top = $("cbar").getBoundingClientRect().bottom, bottom = $("scrub").getBoundingClientRect().top;
-  const ms = side.filter(x => x.mark?.isConnected), level = ms.map(x => {
-    const a = x.mark.getBoundingClientRect(), y = a.top + a.height / 2;
-    if (!a.height || y < top || y > bottom) return null; // hidden or off screen: left as it is
-    const c = x.node.getBoundingClientRect();
-    return c.height > 0 && y >= c.top && y <= c.bottom;
-  });
-  ms.forEach((x, k) => { if (level[k] != null) x.mark.classList.toggle("off", !level[k]); });
+  const svg = $("links");
+  svg.replaceChildren(svg.firstChild, ...dims.map(pd => { // its <defs>, then the connectors
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("d", pd);
+    p.setAttribute("marker-end", "url(#linkhead2)");
+    return p;
+  }));
+  const linked = new Set(list.map(([x]) => x));
+  for (const x of side) if (x.mark) { x.mark.classList.toggle("linked", linked.has(x)); x.mark.classList.toggle("nocard", nocard.has(x)); }
 }
 // A clicked card or 📌 marker: its connector lights up for a moment as they do (flash()), following the scroll meanwhile.
 let flashing = 0;
@@ -1038,7 +1076,7 @@ let linkTick = false;
 $("mbody").addEventListener("scroll", () => { // the column gliding to the card: the connector follows
   if (linkTick || aligned()) return;
   linkTick = true;
-  requestAnimationFrame(() => { linkTick = false; drawLink(linkPath(linkCard)); });
+  requestAnimationFrame(() => { linkTick = false; drawLink(); });
 }, { passive: true });
 $("mem").addEventListener("mouseleave", () => { if (colLed) return void (colLed = false); colTarget = null; updatePosition(); }); // you may have scrolled it: back to the current card
 // ⤓ the other way round (🔄️ off): scrolling the column yourself brings the chat along, the 📌 marker (or line) of the card
@@ -1270,7 +1308,7 @@ let fillPrompt = null; // fills the open popup's prompt column (again when "sour
 // ◢ The lower-right corner resizes the popup while its prompt shows; the next one opens at that size. Double-click: the usual size.
 let popSize = JSON.parse(localStorage["snev.popsize"] || "null");
 function sizePopup(d = $("shot")) {
-  const on = !!popSize && d.classList.contains("withprompt") && !focusOnce; // a 🧠's memories alone: as small as they are
+  const on = !!popSize && d.classList.contains("withprompt") && !focusOnce && !d.classList.contains("nohit"); // a 🧠's memories alone, or no prompt found: as small as they are
   d.classList.toggle("sized", on);
   Object.assign(d.style, on ? { boxSizing: "border-box", width: popSize.w + "px", height: popSize.h + "px", maxWidth: "none", maxHeight: "none" }
     : { boxSizing: "", width: "", height: "", maxWidth: "", maxHeight: "" });
@@ -1308,7 +1346,7 @@ function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node t
   dbody.replaceChildren();
   $("dtocw").hidden = $("dsect").hidden = true;
   wholeOnce = false; focusOnce = null; // a new popup follows the picks again
-  d.classList.remove("withprompt");
+  d.classList.remove("withprompt", "nohit");
   sizePopup(d);
   if (x.noPrompt) { fillPrompt = null; return d.showModal(); } // nothing to show beside it: the greyed 🧾's tooltip says why
   const fill = fillPrompt = async () => {
@@ -1318,6 +1356,7 @@ function showShot(x, who, body, prompt, extra, layout = "") { // extra: a node t
     if (fillPrompt !== fill) return; // another popup was opened meanwhile
     if (nodes.hit) x.lines?.(nodes.hit, nodes.reqs);
     dbody.replaceChildren(...nodes, ...(extra ? [extra()] : []));
+    d.classList.toggle("nohit", !nodes.hit); sizePopup(d); // only a note: no room kept for a prompt
     buildToc();
   };
   const show = on => { d.classList.toggle("withprompt", on); sizePopup(d); if (on && !dbody.childNodes.length) fill(); };
@@ -1980,10 +2019,6 @@ function layout() {
   $("mem").style.top = top;
   $("cbar").style.top = document.querySelector("header").getBoundingClientRect().height + "px";
   document.body.classList.toggle("split", memOn);
-  // 📌 markers' dashed lines run on to the open right-hand panel (▸ touching it); without one they end inside the chat
-  const panel = memOn ? $("mem") : null;
-  const edge = feed.getBoundingClientRect().right - parseFloat(getComputedStyle(feed).paddingRight); // where a marker ends with no margin
-  document.body.style.setProperty("--markreach", (panel ? Math.max(0, panel.getBoundingClientRect().left - edge - 1) : -10) + "px");
   alignSide();
 }
 
@@ -2151,7 +2186,8 @@ function placeMarks() {
     let top = row;
     while (top.parentElement && top.parentElement !== feed) top = top.parentElement; // after the speaker's box, not inside it
     let m;
-    if (kind === "undone") { // ⏪ the fold of cards from undone play
+    if (kind === "undone") { // ⏪ the fold of cards from undone play; no marker while its card is hidden (no 📌 menu entry)
+      if (x.node.hidden) continue;
       m = el("div", "mark sm undone", "⏪ ");
       m.append(el("span", "nm", `${x.items.length} from undone play`), rtSpan(x.time, "rt rtl", "") || "");
     } else if (x.e) { // "🧩 IntelEngine · follower recruited", in the group's colour
@@ -2292,16 +2328,27 @@ function foldUndone(list) {
   for (const x of list) {
     const t = x.time ?? x.e?.localTime, c = cuts.find(([a, b]) => t > a && t < b);
     if (!c) { out.push(x); continue; }
-    let f = folds.get(c[0]);
-    if (!f) { folds.set(c[0], f = { kind: "undone", at: x.at, time: c[0], end: c[1], items: [] }); out.push(f); }
-    f.items.push(x);
-    if (openFolds.has(c[0])) out.push(x);
+    if (!folds.has(c[0])) folds.set(c[0], { kind: "undone", at: x.at, time: c[0], end: c[1], items: [] });
+    folds.get(c[0]).items.push(x);
   }
-  for (const f of folds.values()) f.node = foldCard(f);
-  return out;
+  for (const f of folds.values()) {
+    f.at = Math.max(...f.items.map(x => x.at)); // the last line before the cut; opened, its cards sit there too
+    for (const x of f.items) x.at = f.at;
+    f.node = foldCard(f);
+    out.push(f, ...(openFolds.has(f.time) ? f.items : []));
+  }
+  return out.sort((a, b) => a.at - b.at); // stable: each fold after the cards already at that line, its own after it
 }
+// A card kind switched off in the column header (a 🧩 group also by 🧩's own switch). The fold shows while any of its kinds does.
+const BUILT_KINDS = ["mem", "diary", "omni", "scene", "save"];
+const kindHidden = k => document.body.classList.contains("hide-" + k) || !BUILT_KINDS.includes(k) && document.body.classList.contains("hide-modev");
+document.addEventListener("change", ev => { // after the switch's own handler: the fold's card and marker follow it
+  const k = ev.target.dataset?.toggle;
+  if (k && (BUILT_KINDS.includes(k) || k === "modev" || GROUPS.some(g => g.key === k)) && side.some(x => x.kind === "undone")) { renderSide(); markInputs(); updatePosition(); }
+});
 function foldCard(f) {
   const open = openFolds.has(f.time), card = el("div", "memcard undone");
+  card.hidden = f.items.every(x => kindHidden(x.kind));
   const who = el("div", "who"), n = f.items.length;
   who.append(el("b", null, `⏪ ${n} from play a loaded save took back`), el("span", "kind", open ? "▾ fold" : "▸ show"));
   const names = { mem: ["memory", "memories"], diary: ["diary entry", "diary entries"], omni: ["picture", "pictures"], save: ["save", "saves"] }, counts = new Map();

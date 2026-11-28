@@ -10,6 +10,7 @@ What changed for someone using the page, newest first. The README describes how 
 - 🧾 The popup's resize corner also works where a browser has no pointer events (in game through Magelight).
 - 🎮 In game with Magelight UI: `python serve.py --magelight=<mod folder>` builds a mod that opens the page on F7, with history, memories, pictures and `config.yaml` from serve.py.
 - 🎮 `sn-eventview-magelight.bat`: double-click to make that mod in MO2's mods folder, no path to type.
+- 🎮 The in-game hotkey is yours to pick in `magelight.ini`, which updates leave alone.
 
 ## v0.1.0 alpha · 2026-11-28
 

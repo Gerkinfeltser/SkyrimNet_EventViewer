@@ -57,6 +57,18 @@ def host_ok(host):
 # the key serve.py --magelight baked into its copy. Any website can send a null origin too, so the origin alone proves
 # nothing. Websites can't read the key: this server never answers them with an Access-Control-Allow-Origin header.
 KEY_FILE = os.path.join(HERE, "magelight.key")
+INI_FILE = os.path.join(HERE, "magelight.ini")  # your in-game view's settings: not in the download, so updates keep it
+INI_DEFAULT = """; Your in-game view's settings. Not part of the download, so updating the viewer keeps them.
+; After a change: run sn-eventview-magelight.bat again, then restart the game (Magelight reads its mods once, at start).
+
+; hotkey: opens and closes the view. A key name such as F7, F8 or Home.
+hotkey=F7
+"""
+
+
+def ini_values(text):
+    """name=value lines of a small .ini; ; and # start comments."""
+    return dict(re.findall(r"^[ \t]*(\w+)[ \t]*=[ \t]*([^;#\r\n]*?)[ \t]*(?:[;#].*)?$", text, re.M))
 
 
 def magelight_key():
@@ -78,12 +90,18 @@ def allow_origin(key, origin, real):
 
 
 def install_magelight(mod):
-    """Builds the in-game view as a mod folder for MO2: <mod>/Magelight/SNEventView/, a manifest (F7) and a copy of
-    index.html with the key baked in. Writes only there and the key file next to this script. Run it again after
+    """Builds the in-game view as a mod folder for MO2: <mod>/Magelight/SNEventView/, a manifest (hotkey from
+    magelight.ini) and a copy of index.html with the key baked in. Writes only there and magelight.key/.ini next to
+    this script. Run it again after
     updating the viewer; it keeps the key, so a copy already in game keeps working."""
     mod = os.path.abspath(mod)
     if os.path.isdir(mod) and set(os.listdir(mod)) - {"Magelight", "meta.ini"}:  # meta.ini: MO2's own
         sys.exit(f"{mod} holds other files. Give a new folder in MO2's mods folder, e.g. <MO2>/mods/SNEventView-Magelight")
+    if not os.path.isfile(INI_FILE):
+        with open(INI_FILE, "w", encoding="utf-8") as f:
+            f.write(INI_DEFAULT)
+    with open(INI_FILE, encoding="utf-8") as f:
+        hotkey = ini_values(f.read()).get("hotkey") or "F7"
     key = magelight_key()
     if not key:
         key = secrets.token_urlsafe(24)
@@ -99,10 +117,11 @@ def install_magelight(mod):
     with open(os.path.join(out, "views", "viewer", "index.html"), "w", encoding="utf-8") as f:
         f.write(page.replace(marker, f'const KEY = "{key}";'))
     manifest = {"modId": "SNEventView", "name": "SkyrimNet event view", "version": version, "minHost": "1.9.0", "network": "loopback",
-                "views": {"viewer": {"path": "views/viewer/index.html", "layer": "panel", "fullscreen": True, "hotkey": "F7"}}}
+                "views": {"viewer": {"path": "views/viewer/index.html", "layer": "panel", "fullscreen": True, "hotkey": hotkey}}}
     with open(os.path.join(out, "manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
-    print(f"Magelight view written to {out}\nEnable it in MO2, keep serve.py running while you play, and press F7 in game.")
+    print(f"Magelight view written to {out}\nEnable it in MO2, keep serve.py running while you play, and press {hotkey} in game."
+          f"\nChange the hotkey in {INI_FILE}, then run this again.")
 
 
 def mo2_mods(sn):
@@ -853,6 +872,8 @@ if __name__ == "__main__":
         assert folder_name(r"D:\Steam\Skyrim Special Edition\Data\SKSE\Plugins\SkyrimNet") == "Skyrim Special Edition"
         assert folder_name(r"E:\Saves\MyGame\SkyrimNet") == "MyGame"
         assert mo2_mods(r"D:\Modlists\ADT\overwrite\SKSE\Plugins\SkyrimNet") == os.path.normpath(r"D:\Modlists\ADT\mods")
+        assert ini_values(INI_DEFAULT) == {"hotkey": "F7"}
+        assert ini_values("hotkey = F8  ; mine\n# hotkey=F9\nx=") == {"hotkey": "F8", "x": ""}
         assert mo2_mods(r"D:\Steam\Skyrim Special Edition\Data\SKSE\Plugins\SkyrimNet") is None  # not MO2: --magelight needs a folder
         assert host_ok("localhost:8791") and host_ok("127.0.0.1:8791") and host_ok("[::1]:8791")
         assert no_cache("/") and no_cache("/config.yaml") and no_cache("/local/events?db=x") and not no_cache("/local/shot?name=a.png") and not no_cache("/local/savepic?file=a.ess")

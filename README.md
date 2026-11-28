@@ -186,9 +186,18 @@ All paths are inside the picked SkyrimNet folder (for MO2, `overwrite/SKSE/Plugi
 Things SkyrimNet doesn't keep, so the page can't show them:
 
 - **Spoken audio:** TTS plays from memory and is never saved.
-- **Older prompts:** the playthrough database keeps only the events, never the prompts behind them. Those live only in SkyrimNet's request log (in memory, while the game runs) and its `openrouter_input` log files, of which it keeps the last few (about five) and deletes the oldest as it starts a new one. A day or two of heavy play can push a playthrough's prompts out, and from then on its lines show no prompt for good (see *When there's no prompt to show*). The reply logs (`openrouter_output`) last longer, but a prompt can't be rebuilt from them. *Backlog:* serve.py keeping its own compressed copy of each prompt log, in this folder, before SkyrimNet deletes it.
+- **Older prompts:** the playthrough database keeps only the events, never the prompts behind them. Those live only in SkyrimNet's request log (in memory, while the game runs) and its `openrouter_input` log files, of which it keeps the last few (about five) and deletes the oldest as it starts a new one. A day or two of heavy play can push a playthrough's prompts out, and from then on its lines show no prompt for good (see *When there's no prompt to show*). The reply logs (`openrouter_output`) last longer, but a prompt can't be rebuilt from them. (See *Backlog*.)
 - **Older OmniSight pictures:** OmniSight keeps one picture per subject and replaces it when it retakes it, so an older playthrough can show a newer picture.
 - **Pictures of what was visible (👁️):** SkyrimNet keeps only the latest one, in memory, and the prompt log drops the image. The page keeps the ones it sees while the live view is open.
+
+## Backlog
+
+Not built yet:
+
+- **Keep the prompt logs:** serve.py keeps its own compressed copy of each `openrouter_input` log, in this folder, before SkyrimNet deletes it, so older lines keep their prompts.
+- **🧾 for any mod's requests:** a general match from a mod's events to the requests that mod made, like the ones Narrative Engine and IntelEngine already have.
+
+What changed so far: [CHANGELOG.md](CHANGELOG.md).
 
 ## Files
 
@@ -198,6 +207,7 @@ Things SkyrimNet doesn't keep, so the page can't show them:
 | `serve.py` | the read-only helper: static files plus `/local/*` JSON routes, bound to 127.0.0.1 only (all addresses with `lan: yes`); answers only requests addressed to localhost, or to an IP address with `lan: yes` |
 | `sn-eventview.bat` | double-click launcher |
 | `config.yaml` | LAN access, hide list and right-column groups |
+| `CHANGELOG.md` | what changed, by date |
 | `LICENSE` | MIT (the line icons are Lucide's, ISC licence) |
 
 With `lan: yes`, a page opened from another device reaches SkyrimNet through the helper (`/sn/…`, only the read-only calls the page makes: the event feed, the request log, and OmniSight's current scene and its picture), since SkyrimNet itself answers only on this PC. Anyone who can reach this PC can then read your dialogue, memories and diaries.

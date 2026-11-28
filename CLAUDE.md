@@ -34,4 +34,4 @@ Two files do everything:
 - Read-only, always: never write to the game, SkyrimNet's DBs, logs or folders.
 - Security boundary in `serve.py`: binds 127.0.0.1 unless `lan: yes`; `host_ok()` rejects other Host headers (DNS rebinding); `/local/shot` only serves names matching `SHOT_NAME`; `db=`/`ml=` values are validated against known files and names. Keep these when adding routes, and add an assert to `--check`.
 - No dependencies on either side: stdlib Python, plain browser JS.
-- Commit subjects are short and user-facing, often led by the emoji of the feature they touch (🔄️, 📜, 🤏…). When behaviour changes, update the matching README section in the same commit.
+- Commit subjects are short and user-facing, often led by the emoji of the feature they touch (🔄️, 📜, 🤏…). When behaviour changes, update the matching README section and add a line under today's date in `CHANGELOG.md` in the same commit. Ideas not built yet go in the README's Backlog section; remove one when it ships.

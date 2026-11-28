@@ -45,7 +45,9 @@
   .menu select { margin-left:4px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:calc(12.5px * var(--fs)); }
   .hist { flex:none; font-size:calc(12.5px * var(--fs)); color:var(--muted); white-space:nowrap; }
   .hist a { color:#8fb0d6; }
-  .hist select { max-width:340px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:calc(12.5px * var(--fs)); }
+  .hist.down select { border:1px dashed #d9a93a; color:#e8c46a; } /* Live picked, but no game answering */
+  .hist.down select option { color:var(--fg); }
+  .hist select { margin-left:3px; max-width:340px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:2px 3px; font-size:calc(12.5px * var(--fs)); }
   .dot.arch { background:#777; }
 
   main { max-width:860px; margin:0 auto; padding:12px 14px 64px; }
@@ -258,6 +260,8 @@
   #mbody.aligned { --dash:repeating-linear-gradient(to bottom, rgb(255 255 255 / .22) 0 3px, transparent 3px 6px);
                    background:var(--dash) 35% 0 / 1px 100% no-repeat local, var(--dash) 70% 0 / 1px 100% no-repeat local; }
   #mbody.aligned .memcard { margin:0; }
+  .memcard.undone { background:hsl(0 0% 15%); border:1px dashed var(--line); color:var(--muted); } /* ⏪ the fold of cards from undone play */
+  .memcard.undone b { color:var(--fg); }
   .memcard img { display:block; width:100%; height:170px; object-fit:cover; border-radius:6px; margin:5px 0 3px; }
   .ppane details { border:1px solid var(--line); border-radius:6px; margin:8px 0; }
   .ppane summary { cursor:pointer; padding:6px 10px; color:var(--muted); }
@@ -2147,7 +2151,10 @@ function placeMarks() {
     let top = row;
     while (top.parentElement && top.parentElement !== feed) top = top.parentElement; // after the speaker's box, not inside it
     let m;
-    if (x.e) { // "🧩 IntelEngine · follower recruited", in the group's colour
+    if (kind === "undone") { // ⏪ the fold of cards from undone play
+      m = el("div", "mark sm undone", "⏪ ");
+      m.append(el("span", "nm", `${x.items.length} from undone play`), rtSpan(x.time, "rt rtl", "") || "");
+    } else if (x.e) { // "🧩 IntelEngine · follower recruited", in the group's colour
       const g = GROUPS.find(g => g.key === kind), src = el("span", "nm", g?.label || kind);
       src.style.color = `hsl(${g?.hue ?? 0} 55% 68%)`;
       m = el("div", "mark sm ev " + kind, "🧩 ");
@@ -2277,6 +2284,41 @@ To rename or recolour it, add a column: group in config.yaml.`
   document.head.append(st);
 }
 
+// ⏪ Cards from play a loaded save took back (between a cut's two times: their chat lines were deleted) all hang on the
+// last line before the cut. They fold into one card there, opened and closed by a click (openFolds: the cuts' start times).
+const openFolds = new Set();
+function foldUndone(list) {
+  const out = [], folds = new Map();
+  for (const x of list) {
+    const t = x.time ?? x.e?.localTime, c = cuts.find(([a, b]) => t > a && t < b);
+    if (!c) { out.push(x); continue; }
+    let f = folds.get(c[0]);
+    if (!f) { folds.set(c[0], f = { kind: "undone", at: x.at, time: c[0], end: c[1], items: [] }); out.push(f); }
+    f.items.push(x);
+    if (openFolds.has(c[0])) out.push(x);
+  }
+  for (const f of folds.values()) f.node = foldCard(f);
+  return out;
+}
+function foldCard(f) {
+  const open = openFolds.has(f.time), card = el("div", "memcard undone");
+  const who = el("div", "who"), n = f.items.length;
+  who.append(el("b", null, `⏪ ${n} from play a loaded save took back`), el("span", "kind", open ? "▾ fold" : "▸ show"));
+  const names = { mem: ["memory", "memories"], diary: ["diary entry", "diary entries"], omni: ["picture", "pictures"], save: ["save", "saves"] }, counts = new Map();
+  for (const x of f.items) { const k = names[x.kind] ? x.kind : "ev"; counts.set(k, (counts.get(k) || 0) + 1); }
+  const what = [...counts].map(([k, c]) => `${c} ${(names[k] || ["event", "events"])[c === 1 ? 0 : 1]}`).join(" · ");
+  const foot = el("div", "foot"), from = rtSpan(f.time, "rt", ""), to = rtSpan(f.end, "rt", "");
+  if (from && to) foot.append("between ", from, " and ", to, ": ");
+  foot.append("loading an older save deleted this play's chat lines; these were kept");
+  card.append(who, el("div", null, what), foot);
+  card.addEventListener("click", () => {
+    if (getSelection().toString()) return;
+    if (open) openFolds.delete(f.time); else openFolds.add(f.time);
+    renderSide(); markInputs(); updatePosition();
+  });
+  return card;
+}
+
 function renderSide() {
   names = nameMatcher();
   const mb = $("mbody");
@@ -2313,11 +2355,12 @@ function renderSide() {
   for (const x of diaries) x.node = diaryCard(x);
   for (const x of saves) x.node = saveCard(x);
   for (const x of scenes) x.node = sceneCard(x);
-  side = [...mems, ...diaries, ...omni, ...scenes, ...saves, ...sideEv].filter(x => x.at >= drawStart && x.at < drawEnd).sort((a, b) => a.at - b.at); // stable: memories, diaries, screenshots, scenes, saves, then events at the same line
+  const inView = [...mems, ...diaries, ...omni, ...scenes, ...saves, ...sideEv].filter(x => x.at >= drawStart && x.at < drawEnd).sort((a, b) => a.at - b.at); // stable: memories, diaries, screenshots, scenes, saves, then events at the same line
+  side = foldUndone(inView);
   mb.append(...side.map(x => x.node));
   placeMarks();
   if (!side.length) mb.append(el("div", "note", LOCAL ? "No memories or events yet. Background knowledge entries aren't shown." : "Memories are read by serve.py: open http://localhost:8791/"));
-  for (const c of document.querySelectorAll("#mtitle .n[data-key]")) c.textContent = side.filter(x => x.kind === c.dataset.key).length;
+  for (const c of document.querySelectorAll("#mtitle .n[data-key]")) c.textContent = inView.filter(x => x.kind === c.dataset.key).length;
   if ($("modev")) { // 🧩 lists only the groups this view has events for
     let total = 0;
     for (const c of $("modev").querySelectorAll(".n[data-key]")) { total += +c.textContent; c.parentElement.hidden = c.textContent === "0"; }
@@ -2503,6 +2546,7 @@ async function poll(g) {
       loadMemories(g);
       $("dot").className = "dot arch";
       $("dot").title = "archived playthrough (not live)";
+      setLiveDown(false);
       return;
     }
     const events = maxId < 0 ? await fetchAll()
@@ -2515,10 +2559,12 @@ async function poll(g) {
     grabScene(); // 👁️ keep SkyrimNet's newest scene picture, which it keeps nowhere
     $("dot").className = "dot ok";
     $("dot").title = "live";
+    setLiveDown(false);
   } catch {
     if (g !== gen) return;
     $("dot").className = "dot"; // game closed or server not up yet; keep trying
     $("dot").title = "not connected";
+    setLiveDown(true);
   }
   timer = setTimeout(() => poll(g), POLL_MS);
 }
@@ -2528,10 +2574,19 @@ const LOCAL = location.protocol.startsWith("http");
 // Two kinds of history: the conversation log (every line ever said, by real day; survives loading older saves)
 // and SkyrimNet's per-playthrough databases (with locations and game time, but cut back when an older save is loaded).
 // One modlist at a time: picking one shows its newest playthrough (or Live, for the one being played).
+// Live picked but SkyrimNet not answering (game closed or still loading): said in History's box too, not only by the dot.
+let liveDown = false;
+const liveText = () => liveDown ? `⚠ Live: no game running (${LIVE_ML})` : `Live (current save · ${LIVE_ML})`;
+function setLiveDown(down) {
+  liveDown = down;
+  $("ptwrap")?.classList.toggle("down", down);
+  const o = $("pt")?.querySelector("option[value='']");
+  if (o) o.textContent = liveText();
+}
 async function fillHistory() {
   const q = "ml=" + encodeURIComponent(ML);
   const [days, list] = await Promise.all([fetch(`/local/conversation-days?${q}`).then(r => r.json()), fetch(`/local/playthroughs?${q}`).then(r => r.json())]);
-  const live = el("option", null, `Live (current save · ${LIVE_ML})`);
+  const live = el("option", null, liveText());
   live.value = "";
   const conv = el("optgroup"), dbs = el("optgroup");
   conv.label = "Conversation log: every line, by real day";

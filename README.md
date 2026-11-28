@@ -46,8 +46,9 @@ Opening `index.html` straight from disk also works for the live game, but withou
 
 - Modlist (in ☰, shown when there is more than one): every SkyrimNet folder the helper finds when it starts (restart it after adding one): the folders listed under `skyrimnet:` in `config.yaml`, then every MO2 instance's overwrite folder (a `ModOrganizer.ini` up to two folders deep on any local drive, or a global instance in `%LOCALAPPDATA%\ModOrganizer`), then the game's own `Data` folder (Vortex, manual installs), then any `<drive>:\Modlists\*\overwrite` folder. Each is named after its MO2 instance, mod or game folder; folders that share a name all get their parent folder added, such as *ADT (Modlists)*. ● marks the one being played, or played last: the page starts there, and *Live* always reads it. Picking another modlist opens its newest playthrough. The address keeps the modlist and view (`#ml=…&view=…`), so a refresh or a bookmark opens them again.
 
-- History: *Live (current save)*, then **playthroughs** (newest first, named after your character), then the **conversation log** by real day.
+- History: *Live (current save)* (*⚠ Live: no game running*, in an amber box, while SkyrimNet isn't answering), then **playthroughs** (newest first, named after your character), then the **conversation log** by real day.
 - A playthrough's events are cut back to the save point when you load an older save. The conversation log keeps every line ever said, but has no locations or game time.
+- The memories, OmniSight pictures, saves and mod events from play an older save took back keep no chat line, so they fold into one **⏪ N from play a loaded save took back** card (with a ⏪ marker) at the last line before it. Click it to show them, again to fold them.
 
 **Chat column**
 

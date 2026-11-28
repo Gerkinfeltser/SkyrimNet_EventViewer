@@ -2427,7 +2427,8 @@ function renderSide() {
   for (const x of diaries) x.node = diaryCard(x);
   for (const x of saves) x.node = saveCard(x);
   for (const x of scenes) x.node = sceneCard(x);
-  const inView = [...mems, ...diaries, ...omni, ...scenes, ...saves, ...sideEv].filter(x => x.at >= drawStart && x.at < drawEnd).sort((a, b) => a.at - b.at); // stable: memories, diaries, screenshots, scenes, saves, then events at the same line
+  const inView = [...mems, ...diaries, ...omni, ...scenes, ...saves, ...sideEv].filter(x => x.at >= drawStart && x.at < drawEnd)
+    .sort((a, b) => a.at - b.at || (a.time ?? a.e?.localTime ?? 0) - (b.time ?? b.e?.localTime ?? 0)); // at the same line (after the last one, say), in the order they happened
   side = foldUndone(inView);
   mb.append(...side.map(x => x.node));
   placeMarks();

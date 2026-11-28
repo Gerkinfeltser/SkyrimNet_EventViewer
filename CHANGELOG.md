@@ -4,6 +4,7 @@ What changed for someone using the page, newest first. The README describes how 
 
 ## 2026-11-28
 
+- 📌 Cards and markers on the same chat line (such as everything after a day's last line) go in the order they happened, not grouped by kind.
 - 📡 Live with no game running shows the newest playthrough (*⚠ No game · newest: …*) and switches to the live feed by itself when the game starts.
 - 💾 A save copied into several MO2 profiles shows once, not once per profile.
 - 📷 A card whose picture OmniSight took again later (in any playthrough) no longer shows that later picture; it says when it was retaken. A person or an item keeps the newer picture, labelled with its date.

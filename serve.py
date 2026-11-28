@@ -581,7 +581,8 @@ def save_dirs(sn):
     parts = os.path.normpath(sn).split(os.sep)
     mo2 = len(parts) > 4 and parts[-4].lower() == "overwrite"
     # ponytail: misses a custom profiles_directory and a Documents folder moved by OneDrive; read ModOrganizer.ini / the shell folder if that bites
-    return (glob.glob(os.path.join(os.sep.join(parts[:-4]), "profiles", "*", "saves")) if mo2 else []) +         glob.glob(os.path.join(os.path.expanduser("~"), "Documents", "My Games", "Skyrim*", "Saves"))
+    return ((glob.glob(os.path.join(os.sep.join(parts[:-4]), "profiles", "*", "saves")) if mo2 else []) +
+            glob.glob(os.path.join(os.path.expanduser("~"), "Documents", "My Games", "Skyrim*", "Saves")))
 
 
 def all_saves(sn):

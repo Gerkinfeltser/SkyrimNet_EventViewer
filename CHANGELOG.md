@@ -23,6 +23,7 @@ What changed for someone using the page, newest first. The README describes how 
 - 📌 Column buttons hide cards only; the 📌 menu hides markers. Clicking a hidden card's marker opens its popup.
 - 💾 Save cards show the save's own screenshot. 👁️ "scenes" are now "views". 🧠 Recalled memories show as small cards.
 - 📌 A connector runs from each marker to its card's title; the first and last markers are linked; the date sits above the timeline.
+- 📡 The live view loads again when an event carries plain text ("Jenassa ate Ale") instead of data; a leading `[item_consumed]` tag is dropped from its text.
 - 📔 Diary cards sit at their "diary written" line.
 - 📍 The timeline cursor stays put when your own turn is at the top.
 - ℹ️ About in ☰: version, what the page reads, links.

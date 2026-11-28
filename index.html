@@ -1336,17 +1336,19 @@ function sizePopup(d = $("shot")) {
 }
 const grip = el("div", "grip");
 grip.title = "Drag to resize (the next popup opens at this size). Double-click: the usual size.";
-grip.addEventListener("pointerdown", ev => {
+// Pointer events where there are any (touch too); plain mouse events in Magelight's Ultralight, which has none.
+// Moves are followed on the window, so the drag holds without pointer capture.
+const [P_DOWN, P_MOVE, P_UP] = "PointerEvent" in window ? ["pointerdown", "pointermove", "pointerup"] : ["mousedown", "mousemove", "mouseup"];
+grip.addEventListener(P_DOWN, ev => {
   ev.preventDefault();
   const d = $("shot"), r = d.getBoundingClientRect(), x0 = ev.clientX, y0 = ev.clientY;
-  grip.setPointerCapture(ev.pointerId);
   const move = e => { // the popup stays centred, so it grows by twice the drag to keep its corner under the pointer
     popSize = { w: Math.round(Math.min(innerWidth - 8, Math.max(420, r.width + 2 * (e.clientX - x0)))),
                 h: Math.round(Math.min(innerHeight - 8, Math.max(240, r.height + 2 * (e.clientY - y0)))) };
     sizePopup(d);
   };
-  grip.addEventListener("pointermove", move);
-  grip.addEventListener("pointerup", () => { grip.removeEventListener("pointermove", move); localStorage["snev.popsize"] = JSON.stringify(popSize); }, { once: true });
+  addEventListener(P_MOVE, move);
+  addEventListener(P_UP, () => { removeEventListener(P_MOVE, move); if (popSize) localStorage["snev.popsize"] = JSON.stringify(popSize); }, { once: true });
 });
 grip.addEventListener("dblclick", () => { popSize = null; localStorage.removeItem("snev.popsize"); sizePopup(); });
 grip.addEventListener("click", ev => ev.stopPropagation()); // not the popup's click-outside close

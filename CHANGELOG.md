@@ -7,6 +7,7 @@ What changed for someone using the page, newest first. The README describes how 
 ### 2026-11-28
 
 - 📡 History's box is green while it shows the running game, so it's clear you're not on a history item.
+- 🧾 The popup's resize corner also works where a browser has no pointer events (in game through Magelight).
 
 ## v0.1.0 alpha · 2026-11-28
 

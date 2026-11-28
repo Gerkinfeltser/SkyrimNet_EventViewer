@@ -21,6 +21,7 @@ import re
 import sqlite3
 import struct
 import sys
+import zlib
 from datetime import datetime
 from urllib.parse import parse_qs, urlparse
 from urllib.request import urlopen
@@ -34,7 +35,7 @@ SN_CALLS = {("/events", "list"), ("/logs", "requests"), ("/", "recent-events"), 
 
 def no_cache(path):
     """Every response but a picture makes the browser check for a newer page or config.yaml on each load."""
-    return not path.startswith("/local/shot")  # pictures keep their short cache
+    return not path.startswith(("/local/shot", "/local/savepic"))  # pictures keep their short cache
 
 
 def host_ok(host):
@@ -511,6 +512,37 @@ def read_ess(path):
             "db": cosave_db(path[:-4] + ".skse")}
 
 
+def save_pic(path):
+    """A save's screenshot as PNG bytes, or None when it is black (a save made from the console). The picture follows the
+    header uncompressed: RGBA in SE and AE (version 12), RGB in LE; the compression type only covers the rest of the file."""
+    with open(path, "rb") as f:
+        b = f.read(1024)
+        size, version = struct.unpack_from("<II", b, 13)
+        w, h = struct.unpack_from("<II", b, 17 + size - (10 if version >= 12 else 8))
+        px = 4 if version >= 12 else 3
+        if not 0 < w <= 4096 or not 0 < h <= 4096:
+            return None
+        f.seek(17 + size)
+        data = f.read(w * h * px)
+    if len(data) < w * h * px:
+        return None
+    rgb = bytearray(w * h * 3)
+    for c in range(3):
+        rgb[c::3] = data[c::px]  # the alpha byte isn't a real alpha: dropped
+    if max(rgb) < 24:
+        return None
+    rows = b"".join(b"\x00" + rgb[y * w * 3:(y + 1) * w * 3] for y in range(h))  # each row starts with filter 0
+    chunk = lambda kind, d: struct.pack(">I", len(d)) + kind + d + struct.pack(">I", zlib.crc32(kind + d))
+    return b"\x89PNG\x0d\x0a\x1a\x0a" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(bytes(rows))) + chunk(b"IEND", b"")
+
+
+def save_file(sn, name):
+    """The path of a save by its bare file name, from this folder's save folders only; None for anything else."""
+    if os.path.basename(name) != name or not name.lower().endswith(".ess"):
+        return None
+    return next((p for p in (os.path.join(d, name) for d in save_dirs(sn)) if os.path.isfile(p)), None)
+
+
 SN_COSAVE = (0x53504E53, 0x44494E53)  # SkyrimNet's plugin id and its "unique save id" record in an SKSE cosave
 
 
@@ -608,6 +640,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 data = f.read()
             self.send_response(200)
             self.send_header("Content-Type", mimetypes.guess_type(name)[0] or "application/octet-stream")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "max-age=60")
+            self.end_headers()
+            return self.wfile.write(data)
+        if u.path == "/local/savepic":  # a save's screenshot, by file name only
+            try:
+                path = save_file(folder(q.get("ml", [""])[0]), q.get("file", [""])[0])
+                data = path and save_pic(path)
+            except (ValueError, OSError, struct.error):
+                data = None
+            if not data:
+                return self.send_error(404)
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "max-age=60")
             self.end_headers()
@@ -719,7 +765,7 @@ if __name__ == "__main__":
         assert folder_name(r"D:\Steam\Skyrim Special Edition\Data\SKSE\Plugins\SkyrimNet") == "Skyrim Special Edition"
         assert folder_name(r"E:\Saves\MyGame\SkyrimNet") == "MyGame"
         assert host_ok("localhost:8791") and host_ok("127.0.0.1:8791") and host_ok("[::1]:8791")
-        assert no_cache("/") and no_cache("/config.yaml") and no_cache("/local/events?db=x") and not no_cache("/local/shot?name=a.png")
+        assert no_cache("/") and no_cache("/config.yaml") and no_cache("/local/events?db=x") and not no_cache("/local/shot?name=a.png") and not no_cache("/local/savepic?file=a.ess")
         assert not host_ok("evil.example:8791") and not host_ok("") and host_ok("192.168.1.5:8791") == LAN
         assert AUTO_SAVE.match("Autosave2_A5DA4D24_0_44_Solitude_000007_20261127015759_1_1.ess") and AUTO_SAVE.match("Quicksave0_x.ess")
         assert not AUTO_SAVE.match("omega-c.ess") and not AUTO_SAVE.match("Save1_DB837310_0_42_Whiterun_000001_20261125231926_1_1.ess")
@@ -744,6 +790,9 @@ if __name__ == "__main__":
         live = saves(SN, "live")
         assert all(x["db"] == p[0]["db"] for x in live)
         assert cosave_db(os.path.abspath(__file__)) == ""
+        assert all(save_file(SN, n) is None for n in ("../x.ess", r"..\x.ess", "C:x.ess", "a/b.ess", "x.txt", ""))
+        pics = [save_pic(save_file(SN, x["file"])) for x in sv[-10:]]
+        assert all(x is None or x[1:4] == b"PNG" for x in pics) and (not sv or any(pics)), "save pictures read wrong"
         print(f"saves: {len(sv)} you made in {len(save_dirs(SN))} folders, {len(tagged)} tagged by SkyrimNet, {len(live)} in the newest playthrough")
         print(f"omnisight: {len(shots)} screenshots in the 40 newest playthroughs, {sum(bool(x['image']) for x in shots)} with an image on disk")
         print(f"ok: {len(p)} playthroughs, {len(r)} logged prompts, {sum(1 for x in r if x['response_payload'])} with responses")

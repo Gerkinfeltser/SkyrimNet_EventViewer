@@ -441,7 +441,8 @@ def shots_dir(sn):
 def omnisight_in(path, start=0, end=1e12):
     """OmniSight's screenshots: one per subject (an actor, a place…), each with an AI description. SkyrimNet replaces
     a subject's image when it recaptures it, in any playthrough ("Wilderness" is many places): a picture written over a
-    minute after the record is a later one, so it is left out and its time given as "retaken" instead."""
+    minute after the record is a later one: its time is given as "retaken", and for a place it is left out (one place
+    name covers many spots), while a person or an item still looks like itself, so theirs stays."""
     try:
         with ro(path) as c:
             rows = c.execute(SHOT_SQL, (start, end)).fetchall()
@@ -453,7 +454,7 @@ def omnisight_in(path, start=0, end=1e12):
         taken = os.path.getmtime(os.path.join(shots, image)) if image and os.path.isfile(os.path.join(shots, image)) else None
         later = taken is not None and taken - (t or 0) > 60  # a matching picture is written within a second or two of its record
         out.append({"id": i, "kind": kind, "name": name, "location": loc, "gameTimeStr": game, "time": t, "description": desc,
-                    "image": image if taken and not later else "", "retaken": taken if later else None, "db": os.path.basename(path)})
+                    "image": image if taken and not (later and kind == "location") else "", "retaken": taken if later else None, "db": os.path.basename(path)})
     return out
 
 
@@ -755,7 +756,7 @@ if __name__ == "__main__":
         print(f"diary: {len(dl)} entries in the 40 newest playthroughs")
         shots = [x for q in p[:40] for x in omnisight(SN, q["db"])]
         assert all(not x["image"] or SHOT_NAME.match(x["image"]) for x in shots)
-        assert all(not (x["image"] and x["retaken"]) for x in shots), "a retaken picture shown as the record's own"
+        assert all(not (x["image"] and x["retaken"] and x["kind"] == "location") for x in shots), "a retaken place picture shown as the record's own"
         assert not SHOT_NAME.match("../x.png") and not SHOT_NAME.match("a/b.png")
         assert {a for _, a in SN_CALLS} <= {"list", "requests", "recent-events", "image"}  # /sn passes on read-only calls only
         assert config_list("a: 1\nskyrimnet:\n  # x\n  - 'D:\\MO2\\it''s'\n  - E:/x\nb: 2\n", "skyrimnet") == ["D:\\MO2\\it's", "E:/x"]

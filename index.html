@@ -2135,15 +2135,17 @@ function colourNames(text, tag = "div") {
   return out;
 }
 
-// OmniSight keeps one picture per name across all playthroughs, so a later one (serve.py's "retaken") isn't this record's.
-const retakenNote = x => el("div", "foot nopic", `No picture: OmniSight took ${x.name || "this"} again on ${new Date(x.retaken * 1000).toLocaleDateString()} and keeps only the newest.`);
+// OmniSight keeps one picture per name across all playthroughs, so a later one (serve.py's "retaken") isn't this record's:
+// a place's is left out, a person's or an item's is shown with its date.
+const retakenNote = x => el("div", "foot nopic", (x.image ? `Picture from ${new Date(x.retaken * 1000).toLocaleDateString()}: OmniSight took ${x.name || "this"} again then`
+  : `No picture: OmniSight took ${x.name || "this"} again on ${new Date(x.retaken * 1000).toLocaleDateString()}`) + " and keeps only the newest.");
 // OmniSight: a screenshot SkyrimNet took of someone or somewhere, with its AI description. Click the picture for full size.
 function omniCard(x) {
   const h = 280, card = el("div", "memcard omni");
   x.popup = prompt => { // the picture large with the whole description
     const body = [];
     if (x.image) { const big = el("img"); big.src = `/local/shot?${mlq()}&name=` + encodeURIComponent(x.image); big.alt = x.name || ""; body.push(big); }
-    else if (x.retaken) body.push(retakenNote(x));
+    if (x.retaken) body.push(retakenNote(x));
     body.push(colourNames(x.description || ""));
     if (x.location) body.push(el("div", "foot", x.location));
     showShot(x, who, body, prompt);
@@ -2167,7 +2169,8 @@ function omniCard(x) {
     a.addEventListener("click", ev => { ev.preventDefault(); popup(ev); }); // middle-click still opens a tab
     a.append(img);
     card.append(a);
-  } else if (x.retaken) card.append(retakenNote(x));
+  }
+  if (x.retaken) card.append(retakenNote(x));
   const text = colourNames(x.description || "");
   text.title = "Click to read the whole description";
   text.addEventListener("click", popup);
@@ -2456,7 +2459,7 @@ $("shot").addEventListener("click", ev => { if (ev.target === ev.currentTarget |
 // ---- Polling ----
 function reset() {
   feed.replaceChildren();
-  rows = []; seen = new Set(); maxId = -1; cuts = []; lastEv = null; lastLocation = null; drawStart = 0; drawEnd = Infinity; mems = []; sideEv = []; side = []; omni = []; diaries = []; saves = []; scenes = []; liveScenes = [];
+  fallback = null; rows = []; seen = new Set(); maxId = -1; cuts = []; lastEv = null; lastLocation = null; drawStart = 0; drawEnd = Infinity; mems = []; sideEv = []; side = []; omni = []; diaries = []; saves = []; scenes = []; liveScenes = [];
   $("mbody").replaceChildren(el("div", "note", LOCAL ? "No memories yet." : "Memories are read by serve.py: open http://localhost:8791/"));
   layout();
 }
@@ -2582,10 +2585,11 @@ function ingest(events) {
     else add(e);
   }
   const last = rows.at(-1)?.e;
-  endMark.className = "endmark" + (archive ? "" : " live");
-  const label = el("span", null, (!archive ? "Now" : archive.startsWith("conv:") ? "End of this day" : "End of this playthrough") + (last?.gameTimeStr ? " · " : ""));
+  const now = !archive && !fallback; // the live feed, not the newest playthrough shown while no game runs
+  endMark.className = "endmark" + (now ? " live" : "");
+  const label = el("span", null, (now ? "Now" : archive.startsWith("conv:") ? "End of this day" : "End of this playthrough") + (last?.gameTimeStr ? " · " : ""));
   label.append(gameTime(last?.gameTimeStr));
-  if (!archive) label.prepend(el("span", "pulse", "●")); // live
+  if (now) label.prepend(el("span", "pulse", "●"));
   endMark.replaceChildren(label);
   if (rows.length && drawEnd === Infinity) feed.append(endMark); // moved back to the end after new lines
   renderScrubber();
@@ -2599,7 +2603,7 @@ function ingest(events) {
 
 // archive = a playthrough database name from serve.py, or "" for the live game.
 // gen stops a poll that was in flight when the view was switched from adding to the new view.
-let archive = "", gen = 0, timer;
+let archive = "", gen = 0, timer, fallback = null; // fallback: the newest playthrough, shown while Live is picked and no game runs
 // ML: the modlist picked in History; LIVE_ML: the one being played (serve.py's pick: written to last). Live always reads LIVE_ML.
 let ML = "", LIVE_ML = "";
 const mlq = () => "ml=" + encodeURIComponent(archive ? ML : LIVE_ML);
@@ -2621,6 +2625,7 @@ async function poll(g) {
     const events = maxId < 0 ? await fetchAll()
       : (await (await fetch(`${HOST}/?api=recent-events&count=${POLL_COUNT}`, { cache: "no-store" })).json()).events || [];
     if (g !== gen) return;
+    if (fallback) return start(); // the game is back: from the newest playthrough to the live feed
     // Newest id went backwards: another save or playthrough was loaded, so start over.
     // ponytail: misses a switch to a save whose newest id is higher; compare first-event ids if that bites.
     if (events.length && maxId >= 0 && Math.max(...events.map(e => e.id)) < maxId) return start();
@@ -2634,6 +2639,7 @@ async function poll(g) {
     $("dot").className = "dot"; // game closed or server not up yet; keep trying
     $("dot").title = "not connected";
     setLiveDown(true);
+    if (LOCAL && maxId < 0 && !fallback) await showNewest(g);
   }
   timer = setTimeout(() => poll(g), POLL_MS);
 }
@@ -2645,10 +2651,24 @@ const LOCAL = location.protocol.startsWith("http");
 // One modlist at a time: picking one shows its newest playthrough (or Live, for the one being played).
 // Live picked but SkyrimNet not answering (game closed or still loading): said in History's box too, not only by the dot.
 let liveDown = false;
-const liveText = () => liveDown ? `⚠ Live: no game running (${LIVE_ML})` : `Live (current save · ${LIVE_ML})`;
+const liveText = () => fallback ? `⚠ No game · newest: ${fallback.player || "?"} ${new Date(fallback.modified * 1000).toLocaleDateString(undefined, { month: "numeric", day: "numeric" })}`
+  : liveDown ? `⚠ Live: no game running (${LIVE_ML})` : `Live (current save · ${LIVE_ML})`;
+async function showNewest(g) { // read-only, like History; poll() keeps trying the game and switches back when it answers
+  try {
+    const q = "ml=" + encodeURIComponent(LIVE_ML), p = (await (await fetch(`/local/playthroughs?${q}`)).json())[0];
+    const events = p && await (await fetch(`/local/events?db=${encodeURIComponent(p.db)}&${q}`)).json();
+    if (g !== gen || !events || maxId >= 0) return;
+    fallback = p;
+    ingest(events);
+    loadMemories(g); // db=live: serve.py's newest playthrough, this one
+    setLiveDown(true);
+  } catch {} // serve.py not answering either
+}
 function setLiveDown(down) {
   liveDown = down;
   $("ptwrap")?.classList.toggle("down", down);
+  const w = $("ptwrap");
+  if (w) { w.dataset.tip ??= w.title; w.title = fallback ? `No game running: showing ${LIVE_ML}'s newest playthrough (${fallback.player || "?"}, played until ${new Date(fallback.modified * 1000).toLocaleString()}). The live feed comes back by itself when the game starts.` : w.dataset.tip; }
   const o = $("pt")?.querySelector("option[value='']");
   if (o) o.textContent = liveText();
 }
